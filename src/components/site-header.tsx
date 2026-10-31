@@ -2,6 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Menu, X, GraduationCap } from "lucide-react";
 import { useSession } from "@/hooks/use-session";
+import { logout as logoutRequest } from "@/lib/auth.functions";
 import { clearSession } from "@/lib/session";
 
 const publicNav = [
@@ -22,7 +23,12 @@ export function SiteHeader() {
     ...(role === "admin" ? ([{ to: "/admin", label: "Admin Dashboard" }] as const) : []),
   ];
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await logoutRequest();
+    } catch (error) {
+      console.error("Failed to end the server session", error);
+    }
     clearSession();
     setOpen(false);
     navigate({ to: "/" });
@@ -62,7 +68,7 @@ export function SiteHeader() {
           {role ? (
             <button
               type="button"
-              onClick={logout}
+              onClick={() => void logout()}
               className="ml-2 inline-flex items-center rounded-md bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark"
             >
               Logout
@@ -112,7 +118,7 @@ export function SiteHeader() {
           {role ? (
             <button
               type="button"
-              onClick={logout}
+              onClick={() => void logout()}
               className="my-3 inline-flex w-full items-center justify-center rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground"
             >
               Logout

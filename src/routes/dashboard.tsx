@@ -3,8 +3,9 @@ import { CalendarDays, Briefcase, UserRound, Eye, ArrowRight, MapPinned } from "
 import { AlumniShell } from "@/components/alumni-shell";
 import { ClusterMap, BarList } from "@/components/cluster-map";
 import { REGION_CLUSTERS, SECTOR_SPLIT } from "@/data/gis";
-import { ME } from "@/data/me";
 import { POSTS } from "@/data/news";
+import { getMyProfileData } from "@/lib/profile.functions";
+import { initials } from "@/lib/profile-format";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -22,23 +23,41 @@ export const Route = createFileRoute("/dashboard")({
       },
     ],
   }),
+  loader: async () => getMyProfileData(),
   component: DashboardPage,
 });
 
-const stats = [
-  { label: "Profile completion", value: `${ME.profileCompletion}%`, icon: UserRound },
-  { label: "Employment records", value: "3", icon: Briefcase },
-  { label: "Profile views", value: "42", icon: Eye },
-  { label: "Upcoming events", value: "2", icon: CalendarDays },
-];
-
 function DashboardPage() {
+  const data = Route.useLoaderData();
+  const profile = data.ok ? data.profile : null;
+
+  const firstName = profile?.firstName || "Alumni";
+  const fullName = profile?.fullName || "Alumni User";
+  const batch = profile?.batch || "—";
+  const currentJob = profile?.employment?.[0]?.position || profile?.course || "Not specified";
+  const currentCompany = profile?.employment?.[0]?.company || "Unemployed / Not provided";
+  const currentRegion = profile?.employment?.[0]?.workLocation || profile?.homeAddress || "—";
+  const empCount = profile?.employment?.length ?? 0;
+  const userInitials = profile ? initials(profile.fullName) : "AL";
+
+  const stats = [
+    { label: "Profile completion", value: "100%", icon: UserRound },
+    { label: "Employment records", value: `${empCount}`, icon: Briefcase },
+    { label: "Profile views", value: "42", icon: Eye },
+    { label: "Upcoming events", value: "2", icon: CalendarDays },
+  ];
+
   const posts = POSTS.slice(0, 4);
 
   return (
     <AlumniShell
-      title={`Welcome back, ${ME.name.split(" ")[0]}`}
+      title={`Welcome back, ${firstName}`}
       subtitle="Keep your alumni record up to date so OARCC can reach you."
+      user={{
+        name: fullName,
+        batch: batch,
+        initials: userInitials,
+      }}
     >
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
@@ -68,7 +87,7 @@ function DashboardPage() {
         <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-success"
-            style={{ width: `${ME.profileCompletion}%` }}
+            style={{ width: "100%" }}
           />
         </div>
       </div>
@@ -143,9 +162,9 @@ function DashboardPage() {
         <div className="space-y-4">
           <div className="rounded-lg border border-border bg-card p-5">
             <h2 className="text-sm font-semibold text-foreground">Current employment</h2>
-            <p className="mt-3 text-sm font-semibold text-foreground">{ME.job}</p>
-            <p className="text-xs text-muted-foreground">{ME.company}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{ME.region}</p>
+            <p className="mt-3 text-sm font-semibold text-foreground">{currentJob}</p>
+            <p className="text-xs text-muted-foreground">{currentCompany}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{currentRegion}</p>
             <Link
               to="/employment"
               className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline"

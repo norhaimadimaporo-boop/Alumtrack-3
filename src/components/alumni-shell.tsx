@@ -45,25 +45,31 @@ const links = [
 export function AlumniShell({
   title,
   subtitle,
+  user,
   children,
 }: {
   title: string;
   subtitle?: string;
+  user?: { name?: string; batch?: string; initials?: string };
   children: ReactNode;
 }) {
+  const displayName = user?.name || ME.name;
+  const displayBatch = user?.batch || ME.batch;
+  const displayInitials = user?.initials || "AL";
+
   return (
     <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 md:grid-cols-[220px_1fr]">
       <aside className="md:sticky md:top-24 md:self-start">
         <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-bold text-brand-foreground">
-            NA
+            {displayInitials}
           </span>
           <span className="min-w-0">
             <span className="block truncate text-sm font-semibold text-foreground">
-              {ME.name}
+              {displayName}
             </span>
             <span className="block text-[11px] text-muted-foreground">
-              Batch {ME.batch}
+              Batch {displayBatch}
             </span>
           </span>
         </div>

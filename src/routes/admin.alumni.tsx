@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   Plus,
@@ -19,7 +19,9 @@ import {
 } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
 import { Modal, LabeledInput, PrimaryButton } from "@/components/modal";
-import { ALUMNI, COURSES, COLLEGES, REGIONS, BATCHES, initials, type Alumnus } from "@/data/alumni";
+import { COURSES, COLLEGES, REGIONS, BATCHES, initials } from "@/data/alumni";
+import { deleteAlumni, getAdminAlumni, verifyAlumni } from "@/lib/admin.functions";
+import type { AdminAlumnus as Alumnus } from "@/lib/admin.types";
 
 export const Route = createFileRoute("/admin/alumni")({
   head: () => ({
@@ -37,10 +39,9 @@ export const Route = createFileRoute("/admin/alumni")({
       },
     ],
   }),
+  loader: async () => getAdminAlumni(),
   component: AdminAlumni,
 });
-
-const VERIFIED = [1, 2, 4, 5, 7, 8, 10, 11];
 
 const idNumber = (a: Alumnus) => `${a.batch}-${30000 + a.id * 137}`;
 
@@ -73,14 +74,11 @@ const PHASE_STEPS = [
   "Organization",
 ] as const;
 
-const DEGREE_TYPES = [
-  "Post Graduate Degree",
-  "Graduate Degree",
-  "Baccalaureate Degree",
-] as const;
-
+const DEGREE_TYPES = ["Post Graduate Degree", "Graduate Degree", "Baccalaureate Degree"] as const;
 
 function AdminAlumni() {
+  const data = Route.useLoaderData();
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [course, setCourse] = useState("");
   const [batch, setBatch] = useState("");
@@ -97,6 +95,11 @@ function AdminAlumni() {
   const [degreeTypes, setDegreeTypes] = useState<string[]>([]);
   const [employed, setEmployed] = useState<"employed" | "unemployed" | "">("");
   const [affiliated, setAffiliated] = useState<"yes" | "no" | "">("");
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [actionMessage, setActionMessage] = useState<{
+    tone: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const resetWizard = () => {
     setStep(0);
@@ -106,17 +109,77 @@ function AdminAlumni() {
     setAffiliated("");
   };
 
-  const rows = ALUMNI.filter((a) => {
-    const verified = VERIFIED.includes(a.id);
+  const handleVerify = async (record: Alumnus) => {
+    setBusyId(record.id);
+    setActionMessage(null);
+    try {
+      const result = await verifyAlumni({ data: { id: record.id } });
+      setActionMessage({ tone: result.ok ? "success" : "error", text: result.message });
+      if (result.ok) await router.invalidate();
+    } catch (error) {
+      console.error(error);
+      setActionMessage({
+        tone: "error",
+        text: "We could not verify this record right now. Please try again.",
+      });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleDelete = async (record: Alumnus) => {
+    setBusyId(record.id);
+    setActionMessage(null);
+    try {
+      const result = await deleteAlumni({ data: { id: record.id } });
+      setActionMessage({ tone: result.ok ? "success" : "error", text: result.message });
+      if (result.ok) {
+        setDeleting(null);
+        await router.invalidate();
+      }
+    } catch (error) {
+      console.error(error);
+      setActionMessage({
+        tone: "error",
+        text: "We could not delete this record right now. Please try again.",
+      });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  if (!data.ok) {
+    return (
+      <AdminShell
+        title="Manage Alumni Directory"
+        subtitle="Add, edit, search, delete and verify alumni professional information."
+      >
+        <div className="rounded-lg border-t-4 border-brand bg-card p-6">
+          <h2 className="text-sm font-bold text-foreground">Administrator sign-in required</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{data.message}</p>
+          <Link
+            to="/login"
+            className="mt-5 inline-flex rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+          >
+            Go to Login
+          </Link>
+        </div>
+      </AdminShell>
+    );
+  }
+
+  const alumni = data.alumni;
+  const courseOptions = [...new Set(alumni.map((record) => record.course))].sort();
+  const batchOptions = [...new Set(alumni.map((record) => record.batch))]
+    .filter((value) => value && value !== "—")
+    .sort((a, b) => Number(b) - Number(a));
+
+  const rows = alumni.filter((a) => {
     return (
       a.name.toLowerCase().includes(query.toLowerCase()) &&
       (course ? a.course === course : true) &&
       (batch ? a.batch === batch : true) &&
-      (verification === ""
-        ? true
-        : verification === "Verified"
-          ? verified
-          : !verified)
+      (verification === "" ? true : verification === "Verified" ? a.verified : !a.verified)
     );
   });
 
@@ -168,7 +231,7 @@ function AdminAlumni() {
           className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
         >
           <option value="">All courses</option>
-          {COURSES.map((c) => (
+          {courseOptions.map((c) => (
             <option key={c}>{c}</option>
           ))}
         </select>
@@ -178,7 +241,7 @@ function AdminAlumni() {
           className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
         >
           <option value="">All batches</option>
-          {BATCHES.map((b) => (
+          {batchOptions.map((b) => (
             <option key={b}>{b}</option>
           ))}
         </select>
@@ -192,6 +255,19 @@ function AdminAlumni() {
           <option value="For Verification">For Verification</option>
         </select>
       </div>
+
+      {actionMessage && (
+        <p
+          role="status"
+          className={`mt-3 rounded-lg border px-3 py-2 text-sm ${
+            actionMessage.tone === "success"
+              ? "border-success/40 bg-success/10 text-foreground"
+              : "border-red-300 bg-red-50 text-red-700"
+          }`}
+        >
+          {actionMessage.text}
+        </p>
+      )}
 
       <p className="mt-3 text-xs text-muted-foreground">
         {rows.length} record{rows.length === 1 ? "" : "s"} found
@@ -209,8 +285,15 @@ function AdminAlumni() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  No alumni records match your filters yet.
+                </td>
+              </tr>
+            )}
             {rows.map((a) => {
-              const verified = VERIFIED.includes(a.id);
+              const verified = a.verified;
               return (
                 <tr key={a.id} className="align-top">
                   <td className="px-4 py-3">
@@ -250,8 +333,12 @@ function AdminAlumni() {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-3">
                       {!verified && (
-                        <button className="text-xs font-semibold text-success hover:underline">
-                          Verify
+                        <button
+                          onClick={() => void handleVerify(a)}
+                          disabled={busyId === a.id}
+                          className="text-xs font-semibold text-success hover:underline disabled:opacity-50"
+                        >
+                          {busyId === a.id ? "Verifying…" : "Verify"}
                         </button>
                       )}
                       <button
@@ -305,9 +392,7 @@ function AdminAlumni() {
                   <button
                     key={f}
                     type="button"
-                    onClick={() =>
-                      setFields((s) => (on ? s.filter((x) => x !== f) : [...s, f]))
-                    }
+                    onClick={() => setFields((s) => (on ? s.filter((x) => x !== f) : [...s, f]))}
                     className={`rounded-md border px-3 py-2 text-left text-xs font-semibold transition-colors ${
                       on
                         ? "border-brand bg-brand/10 text-brand"
@@ -420,8 +505,9 @@ function AdminAlumni() {
             }}
           >
             <p className="rounded-md border-l-4 border-highlight bg-muted/50 px-3 py-2 text-[11px] text-muted-foreground">
-              Same five phases as the alumni registration. Complete each phase, then save the
-              record.
+              Direct add and edit from the admin console is not connected to the database yet. New
+              alumni accounts are created through the public registration form, and the records in
+              this directory are read live from MySQL. The verify and delete actions are fully live.
             </p>
 
             <ol className="flex flex-wrap gap-1.5">
@@ -500,10 +586,7 @@ function AdminAlumni() {
                       type="email"
                       placeholder="you@msumain.edu.ph"
                     />
-                    <LabeledInput
-                      label="Facebook account"
-                      placeholder="facebook.com/username"
-                    />
+                    <LabeledInput label="Facebook account" placeholder="facebook.com/username" />
                   </div>
                 </div>
               </div>
@@ -550,9 +633,7 @@ function AdminAlumni() {
 
                 {DEGREE_TYPES.filter((d) => degreeTypes.includes(d)).map((d) => (
                   <div key={d} className="rounded-md border border-border p-4">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-brand">
-                      {d}
-                    </p>
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-brand">{d}</p>
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
                       <LabeledInput label="School ID No." placeholder="e.g. 2020-30124" />
                       <LabeledInput label="Degree" />
@@ -651,19 +732,13 @@ function AdminAlumni() {
                 {employed === "employed" && (
                   <div className="mt-4 space-y-3 rounded-md border border-border p-4">
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <LabeledInput
-                        label="Present position / job"
-                        defaultValue={editing?.job}
-                      />
+                      <LabeledInput label="Present position / job" defaultValue={editing?.job} />
                       <LabeledInput
                         label="Present company / agency name"
                         defaultValue={editing?.company}
                       />
                       <LabeledInput label="Company address" />
-                      <LabeledInput
-                        label="Length of employment"
-                        placeholder="e.g. 3 years"
-                      />
+                      <LabeledInput label="Length of employment" placeholder="e.g. 3 years" />
                       <LabeledInput
                         label="Years assumed in current office / agency"
                         placeholder="e.g. 2"
@@ -747,8 +822,8 @@ function AdminAlumni() {
                   Next phase
                 </button>
               ) : (
-                <PrimaryButton type="submit">
-                  {editing ? "Save changes" : "Add record"}
+                <PrimaryButton type="submit" disabled>
+                  Save not connected yet
                 </PrimaryButton>
               )}
             </div>
@@ -772,20 +847,24 @@ function AdminAlumni() {
               </div>
               <span
                 className={`ml-auto shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-                  VERIFIED.includes(viewing.id)
+                  viewing.verified
                     ? "bg-success text-success-foreground"
                     : "bg-highlight text-highlight-foreground"
                 }`}
               >
-                {VERIFIED.includes(viewing.id) ? "Verified" : "For verification"}
+                {viewing.verified
+                  ? "Verified"
+                  : viewing.verificationStatus === "rejected"
+                    ? "Rejected"
+                    : "For verification"}
               </span>
             </div>
 
             <div className="grid grid-cols-3 gap-2">
               {[
                 { label: "Batch", value: viewing.batch },
-                { label: "Degrees", value: "1" },
-                { label: "Profile", value: "92%" },
+                { label: "Degrees", value: String(viewing.education.length) },
+                { label: "Registered", value: viewing.createdAt || "—" },
               ].map((s) => (
                 <div key={s.label} className="rounded-lg border border-border bg-card p-3">
                   <p className="text-base font-bold text-foreground">{s.value}</p>
@@ -796,72 +875,120 @@ function AdminAlumni() {
 
             <MiniCard icon={UserRound} title="Personal details">
               <Row label="Full name" value={viewing.name} />
-              <Row label="Gender" value={viewing.id % 2 === 0 ? "Female" : "Male"} />
-              <Row label="Date of birth" value="14-03-1999" />
-              <Row label="Age" value="27" />
-              <Row label="Ethnicity / Tribe" value="Maranao" />
-              <Row label="Place of birth" value="Marawi City, Lanao del Sur" />
-              <Row label="Religious affiliation" value="Islam" />
+              <Row label="Gender" value={viewing.gender || "—"} />
+              <Row label="Date of birth" value={viewing.birthDate || "—"} />
+              <Row label="Age" value={viewing.age || "—"} />
+              <Row label="Ethnicity / Tribe" value={viewing.ethnicity || "—"} />
+              <Row label="Place of birth" value={viewing.birthPlace || "—"} />
+              <Row label="Religious affiliation" value={viewing.religion || "—"} />
             </MiniCard>
 
             <MiniCard icon={Phone} title="Contact details">
-              <Row label="Present address" value={`Barangay Poblacion, ${viewing.region}`} />
-              <Row label="Home address" value="Marinaut East, Marawi City, Lanao del Sur" />
-              <Row label="Mobile number" value="+63 9XX XXX 1234" />
-              <Row
-                label="Email address"
-                value={`${viewing.name.split(" ")[0]?.toLowerCase()}@email.com`}
-              />
-              <Row label="Akan email address" value="alumnus@msumain.edu.ph" />
-              <Row label="Facebook account" value={`fb.com/${viewing.name.split(" ")[0]}`} />
+              <Row label="Present address" value={viewing.currentAddress || "—"} />
+              <Row label="Home address" value={viewing.homeAddress || "—"} />
+              <Row label="Mobile number" value={viewing.mobileNumber || "—"} />
+              <Row label="Email address" value={viewing.contactEmail || viewing.email} />
+              <Row label="Akan email address" value={viewing.akanEmail || "—"} />
+              <Row label="Facebook account" value={viewing.facebook || "—"} />
             </MiniCard>
 
             <MiniCard icon={GraduationCap} title="Educational details">
-              <div className="rounded-md border-l-2 border-brand bg-muted/40 p-3">
-                <p className="font-semibold text-foreground">{viewing.course}</p>
-                <p>{viewing.college}</p>
-                <p>School ID No. {idNumber(viewing)}</p>
-                <p>Batch {viewing.batch} · MSU Main Campus, Marawi City</p>
-                <p className="text-[11px]">Baccalaureate · Graduated 06-{viewing.batch}</p>
-              </div>
+              {viewing.education.length === 0 ? (
+                <p className="rounded-md bg-muted px-3 py-2">No education records submitted yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {viewing.education.map((record, index) => (
+                    <div
+                      key={`${record.degree}-${index}`}
+                      className="rounded-md border-l-2 border-brand bg-muted/40 p-3"
+                    >
+                      <p className="font-semibold text-foreground">{record.degree}</p>
+                      <p>{record.college || viewing.college}</p>
+                      {record.schoolIdNo && <p>School ID No. {record.schoolIdNo}</p>}
+                      <p>
+                        Batch {viewing.batch} · {record.school}
+                      </p>
+                      <p className="text-[11px]">
+                        {record.level}
+                        {record.major ? ` · ${record.major}` : ""}
+                        {record.graduatedOn ? ` · Graduated ${record.graduatedOn}` : ""}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </MiniCard>
 
             <MiniCard icon={Briefcase} title="Employment history">
-              <div className="rounded-md border-l-4 border-success bg-success/10 p-3">
-                <p className="flex items-center gap-2 font-semibold text-foreground">
-                  {viewing.job}
-                  <span className="rounded-full bg-success px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-success-foreground">
-                    Current job
-                  </span>
+              {viewing.employment.length === 0 ? (
+                <p className="rounded-md bg-muted px-3 py-2">
+                  Employment status: {viewing.status}. No employment record submitted.
                 </p>
-                <p>{viewing.company}</p>
-                <p>Government sector · Local · Aligned with degree</p>
-                <p className="text-[11px]">{viewing.region} · 3 years in office</p>
-              </div>
-              <div className="mt-3 rounded-md border-l-2 border-border bg-muted/40 p-3">
-                <p className="font-semibold text-foreground">Junior Associate</p>
-                <p>Previous employer</p>
-                <p className="text-[11px]">Previous · 2 years</p>
-              </div>
+              ) : (
+                <div className="space-y-3">
+                  {viewing.employment.map((record, index) => (
+                    <div
+                      key={`${record.position}-${index}`}
+                      className={`rounded-md p-3 ${
+                        record.isCurrent
+                          ? "border-l-4 border-success bg-success/10"
+                          : "border-l-2 border-border bg-muted/40"
+                      }`}
+                    >
+                      <p className="flex flex-wrap items-center gap-2 font-semibold text-foreground">
+                        {record.position || "Position not provided"}
+                        {record.isCurrent && (
+                          <span className="rounded-full bg-success px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-success-foreground">
+                            Current job
+                          </span>
+                        )}
+                      </p>
+                      <p>{record.company || "Company not provided"}</p>
+                      <p className="text-[11px]">
+                        {[record.sector, record.workLocation, record.yearsInOffice]
+                          .filter(Boolean)
+                          .join(" · ") || "Sector and location not provided"}
+                      </p>
+                      {record.companyAddress && (
+                        <p className="text-[11px]">{record.companyAddress}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </MiniCard>
 
             <MiniCard icon={Users} title="Organization / group affiliation">
-              <div className="rounded-md border-l-4 border-success bg-success/10 p-3">
-                <p className="flex items-center gap-2 font-semibold text-foreground">
-                  MSU Alumni Association Inc.
-                  <span className="rounded-full bg-success px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-success-foreground">
-                    Current
-                  </span>
+              {viewing.organizations.length === 0 ? (
+                <p className="rounded-md bg-muted px-3 py-2">
+                  No organization or group affiliation on record.
                 </p>
-                <p>Member · Secular · since 06-2019</p>
-                <p className="text-[11px]">Marawi City · alumni@msumain.edu.ph</p>
-              </div>
-              <div className="mt-3 rounded-md border-l-2 border-border bg-muted/40 p-3">
-                <p className="font-semibold text-foreground">College Student Council</p>
-                <p>Former member · 2017 – 2019</p>
-              </div>
+              ) : (
+                <div className="space-y-3">
+                  {viewing.organizations.map((record, index) => (
+                    <div
+                      key={`${record.name}-${index}`}
+                      className="rounded-md border-l-4 border-success bg-success/10 p-3"
+                    >
+                      <p className="flex flex-wrap items-center gap-2 font-semibold text-foreground">
+                        {record.name}
+                        <span className="rounded-full bg-success px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-success-foreground">
+                          Affiliated
+                        </span>
+                      </p>
+                      <p>
+                        {record.position || "Member"}
+                        {record.memberSince ? ` · since ${record.memberSince}` : ""}
+                      </p>
+                      <p className="text-[11px]">
+                        {[record.address, record.email].filter(Boolean).join(" · ") ||
+                          "No contact details provided"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </MiniCard>
-
 
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -890,21 +1017,23 @@ function AdminAlumni() {
         <Modal title="Delete alumni record" onClose={() => setDeleting(null)}>
           <p className="text-sm text-muted-foreground">
             Are you sure you want to delete the record of{" "}
-            <span className="font-semibold text-foreground">{deleting.name}</span>? This removes
-            the alumnus from the public directory.
+            <span className="font-semibold text-foreground">{deleting.name}</span>? This permanently
+            deletes the alumni account, profile, and all related records from the database.
           </p>
           <div className="mt-5 grid grid-cols-2 gap-3">
             <button
               onClick={() => setDeleting(null)}
-              className="rounded-md border border-border py-2.5 text-sm font-semibold text-foreground hover:border-brand"
+              disabled={busyId === deleting.id}
+              className="rounded-md border border-border py-2.5 text-sm font-semibold text-foreground hover:border-brand disabled:opacity-50"
             >
               Cancel
             </button>
             <button
-              onClick={() => setDeleting(null)}
-              className="rounded-md bg-brand py-2.5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+              onClick={() => void handleDelete(deleting)}
+              disabled={busyId === deleting.id}
+              className="rounded-md bg-brand py-2.5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark disabled:opacity-60"
             >
-              Delete record
+              {busyId === deleting.id ? "Deleting…" : "Delete record"}
             </button>
           </div>
         </Modal>
@@ -987,15 +1116,7 @@ function Radio({
   );
 }
 
-function CheckRow({
-  label,
-  name,
-  options,
-}: {
-  label: string;
-  name: string;
-  options: string[];
-}) {
+function CheckRow({ label, name, options }: { label: string; name: string; options: string[] }) {
   return (
     <div>
       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
