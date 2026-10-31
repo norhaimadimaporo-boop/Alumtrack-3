@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
 import { Activity, MapPinned, LogIn, Users } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
-import { ClusterMap } from "@/components/cluster-map";
-import { LOGIN_ACTIVITY } from "@/data/gis";
+import { RealAlumniMap } from "@/components/real-alumni-map";
+import { ALUMNI_MAP_PINS, LOGIN_ACTIVITY } from "@/data/gis";
 import { BATCHES, COURSES, REGIONS } from "@/data/alumni";
 
 export const Route = createFileRoute("/admin/usage")({
@@ -26,11 +25,41 @@ export const Route = createFileRoute("/admin/usage")({
 });
 
 const logins = [
-  { user: "Naimah T. Abdulcader", role: "Alumni", when: "08-08-2026 09:14", device: "Chrome · Windows", where: "Taguig, NCR" },
-  { user: "oarcc.head", role: "Admin", when: "08-08-2026 08:52", device: "Edge · Windows", where: "Marawi City, BARMM" },
-  { user: "Rania K. Bantuas", role: "Alumni", when: "07-08-2026 21:03", device: "Safari · iPhone", where: "Makati, NCR" },
-  { user: "records.staff01", role: "Admin", when: "07-08-2026 16:40", device: "Chrome · macOS", where: "Iligan City, Region X" },
-  { user: "Omar H. Pangandaman", role: "Alumni", when: "07-08-2026 12:27", device: "Chrome · Android", where: "Riyadh, KSA" },
+  {
+    user: "Naimah T. Abdulcader",
+    role: "Alumni",
+    when: "08-08-2026 09:14",
+    device: "Chrome · Windows",
+    where: "Taguig, NCR",
+  },
+  {
+    user: "oarcc.head",
+    role: "Admin",
+    when: "08-08-2026 08:52",
+    device: "Edge · Windows",
+    where: "Marawi City, BARMM",
+  },
+  {
+    user: "Rania K. Bantuas",
+    role: "Alumni",
+    when: "07-08-2026 21:03",
+    device: "Safari · iPhone",
+    where: "Makati, NCR",
+  },
+  {
+    user: "records.staff01",
+    role: "Admin",
+    when: "07-08-2026 16:40",
+    device: "Chrome · macOS",
+    where: "Iligan City, Region X",
+  },
+  {
+    user: "Omar H. Pangandaman",
+    role: "Alumni",
+    when: "07-08-2026 12:27",
+    device: "Chrome · Android",
+    where: "Riyadh, KSA",
+  },
 ];
 
 const summary = [
@@ -40,29 +69,11 @@ const summary = [
   { label: "Overseas sessions", value: "37" },
 ];
 
-const SHORTS: Record<string, string> = {
-  BARMM: "BARMM",
-  "Region X — Northern Mindanao": "R-X",
-  "NCR — Metro Manila": "NCR",
-  "Region XI — Davao": "R-XI",
-  Overseas: "ABROAD",
-};
-
-const clusters = LOGIN_ACTIVITY.map((l) => ({
-  region: l.region,
-  short: SHORTS[l.region] ?? l.region.slice(0, 6),
-  count: l.sessions,
-  x: l.x,
-  y: l.y,
-}));
-
 function AdminUsage() {
-  const [range, setRange] = useState<"today" | "week" | "month">("today");
-
   return (
     <AdminShell
       title="System Monitoring"
-      subtitle="Interactive login & activity GIS map, session monitoring, and tracer report exports."
+      subtitle="Interactive alumni location GIS map, session monitoring, and tracer report exports."
     >
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {summary.map((s) => (
@@ -76,37 +87,23 @@ function AdminUsage() {
       <div className="mt-4 rounded-lg border-t-4 border-brand bg-card p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <MapPinned className="size-4 text-brand" /> Login &amp; activity GIS map
+            <MapPinned className="size-4 text-brand" /> Alumni location GIS map
           </h2>
-          <div className="flex gap-1 rounded-md border border-border p-1">
-            {(
-              [
-                ["today", "Today"],
-                ["week", "This week"],
-                ["month", "This month"],
-              ] as const
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setRange(key)}
-                className={`rounded px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  range === key
-                    ? "bg-brand text-brand-foreground"
-                    : "text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="flex items-center gap-3 text-[11px] font-semibold text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="size-2.5 rounded-full bg-[#2f7d32]" /> Employed
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="size-2.5 rounded-full bg-[#f2b705]" /> Unemployed
+            </span>
           </div>
         </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Domestic and overseas alumni plotted by current location. Tap a pin for the
+          graduate&apos;s status, location, and company.
+        </p>
         <div className="mt-4">
-          <ClusterMap
-            clusters={clusters}
-            unit="sessions"
-            tone="success"
-            caption="Active alumni and admin sessions grouped by access region."
-          />
+          <RealAlumniMap pins={ALUMNI_MAP_PINS} heightClassName="h-[360px] sm:h-[420px]" />
         </div>
       </div>
 

@@ -2,9 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { BarChart3, MapPinned } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
-import { ClusterMap, BarList, DonutChart, ColumnChart } from "@/components/cluster-map";
-import type { Cluster, Tone } from "@/components/cluster-map";
-import { REGION_CLUSTERS, OVERSEAS_CLUSTERS } from "@/data/gis";
+import { BarList, DonutChart, ColumnChart } from "@/components/cluster-map";
+import { RealAlumniMap } from "@/components/real-alumni-map";
+import { ALUMNI_MAP_PINS } from "@/data/gis";
 
 import { BATCHES, COLLEGES, COURSES, REGIONS } from "@/data/alumni";
 
@@ -34,7 +34,6 @@ const employment = [
   { label: "Employed locally", value: "2,731" },
   { label: "Employed abroad", value: "533" },
 ];
-
 
 const GRADUATES_PER_YEAR = [
   { label: "2026 — Undergraduate", value: 812 },
@@ -79,7 +78,6 @@ const EMPLOYMENT_BY_PLACE = [
   { label: "Others (abroad)", value: 132 },
 ];
 
-
 const PROVINCES = [
   "Lanao del Sur",
   "Lanao del Norte",
@@ -96,14 +94,8 @@ const AFFILIATIONS = ["Secular", "Non-secular", "Professional", "None"];
 const COUNTRIES = ["Philippines", "Saudi Arabia", "UAE", "Qatar", "Singapore", "Canada", "USA"];
 const EMPLOYMENT_STATUS = ["Employed", "Unemployed", "Self-employed", "Further studies"];
 
-const LEGEND: { label: string; tone: Tone; hint?: string }[] = [
-  { label: "Employed", tone: "success", hint: "70% and above employment rate" },
-  { label: "Mixed", tone: "highlight", hint: "40% – 69% employment rate" },
-  { label: "Unemployed", tone: "brand", hint: "below 40% employment rate" },
-];
-
-const clusterTone = (c: Cluster): Tone =>
-  c.count % 3 === 0 ? "brand" : c.count % 3 === 1 ? "success" : "highlight";
+const DOMESTIC_PINS = ALUMNI_MAP_PINS.filter((pin) => pin.country === "Philippines");
+const OVERSEAS_PINS = ALUMNI_MAP_PINS.filter((pin) => pin.country !== "Philippines");
 
 function AdminReports() {
   const [scope, setScope] = useState<"domestic" | "overseas">("domestic");
@@ -176,12 +168,10 @@ function AdminReports() {
           </div>
         </div>
         <div className="mt-4">
-          <ClusterMap
-            clusters={scope === "domestic" ? REGION_CLUSTERS : OVERSEAS_CLUSTERS}
-            toneOf={clusterTone}
-            caption="Filtered employment distribution — click a cluster for its total. Cluster colors follow the legend below."
-            legend={LEGEND}
-            height="h-[420px]"
+          <RealAlumniMap
+            pins={scope === "domestic" ? DOMESTIC_PINS : OVERSEAS_PINS}
+            focusView={scope === "domestic" ? "philippines" : "middle-east"}
+            heightClassName="h-[360px] sm:h-[420px]"
           />
         </div>
       </div>
@@ -206,7 +196,6 @@ function AdminReports() {
           <BarList items={EMPLOYMENT_BY_PLACE} suffix="" tone="success" />
         </Panel>
       </div>
-
     </AdminShell>
   );
 }

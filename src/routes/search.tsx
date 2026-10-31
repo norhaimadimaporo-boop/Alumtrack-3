@@ -1,15 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Search, LayoutGrid, List, Briefcase, MapPin, X, ShieldCheck, Lock } from "lucide-react";
 import {
-  ALUMNI,
-  BATCHES,
-  COLLEGES,
-  COURSES,
-  REGIONS,
-  initials,
-  type Alumnus,
-} from "@/data/alumni";
+  Search,
+  LayoutGrid,
+  List,
+  Briefcase,
+  MapPin,
+  X,
+  ShieldCheck,
+  Lock,
+  Database,
+} from "lucide-react";
+import { getPublicAlumni } from "@/lib/search.functions";
+import { initials } from "@/lib/profile-format";
+import type { PublicAlumnus } from "@/lib/search.types";
 
 export const Route = createFileRoute("/search")({
   head: () => ({
@@ -18,15 +22,16 @@ export const Route = createFileRoute("/search")({
       {
         name: "description",
         content:
-          "Search MSU Main Campus graduates by course, college, region, and batch year, and view their current job, company, and location.",
+          "Search MSU Main Campus graduates by name, course, college, region, and batch year, and view their current job, company, and location.",
       },
       { property: "og:title", content: "Search Alumni — AlumTrack" },
       {
         property: "og:description",
-        content: "Find MSU Main Campus alumni by course, college, region, and batch year.",
+        content: "Find MSU Main Campus alumni by name, course, college, region, and batch year.",
       },
     ],
   }),
+  loader: async () => getPublicAlumni(),
   component: SearchPage,
 });
 
@@ -39,26 +44,66 @@ type Filters = {
 
 const empty: Filters = { course: "", college: "", region: "", batch: "" };
 
+/** Case-insensitive equality so "lanao del sur" matches "Lanao del Sur". */
+function sameValue(value: string, filter: string) {
+  return !filter || value.trim().toLowerCase() === filter.trim().toLowerCase();
+}
+
+/** Deduplicates filter values, keeping the best-capitalised spelling. */
+function pickLabels(values: string[]) {
+  const seen = new Map<string, string>();
+  for (const raw of values) {
+    const value = raw.trim();
+    if (!value || value === "—" || value === "Not provided") continue;
+    const key = value.toLowerCase();
+    const current = seen.get(key);
+    const capitals = (value.match(/[A-Z]/g) ?? []).length;
+    const currentCapitals = current ? (current.match(/[A-Z]/g) ?? []).length : -1;
+    if (!current || capitals > currentCapitals) seen.set(key, value);
+  }
+  return [...seen.values()].sort((a, b) => a.localeCompare(b));
+}
+
 function SearchPage() {
+  const data = Route.useLoaderData();
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<Filters>(empty);
   const [view, setView] = useState<"grid" | "list">("grid");
 
-  const set = (key: keyof Filters, value: string) =>
-    setFilters((f) => ({ ...f, [key]: value }));
+  const alumni = useMemo(() => (data.ok ? data.alumni : []), [data]);
+
+  const options = useMemo(
+    () => ({
+      courses: pickLabels(alumni.map((a) => a.course)),
+      colleges: pickLabels(alumni.map((a) => a.college)),
+      regions: pickLabels(alumni.map((a) => a.region)),
+      batches: [...new Set(alumni.map((a) => a.batch).filter((b) => b !== "—"))].sort((a, b) =>
+        b.localeCompare(a),
+      ),
+    }),
+    [alumni],
+  );
+
+  const set = (key: keyof Filters, value: string) => setFilters((f) => ({ ...f, [key]: value }));
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return ALUMNI.filter((a) => {
-      if (q && !a.name.toLowerCase().includes(q) && !a.company.toLowerCase().includes(q))
+    return alumni.filter((a) => {
+      if (
+        q &&
+        ![a.name, a.job, a.company, a.course, a.college, a.region, a.batch].some((field) =>
+          field.toLowerCase().includes(q),
+        )
+      ) {
         return false;
-      if (filters.course && filters.course !== a.course) return false;
-      if (filters.college && filters.college !== a.college) return false;
-      if (filters.region && filters.region !== a.region) return false;
-      if (filters.batch && filters.batch !== a.batch) return false;
+      }
+      if (!sameValue(a.course, filters.course)) return false;
+      if (!sameValue(a.college, filters.college)) return false;
+      if (!sameValue(a.region, filters.region)) return false;
+      if (filters.batch && a.batch !== filters.batch) return false;
       return true;
     });
-  }, [query, filters]);
+  }, [alumni, query, filters]);
 
   const activeCount = Object.values(filters).filter(Boolean).length;
 
@@ -74,11 +119,23 @@ function SearchPage() {
       <div className="mt-5 flex items-start gap-3 rounded-lg border-l-4 border-highlight bg-card p-4">
         <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand" />
         <p className="text-xs leading-relaxed text-muted-foreground">
-          <span className="font-semibold text-foreground">Privacy-protected results.</span>{" "}
-          Public cards show only name, degree, batch year, employment status, company, and
-          general region. Exact addresses, mobile numbers, and Akan email addresses stay
-          private to verified alumni and OARCC administrators.
+          <span className="font-semibold text-foreground">Privacy-protected results.</span> Public
+          cards show only name, degree, batch year, employment status, company, and general region.
+          Exact addresses, mobile numbers, and Akan email addresses stay private to verified alumni
+          and OARCC administrators.
         </p>
+      </div>
+
+      <div className="mt-3 flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
+        <Database className="size-3.5 text-brand" />
+        {data.ok ? (
+          <>
+            Live records from the OARCC alumni database · {alumni.length} verified{" "}
+            {alumni.length === 1 ? "alumnus" : "alumni"}
+          </>
+        ) : (
+          <span className="text-red-600">{data.message}</span>
+        )}
       </div>
 
       <div className="mt-6 flex items-center gap-2 rounded-sm border border-border bg-card px-3 py-2 focus-within:border-brand">
@@ -86,7 +143,7 @@ function SearchPage() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by name or company…"
+          placeholder="Search by name, course, batch, region, or company…"
           className="w-full bg-transparent py-1.5 text-sm outline-none placeholder:text-muted-foreground"
         />
         {query && (
@@ -113,25 +170,25 @@ function SearchPage() {
           </div>
           <FilterSelect
             label="Course"
-            options={[...COURSES]}
+            options={options.courses}
             value={filters.course}
             onChange={(v) => set("course", v)}
           />
           <FilterSelect
             label="College"
-            options={[...COLLEGES]}
+            options={options.colleges}
             value={filters.college}
             onChange={(v) => set("college", v)}
           />
           <FilterSelect
             label="Region"
-            options={[...REGIONS]}
+            options={options.regions}
             value={filters.region}
             onChange={(v) => set("region", v)}
           />
           <FilterSelect
             label="Batch Year"
-            options={[...BATCHES]}
+            options={options.batches}
             value={filters.batch}
             onChange={(v) => set("batch", v)}
           />
@@ -140,8 +197,8 @@ function SearchPage() {
         <section>
           <div className="flex items-center justify-between border-b border-border pb-3">
             <p className="text-sm text-muted-foreground">
-              Showing <span className="font-semibold text-foreground">{results.length}</span>{" "}
-              of {ALUMNI.length} alumni
+              Showing <span className="font-semibold text-foreground">{results.length}</span> of{" "}
+              {alumni.length} verified alumni
             </p>
             <div className="flex items-center gap-1">
               <ViewButton
@@ -163,14 +220,16 @@ function SearchPage() {
 
           {results.length === 0 ? (
             <p className="py-16 text-center text-sm text-muted-foreground">
-              No alumni match your search. Try adjusting the filters.
+              {alumni.length === 0
+                ? data.ok
+                  ? "No verified alumni are available yet. Records appear here once the OARCC verifies them."
+                  : "The alumni directory is temporarily unavailable."
+                : "No alumni match your search. Try adjusting the filters."}
             </p>
           ) : (
             <div
               className={
-                view === "grid"
-                  ? "mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
-                  : "mt-6 space-y-3"
+                view === "grid" ? "mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3" : "mt-6 space-y-3"
               }
             >
               {results.map((a) => (
@@ -243,11 +302,11 @@ function FilterSelect({
   );
 }
 
-function AlumniCard({ alumnus, view }: { alumnus: Alumnus; view: "grid" | "list" }) {
+function AlumniCard({ alumnus, view }: { alumnus: PublicAlumnus; view: "grid" | "list" }) {
   const statusColor =
     alumnus.status === "Employed"
       ? "bg-success/12 text-success"
-      : alumnus.status === "Self-employed"
+      : alumnus.status === "Unemployed"
         ? "bg-highlight/25 text-highlight-foreground"
         : "bg-muted text-muted-foreground";
 
@@ -297,7 +356,7 @@ function AlumniCard({ alumnus, view }: { alumnus: Alumnus; view: "grid" | "list"
   );
 }
 
-function Details({ alumnus, inline }: { alumnus: Alumnus; inline?: boolean }) {
+function Details({ alumnus, inline }: { alumnus: PublicAlumnus; inline?: boolean }) {
   return (
     <dl className={`space-y-1.5 text-xs ${inline ? "mt-2" : ""}`}>
       <div className="flex gap-2">

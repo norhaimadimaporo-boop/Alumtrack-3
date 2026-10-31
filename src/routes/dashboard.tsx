@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CalendarDays, Briefcase, UserRound, Eye, ArrowRight, MapPinned } from "lucide-react";
 import { AlumniShell } from "@/components/alumni-shell";
-import { ClusterMap, BarList } from "@/components/cluster-map";
-import { REGION_CLUSTERS, SECTOR_SPLIT } from "@/data/gis";
+import { BarList } from "@/components/cluster-map";
+import { RealAlumniMap } from "@/components/real-alumni-map";
+import { ALUMNI_MAP_PINS, SECTOR_SPLIT } from "@/data/gis";
 import { POSTS } from "@/data/news";
 import { getMyProfileData } from "@/lib/profile.functions";
 import { initials } from "@/lib/profile-format";
@@ -85,10 +86,7 @@ function DashboardPage() {
           </Link>
         </div>
         <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-success"
-            style={{ width: "100%" }}
-          />
+          <div className="h-full rounded-full bg-success" style={{ width: "100%" }} />
         </div>
       </div>
 
@@ -105,8 +103,15 @@ function DashboardPage() {
               Open interactive map <ArrowRight className="size-3.5" />
             </Link>
           </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Batchmates at home and overseas — green pins are employed, yellow pins are unemployed.
+          </p>
           <div className="mt-4">
-            <ClusterMap clusters={REGION_CLUSTERS} height="h-[240px]" />
+            <RealAlumniMap
+              pins={ALUMNI_MAP_PINS}
+              heightClassName="h-[260px] sm:h-[320px]"
+              compact
+            />
           </div>
         </div>
         <div className="rounded-lg border-t-4 border-brand bg-card p-5">

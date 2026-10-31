@@ -166,3 +166,115 @@
     color: var(--color-foreground);
   }
 }
+
+/* ---------- Interactive Leaflet alumni map ---------- */
+
+.leaflet-container {
+  font-family: inherit;
+  background: var(--secondary);
+}
+
+/* Teardrop alumni pins: green = employed, yellow = unemployed. */
+.alumni-marker {
+  background: transparent;
+  border: 0;
+}
+
+.alumni-pin {
+  display: flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 3px 8px rgb(0 0 0 / 35%);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.alumni-marker:hover .alumni-pin,
+.alumni-marker:focus-visible .alumni-pin {
+  transform: rotate(-45deg) scale(1.12);
+  box-shadow: 0 5px 14px rgb(0 0 0 / 40%);
+}
+
+.alumni-pin > span {
+  transform: rotate(45deg);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.alumni-pin--employed {
+  background: var(--success);
+  color: var(--success-foreground);
+}
+
+.alumni-pin--unemployed {
+  background: var(--highlight);
+  color: var(--highlight-foreground);
+}
+
+/* Popup card */
+.leaflet-popup-content-wrapper {
+  border-radius: 0.75rem;
+  border-top: 3px solid var(--brand);
+  background: var(--card);
+  color: var(--card-foreground);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 18%);
+  padding: 0;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  padding: 0.8rem 0.9rem;
+  line-height: 1.35;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  top: 5px;
+  right: 5px;
+  color: var(--muted-foreground);
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+  color: var(--foreground);
+}
+
+.leaflet-popup-tip {
+  background: var(--card);
+  box-shadow: none;
+}
+
+/* Zoom buttons + attribution */
+.leaflet-touch .leaflet-bar,
+.leaflet-bar {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+}
+
+.leaflet-container .leaflet-control-zoom a {
+  background: var(--card);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.leaflet-container .leaflet-control-zoom a:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.leaflet-control-attribution {
+  background: color-mix(in oklab, var(--card) 85%, transparent) !important;
+  color: var(--muted-foreground) !important;
+  font-size: 9px !important;
+}
+
+.leaflet-control-attribution a {
+  color: var(--brand) !important;
+}

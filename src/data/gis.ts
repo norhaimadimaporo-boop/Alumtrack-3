@@ -1,31 +1,3 @@
-export type RegionPoint = {
-  region: string;
-  short: string;
-  count: number;
-  /** Percentage coordinates on the stylized map canvas. */
-  x: number;
-  y: number;
-};
-
-/** Aggregate-only clusters — no individual names or addresses. */
-export const REGION_CLUSTERS: RegionPoint[] = [
-  { region: "BARMM", short: "BARMM", count: 1478, x: 48, y: 74 },
-  { region: "Region X — Northern Mindanao", short: "R-X", count: 902, x: 58, y: 66 },
-  { region: "Region XI — Davao", short: "R-XI", count: 388, x: 68, y: 79 },
-  { region: "Region XII — SOCCSKSARGEN", short: "R-XII", count: 431, x: 56, y: 85 },
-  { region: "Region VII — Central Visayas", short: "R-VII", count: 297, x: 52, y: 52 },
-  { region: "NCR — Metro Manila", short: "NCR", count: 651, x: 34, y: 30 },
-  { region: "Region III — Central Luzon", short: "R-III", count: 214, x: 30, y: 21 },
-];
-
-export const OVERSEAS_CLUSTERS: RegionPoint[] = [
-  { region: "Saudi Arabia", short: "KSA", count: 214, x: 18, y: 38 },
-  { region: "United Arab Emirates", short: "UAE", count: 168, x: 26, y: 45 },
-  { region: "Qatar", short: "QAT", count: 71, x: 22, y: 56 },
-  { region: "Malaysia", short: "MYS", count: 44, x: 74, y: 62 },
-  { region: "Canada / USA", short: "N.AM", count: 36, x: 82, y: 26 },
-];
-
 export const PUBLIC_STATS = [
   { label: "Total traced alumni", value: "12,480", note: "Across 52 batch years" },
   { label: "Employment rate", value: "78.5%", note: "Employed within 12 months" },
@@ -64,19 +36,311 @@ export const SECTOR_SPLIT = [
   { label: "NGO", value: 10 },
 ];
 
-/** Workplace pins visible only to signed-in alumni who opted in. */
-export const WORKPLACE_PINS = [
-  { name: "Naimah T. A.", role: "Software Engineer", place: "Accenture · Taguig", x: 34, y: 30 },
-  { name: "Abdul R. M.", role: "Project Engineer", place: "DPWH · Cagayan de Oro", x: 58, y: 66 },
-  { name: "Norhaimah Y. D.", role: "IT Support", place: "LGU · Marawi City", x: 48, y: 74 },
-  { name: "Jasmin P. L.", role: "Junior Auditor", place: "SGV & Co. · Davao", x: 68, y: 79 },
-  { name: "Farhana A. S.", role: "Registered Nurse", place: "Riyadh, KSA", x: 12, y: 44 },
+/* ---------- Alumni map ---------- */
+
+export type EmploymentStatus = "Employed" | "Unemployed";
+
+/** How accurately a pin is placed: city/municipality here, state/province abroad. */
+export type GeoPrecision = "city" | "state";
+
+export type AlumniMapPin = {
+  id: string;
+  name: string;
+  /** Job title, or "Seeking employment" for unemployed alumni. */
+  role: string;
+  status: EmploymentStatus;
+  company: string | null;
+  /** City or municipality. */
+  city: string;
+  /** Province / emirate / governorate. */
+  region: string;
+  country: string;
+  precision: GeoPrecision;
+  lat: number;
+  lng: number;
+  course: string;
+  batch: string;
+};
+
+/**
+ * Opt-in workplace pins visible to signed-in alumni. Overseas alumni are placed
+ * at state/province level (e.g. Dubai Emirate) to protect their exact address;
+ * Philippine alumni keep city/municipality precision.
+ */
+export const ALUMNI_MAP_PINS: AlumniMapPin[] = [
+  {
+    id: "pin-naimah",
+    name: "Naimah T. A.",
+    role: "Software Engineer",
+    status: "Employed",
+    company: "Accenture Philippines",
+    city: "Taguig City",
+    region: "Metro Manila",
+    country: "Philippines",
+    precision: "city",
+    lat: 14.5176,
+    lng: 121.0509,
+    course: "BS Information Technology",
+    batch: "2024",
+  },
+  {
+    id: "pin-abdul",
+    name: "Abdul R. M.",
+    role: "Project Engineer",
+    status: "Employed",
+    company: "DPWH Region X",
+    city: "Cagayan de Oro",
+    region: "Misamis Oriental",
+    country: "Philippines",
+    precision: "city",
+    lat: 8.4542,
+    lng: 124.6319,
+    course: "BS Civil Engineering",
+    batch: "2021",
+  },
+  {
+    id: "pin-norhaimah",
+    name: "Norhaimah Y. D.",
+    role: "IT Support Officer",
+    status: "Employed",
+    company: "LGU Marawi City",
+    city: "Marawi City",
+    region: "Lanao del Sur",
+    country: "Philippines",
+    precision: "city",
+    lat: 8.0,
+    lng: 124.29,
+    course: "BS Information Technology",
+    batch: "2022",
+  },
+  {
+    id: "pin-jasmin",
+    name: "Jasmin P. L.",
+    role: "Junior Auditor",
+    status: "Employed",
+    company: "SGV & Co.",
+    city: "Davao City",
+    region: "Davao del Sur",
+    country: "Philippines",
+    precision: "city",
+    lat: 7.1907,
+    lng: 125.4553,
+    course: "BS Accountancy",
+    batch: "2020",
+  },
+  {
+    id: "pin-rania",
+    name: "Rania K. B.",
+    role: "Accountant",
+    status: "Employed",
+    company: "BDO Unibank",
+    city: "Makati City",
+    region: "Metro Manila",
+    country: "Philippines",
+    precision: "city",
+    lat: 14.5547,
+    lng: 121.0244,
+    course: "BS Accountancy",
+    batch: "2020",
+  },
+  {
+    id: "pin-amirah",
+    name: "Amirah B. S.",
+    role: "Civil Engineer",
+    status: "Employed",
+    company: "Emirates Engineering LLC",
+    city: "Dubai",
+    region: "Dubai Emirate",
+    country: "United Arab Emirates",
+    precision: "state",
+    lat: 25.2048,
+    lng: 55.2708,
+    course: "BS Civil Engineering",
+    batch: "2018",
+  },
+  {
+    id: "pin-farhana",
+    name: "Farhana A. S.",
+    role: "Registered Nurse",
+    status: "Employed",
+    company: "King Fahd Medical City",
+    city: "Riyadh",
+    region: "Riyadh Province",
+    country: "Saudi Arabia",
+    precision: "state",
+    lat: 24.7136,
+    lng: 46.6753,
+    course: "BS Nursing",
+    batch: "2019",
+  },
+  {
+    id: "pin-yusuf",
+    name: "Yusuf M. K.",
+    role: "Logistics Supervisor",
+    status: "Employed",
+    company: "Qatar Logistics Co.",
+    city: "Doha",
+    region: "Ad Dawhah",
+    country: "Qatar",
+    precision: "state",
+    lat: 25.2854,
+    lng: 51.531,
+    course: "BS Business Administration",
+    batch: "2017",
+  },
+  {
+    id: "pin-zainab",
+    name: "Zainab A. T.",
+    role: "IT Analyst",
+    status: "Employed",
+    company: "Maybank",
+    city: "Kuala Lumpur",
+    region: "Federal Territory",
+    country: "Malaysia",
+    precision: "state",
+    lat: 3.139,
+    lng: 101.6869,
+    course: "BS Information Technology",
+    batch: "2021",
+  },
+  {
+    id: "pin-nadia",
+    name: "Nadia S. L.",
+    role: "Staff Nurse",
+    status: "Employed",
+    company: "Singapore General Hospital",
+    city: "Singapore",
+    region: "Central Region",
+    country: "Singapore",
+    precision: "city",
+    lat: 1.2847,
+    lng: 103.8513,
+    course: "BS Nursing",
+    batch: "2020",
+  },
+  {
+    id: "pin-sittie",
+    name: "Sittie A. F.",
+    role: "Seeking employment",
+    status: "Unemployed",
+    company: null,
+    city: "Iligan City",
+    region: "Lanao del Norte",
+    country: "Philippines",
+    precision: "city",
+    lat: 8.228,
+    lng: 124.2452,
+    course: "BS Computer Science",
+    batch: "2024",
+  },
+  {
+    id: "pin-omar",
+    name: "Omar H. P.",
+    role: "Seeking employment",
+    status: "Unemployed",
+    company: null,
+    city: "Cotabato City",
+    region: "BARMM",
+    country: "Philippines",
+    precision: "city",
+    lat: 7.2047,
+    lng: 124.231,
+    course: "BS Information Technology",
+    batch: "2023",
+  },
+];
+
+export type MapViewBounds = {
+  minLng: number;
+  maxLng: number;
+  minLat: number;
+  maxLat: number;
+};
+
+export type MapViewKey = "region" | "philippines" | "middle-east";
+
+export type MapView = {
+  key: MapViewKey;
+  label: string;
+  short: string;
+  hint: string;
+  /** Leaflet `[lat, lng]` centre used for the initial render. */
+  center: [number, number];
+  /** Leaflet zoom used for the initial render (fitBounds refines it after mount). */
+  zoom: number;
+  bounds: MapViewBounds;
+};
+
+/**
+ * Map presets. The default "region" view frames the Philippines together with
+ * the Middle East and Southeast Asia so overseas alumni are visible on load.
+ */
+export const MAP_VIEWS: MapView[] = [
+  {
+    key: "region",
+    label: "Asia & Middle East",
+    short: "Region",
+    hint: "Philippines + Middle East + Southeast Asia",
+    center: [20, 83],
+    zoom: 3,
+    bounds: { minLng: 30, maxLng: 136, minLat: -4, maxLat: 44 },
+  },
+  {
+    key: "philippines",
+    label: "Philippines",
+    short: "PH",
+    hint: "City / municipality precision",
+    center: [12, 122],
+    zoom: 5,
+    bounds: { minLng: 112, maxLng: 132, minLat: 2, maxLat: 22 },
+  },
+  {
+    key: "middle-east",
+    label: "Middle East",
+    short: "Gulf",
+    hint: "State / province precision",
+    center: [22, 47],
+    zoom: 5,
+    bounds: { minLng: 34, maxLng: 60, minLat: 12, maxLat: 32 },
+  },
+];
+
+/** Legend copy — kept apart from the map component so it is easy to audit. */
+export const MAP_LEGEND = [
+  {
+    status: "Employed" as const,
+    color: "success" as const,
+    label: "Green pin = Employed",
+  },
+  {
+    status: "Unemployed" as const,
+    color: "highlight" as const,
+    label: "Yellow pin = Unemployed",
+  },
 ];
 
 export const NEARBY_ALUMNI = [
-  { name: "Sittie Asmerah F. A.", course: "BS Computer Science", batch: "2022", place: "Globe Telecom · BGC", km: "2.1 km" },
-  { name: "Omar H. Pangandaman", course: "BS Information Technology", batch: "2021", place: "Concentrix · Ortigas", km: "6.4 km" },
-  { name: "Rania K. Bantuas", course: "BS Accountancy", batch: "2020", place: "BDO Unibank · Makati", km: "7.8 km" },
+  {
+    name: "Sittie Asmerah F. A.",
+    course: "BS Computer Science",
+    batch: "2022",
+    place: "Globe Telecom · BGC",
+    km: "2.1 km",
+  },
+  {
+    name: "Omar H. Pangandaman",
+    course: "BS Information Technology",
+    batch: "2021",
+    place: "Concentrix · Ortigas",
+    km: "6.4 km",
+  },
+  {
+    name: "Rania K. Bantuas",
+    course: "BS Accountancy",
+    batch: "2020",
+    place: "BDO Unibank · Makati",
+    km: "7.8 km",
+  },
 ];
 
 export const LOGIN_ACTIVITY = [

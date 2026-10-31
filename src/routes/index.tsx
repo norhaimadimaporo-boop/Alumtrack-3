@@ -1,21 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  Search,
-  MapPinned,
-  Newspaper,
-  UserRoundPen,
-  ArrowRight,
-  CalendarDays,
-} from "lucide-react";
+import { Search, MapPinned, Newspaper, UserRoundPen, ArrowRight, CalendarDays } from "lucide-react";
 import heroImage from "@/assets/campus-hero.jpg";
 import { POSTS } from "@/data/news";
-import {
-  REGION_CLUSTERS,
-  OVERSEAS_CLUSTERS,
-  PUBLIC_STATS,
-  TOP_INDUSTRIES,
-} from "@/data/gis";
-import { ClusterMap, BarList } from "@/components/cluster-map";
+import { ALUMNI_MAP_PINS, PUBLIC_STATS, TOP_INDUSTRIES } from "@/data/gis";
+import { BarList } from "@/components/cluster-map";
+import { RealAlumniMap } from "@/components/real-alumni-map";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -95,8 +84,7 @@ function Index() {
           <h1 className="mt-6 max-w-3xl text-4xl font-bold leading-[1.1] text-background sm:text-5xl md:text-6xl">
             AlumTrack
             <span className="mt-3 block text-lg font-medium leading-snug text-background/80 sm:text-xl">
-              Alumni Tracing System and Online Platform for Mindanao State University — Main
-              Campus
+              Alumni Tracing System and Online Platform for Mindanao State University — Main Campus
             </span>
           </h1>
           <p className="mt-6 max-w-xl text-sm leading-relaxed text-background/70">
@@ -145,10 +133,7 @@ function Index() {
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {PUBLIC_STATS.map((s) => (
-            <div
-              key={s.label}
-              className="rounded-lg border-t-4 border-brand bg-card p-5"
-            >
+            <div key={s.label} className="rounded-lg border-t-4 border-brand bg-card p-5">
               <p className="text-3xl font-bold text-foreground">{s.value}</p>
               <p className="mt-1 text-sm font-semibold text-foreground">{s.label}</p>
               <p className="mt-1 text-xs text-muted-foreground">{s.note}</p>
@@ -158,29 +143,13 @@ function Index() {
 
         <div className="mt-6 grid gap-4 lg:grid-cols-[1.5fr_1fr]">
           <div className="rounded-lg border border-border bg-card p-5">
-            <h3 className="text-sm font-semibold text-foreground">
-              Regional distribution of alumni
-            </h3>
+            <h3 className="text-sm font-semibold text-foreground">Where our alumni are now</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              Cluster totals per region. Individual names and home addresses are never shown
-              on the public map.
+              Green pins are employed alumni, yellow pins are unemployed. Home cities and overseas
+              workplaces are plotted — tap a pin for details.
             </p>
             <div className="mt-4">
-              <ClusterMap
-                clusters={REGION_CLUSTERS}
-                caption="Bubble size reflects the number of traced graduates in that region."
-              />
-            </div>
-            <h3 className="mt-6 text-sm font-semibold text-foreground">
-              Alumni working abroad
-            </h3>
-            <div className="mt-3">
-              <ClusterMap
-                clusters={OVERSEAS_CLUSTERS}
-                tone="highlight"
-                height="h-[220px]"
-                caption="Country-level totals for graduates employed overseas."
-              />
+              <RealAlumniMap pins={ALUMNI_MAP_PINS} heightClassName="h-[320px] sm:h-[420px]" />
             </div>
           </div>
 
@@ -197,10 +166,9 @@ function Index() {
             <div className="rounded-lg border-l-4 border-highlight bg-card p-5">
               <h3 className="text-sm font-semibold text-foreground">Privacy notice</h3>
               <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                Public maps and statistics show aggregate counts by region or country only —
-                no personal names, exact home addresses, contact numbers, or Akan email
-                addresses. Detailed records are available to verified alumni and OARCC
-                administrators.
+                Public maps and statistics show only where alumni are based — never exact street
+                addresses, contact numbers, or Akan email addresses. Detailed records are available
+                to verified alumni and OARCC administrators.
               </p>
             </div>
           </div>
@@ -222,9 +190,7 @@ function Index() {
                 <f.icon className="size-5" />
               </span>
               <h3 className="mt-4 text-base font-bold text-foreground">{f.title}</h3>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
-                {f.text}
-              </p>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">{f.text}</p>
               <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-brand">
                 {f.action} <ArrowRight className="size-3.5" />
               </span>
@@ -260,9 +226,7 @@ function Index() {
                 <h3 className="mt-3 text-base font-bold leading-snug text-foreground group-hover:text-brand">
                   {post.title}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {post.excerpt}
-                </p>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{post.excerpt}</p>
               </Link>
             ))}
           </div>
@@ -278,9 +242,8 @@ function Index() {
             Office of Alumni Relations and Career Center
           </h2>
           <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">
-            Created in 1972 under the supervision of the Office of the President, OARCC
-            enhances mutuality of interests and concerns between the University and her
-            pride — her alumni.
+            Created in 1972 under the supervision of the Office of the President, OARCC enhances
+            mutuality of interests and concerns between the University and her pride — her alumni.
           </p>
           <Link
             to="/oarcc"

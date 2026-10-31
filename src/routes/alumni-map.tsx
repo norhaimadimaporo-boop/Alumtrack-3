@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { MapPinned, Filter } from "lucide-react";
+import { Filter, Globe2, MapPinned, RotateCcw } from "lucide-react";
 import { AlumniShell } from "@/components/alumni-shell";
-import { ClusterMap, PinMap } from "@/components/cluster-map";
-import { REGION_CLUSTERS, WORKPLACE_PINS } from "@/data/gis";
-import { BATCHES, COURSES, REGIONS } from "@/data/alumni";
+import { RealAlumniMap } from "@/components/real-alumni-map";
+import { ALUMNI_MAP_PINS } from "@/data/gis";
+import { BATCHES, COURSES } from "@/data/alumni";
 
 export const Route = createFileRoute("/alumni-map")({
   head: () => ({
@@ -13,76 +13,133 @@ export const Route = createFileRoute("/alumni-map")({
       {
         name: "description",
         content:
-          "Interactive GIS map of MSU Main Campus alumni workplaces. Find fellow graduates working near you based on opt-in privacy preferences.",
+          "Interactive GIS map of MSU Main Campus alumni in the Philippines and abroad. Find fellow graduates by city or host country based on opt-in privacy preferences.",
       },
       { property: "og:title", content: "Alumni Map — AlumTrack" },
       {
         property: "og:description",
-        content: "View pinpointed alumni workplaces and connect with nearby graduates.",
+        content: "View pinpointed alumni workplaces at home and overseas.",
       },
     ],
   }),
   component: AlumniMapPage,
 });
 
+const COUNTRIES = Array.from(new Set(ALUMNI_MAP_PINS.map((p) => p.country))).sort((a, b) =>
+  a === "Philippines" ? -1 : b === "Philippines" ? 1 : a.localeCompare(b),
+);
+
+const OVERSEAS_COUNTRIES = COUNTRIES.filter((c) => c !== "Philippines").length;
+
+const GULF_COUNTRIES = ["United Arab Emirates", "Saudi Arabia", "Qatar"];
+
+/** Pick the preset that best frames the selected host country. */
+function focusForCountry(country: string): "region" | "philippines" | "middle-east" {
+  if (country === "Philippines") return "philippines";
+  if (GULF_COUNTRIES.includes(country)) return "middle-east";
+  return "region";
+}
+
 function AlumniMapPage() {
-  const [mode, setMode] = useState<"workplaces" | "clusters">("workplaces");
   const [course, setCourse] = useState("");
   const [batch, setBatch] = useState("");
-  const [region, setRegion] = useState("");
+  const [country, setCountry] = useState("");
 
-  const pins = useMemo(() => WORKPLACE_PINS, []);
+  const pins = useMemo(
+    () =>
+      ALUMNI_MAP_PINS.filter(
+        (pin) =>
+          (!course || pin.course === course) &&
+          (!batch || pin.batch === batch) &&
+          (!country || pin.country === country),
+      ),
+    [course, batch, country],
+  );
+
+  const employed = pins.filter((p) => p.status === "Employed").length;
+  const hasFilters = Boolean(course || batch || country);
 
   return (
     <AlumniShell
       title="Alumni Map"
-      subtitle="See where fellow graduates work and connect with alumni near you."
+      subtitle="See where fellow graduates work — from Marawi and Metro Manila to Dubai, Riyadh, and Doha."
     >
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2">
-        {(
-          [
-            ["workplaces", "Workplace pins"],
-            ["clusters", "Regional clusters"],
-          ] as const
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setMode(key)}
-            className={`rounded-md px-3 py-2 text-xs font-semibold transition-colors ${
-              mode === key
-                ? "bg-brand text-brand-foreground"
-                : "text-foreground/80 hover:bg-muted"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+        <span className="px-2 text-xs font-semibold text-foreground">Workplace pins</span>
+        <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
+          <Globe2 className="size-3.5 text-brand" />
+          {COUNTRIES.length} countries · {OVERSEAS_COUNTRIES} overseas
+        </span>
       </div>
 
       <div className="mt-4 grid gap-4">
         <div className="rounded-lg border border-border bg-card p-5">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <MapPinned className="size-4 text-brand" />
-            {mode === "workplaces" ? "Pinpointed workplaces" : "Alumni per region"}
-          </h2>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <MapPinned className="size-4 text-brand" />
+                Pinpointed workplaces
+              </h2>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Green pins are employed alumni, yellow pins are unemployed. Select a pin for
+                details.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 text-[11px] font-semibold text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2.5 rounded-full bg-success" />
+                {employed} employed
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2.5 rounded-full bg-highlight" />
+                {pins.length - employed} unemployed
+              </span>
+            </div>
+          </div>
 
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
             <MapSelect label="Course" options={[...COURSES]} value={course} onChange={setCourse} />
-            <MapSelect label="Batch year" options={[...BATCHES]} value={batch} onChange={setBatch} />
-            <MapSelect label="Region" options={[...REGIONS]} value={region} onChange={setRegion} />
+            <MapSelect
+              label="Batch year"
+              options={[...BATCHES]}
+              value={batch}
+              onChange={setBatch}
+            />
+            <MapSelect
+              label="Country"
+              options={COUNTRIES}
+              value={country}
+              onChange={setCountry}
+              allLabel="All countries"
+            />
           </div>
 
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={() => {
+                setCourse("");
+                setBatch("");
+                setCountry("");
+              }}
+              className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
+            >
+              <RotateCcw className="size-3" />
+              Clear filters
+            </button>
+          )}
+
           <div className="mt-4">
-            {mode === "workplaces" ? (
-              <PinMap pins={pins} height="h-[560px]" />
-            ) : (
-              <ClusterMap clusters={REGION_CLUSTERS} height="h-[560px]" />
-            )}
+            <RealAlumniMap
+              pins={pins}
+              focusView={focusForCountry(country)}
+              heightClassName="h-[360px] sm:h-[460px] lg:h-[560px]"
+            />
           </div>
           <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <Filter className="size-3" /> Only alumni who opted in to workplace mapping appear
-            as pins.
+            <Filter className="size-3" />
+            Only alumni who opted in to workplace mapping appear as pins. Overseas locations are
+            shown at state or province level.
           </p>
         </div>
       </div>
@@ -95,11 +152,13 @@ function MapSelect({
   options,
   value,
   onChange,
+  allLabel,
 }: {
   label: string;
   options: string[];
   value: string;
   onChange: (v: string) => void;
+  allLabel?: string;
 }) {
   return (
     <select
@@ -110,7 +169,7 @@ function MapSelect({
         value ? "border-brand text-foreground" : "border-border text-muted-foreground"
       }`}
     >
-      <option value="">All {label.toLowerCase()}s</option>
+      <option value="">{allLabel ?? `All ${label.toLowerCase()}s`}</option>
       {options.map((o) => (
         <option key={o} value={o}>
           {o}
