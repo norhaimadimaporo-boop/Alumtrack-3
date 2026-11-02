@@ -110,6 +110,17 @@ export type AdminAlumniList = { ok: true; alumni: AdminAlumnus[] } | { ok: false
 
 export type AdminActionResult = { ok: true; message: string } | { ok: false; message: string };
 
+export type AdminImportResult =
+  | {
+      ok: true;
+      message: string;
+      created: number;
+      updated: number;
+      totalRows: number;
+      errors: string[];
+    }
+  | { ok: false; message: string; errors: string[] };
+
 export type MyProfile = {
   userId: number;
   firstName: string;

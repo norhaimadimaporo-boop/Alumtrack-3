@@ -20,8 +20,8 @@ import {
 import { AdminShell } from "@/components/admin-shell";
 import { Modal, LabeledInput, PrimaryButton } from "@/components/modal";
 import { COURSES, COLLEGES, REGIONS, BATCHES, initials } from "@/data/alumni";
-import { deleteAlumni, getAdminAlumni, verifyAlumni } from "@/lib/admin.functions";
-import type { AdminAlumnus as Alumnus } from "@/lib/admin.types";
+import { deleteAlumni, getAdminAlumni, importAlumni, verifyAlumni } from "@/lib/admin.functions";
+import type { AdminAlumnus as Alumnus, AdminImportResult } from "@/lib/admin.types";
 
 export const Route = createFileRoute("/admin/alumni")({
   head: () => ({
@@ -63,8 +63,54 @@ const EXPORT_FIELDS = [
   "Religion",
 ];
 
-const CSV_COLUMNS =
-  "Last Name, First Name, Middle Name, College, Degree/Course taken, Date Graduated, Campus Graduated, Home Address, Employment and Business Address, Position, Present Address, MSU ID No., Email Address, Contact Number, Gender, Religion";
+const CSV_TEMPLATE_COLUMNS = [
+  // Phase 1 — personal details
+  "Last Name",
+  "First Name",
+  "Middle Name",
+  "Gender",
+  "Birth Date",
+  "Ethnicity",
+  "Religion",
+  "Birth Place",
+  // Phase 2 — address & contact
+  "Home Address",
+  "Present Address",
+  "Contact Number",
+  "Email Address",
+  "Facebook Link",
+  // Phase 3 — educational background
+  "College",
+  "Degree/Course taken",
+  "Date Graduated",
+  "Campus Graduated",
+  "MSU ID No.",
+  // Phase 4 — employment
+  "Employment Status",
+  "Employer",
+  "Sector",
+  "Position",
+  "Workplace Address",
+  // Phase 5 — organization affiliation
+  "Organization Name",
+  "Organization Position",
+  "Organization Address",
+  "Organization Contact",
+  "Organization Email",
+  "Member Since",
+] as const;
+
+const CSV_COLUMNS = CSV_TEMPLATE_COLUMNS.join(", ");
+
+const CSV_INSTRUCTIONS = [
+  { phase: "Phase 1", detail: "Personal details → users and alumni_profiles" },
+  { phase: "Phase 2", detail: "Address and contact → alumni_addresses and alumni_profiles" },
+  { phase: "Phase 3", detail: "Educational background → alumni_education (primary course synced)" },
+  { phase: "Phase 4", detail: "Employment → alumni_employment and GIS map coordinates" },
+  { phase: "Phase 5", detail: "Organization affiliation → alumni_organizations" },
+] as const;
+
+const IMPORT_TEMPLATE_FILENAME = "alumtrack-alumni-import-template.csv";
 
 const PHASE_STEPS = [
   "Personal details",
@@ -88,6 +134,13 @@ function AdminAlumni() {
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<Alumnus | null>(null);
   const [importing, setImporting] = useState(false);
+  const [importFile, setImportFile] = useState<{
+    name: string;
+    size: number;
+    text: string;
+  } | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importResult, setImportResult] = useState<AdminImportResult | null>(null);
   const [exporting, setExporting] = useState(false);
   const [fields, setFields] = useState<string[]>([...EXPORT_FIELDS]);
   const [step, setStep] = useState(0);
@@ -148,6 +201,93 @@ function AdminAlumni() {
     }
   };
 
+  const openImport = () => {
+    setImportFile(null);
+    setImportResult(null);
+    setImporting(true);
+  };
+
+  const closeImport = () => {
+    if (importBusy) return;
+    setImporting(false);
+    setImportFile(null);
+    setImportResult(null);
+  };
+
+  const downloadImportTemplate = () => {
+    const blob = new Blob([`${CSV_COLUMNS}\r\n`], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = IMPORT_TEMPLATE_FILENAME;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportFile = async (file: File | undefined) => {
+    if (!file) return;
+
+    if (!/\.csv$/i.test(file.name)) {
+      setImportResult({ ok: false, message: "Please choose a .csv file.", errors: [] });
+      return;
+    }
+
+    if (file.size > 5_000_000) {
+      setImportResult({
+        ok: false,
+        message: "The CSV file is larger than 5 MB. Split it into smaller files.",
+        errors: [],
+      });
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      if (!text.trim()) {
+        setImportResult({ ok: false, message: "The selected CSV file is empty.", errors: [] });
+        return;
+      }
+      setImportFile({ name: file.name, size: file.size, text });
+      setImportResult(null);
+    } catch (error) {
+      console.error(error);
+      setImportResult({
+        ok: false,
+        message: "The selected file could not be read. Please try again.",
+        errors: [],
+      });
+    }
+  };
+
+  const handleImport = async () => {
+    if (!importFile || importBusy) return;
+
+    setImportBusy(true);
+    setImportResult(null);
+
+    try {
+      const result = await importAlumni({ data: { csv: importFile.text } });
+      setImportResult(result);
+      if (result.ok) {
+        setImportFile(null);
+        await router.invalidate();
+      }
+    } catch (error) {
+      console.error(error);
+      setImportResult({
+        ok: false,
+        message: "The import could not be completed right now. Please try again.",
+        errors: [],
+      });
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
   if (!data.ok) {
     return (
       <AdminShell
@@ -184,6 +324,12 @@ function AdminAlumni() {
   });
 
   const open = adding || editing !== null;
+  const importRowCount = importFile
+    ? Math.max(
+        0,
+        importFile.text.split(/\r?\n/).filter((line) => line.trim() !== "").length - 1,
+      )
+    : 0;
 
   return (
     <AdminShell
@@ -198,7 +344,7 @@ function AdminAlumni() {
             <Download className="size-3.5" /> Export
           </button>
           <button
-            onClick={() => setImporting(true)}
+            onClick={openImport}
             className="inline-flex items-center gap-1.5 rounded-md border border-brand px-3 py-2 text-xs font-semibold text-brand hover:bg-brand hover:text-brand-foreground"
           >
             <Upload className="size-3.5" /> Import
@@ -426,11 +572,11 @@ function AdminAlumni() {
       )}
 
       {importing && (
-        <Modal title="Import alumni records" onClose={() => setImporting(false)}>
+        <Modal title="Import alumni records" onClose={closeImport}>
           <div className="space-y-4">
             <p className="rounded-md border-l-4 border-highlight bg-muted/50 px-3 py-2 text-[11px] text-muted-foreground">
               Use import to add many alumni at once through a CSV file instead of encoding each
-              record manually.
+              record manually. All five registration phases are written to the database.
             </p>
 
             <div className="rounded-lg border border-border p-3">
@@ -439,48 +585,129 @@ function AdminAlumni() {
               </p>
               <ol className="mt-2 space-y-1.5 text-xs text-muted-foreground">
                 <li>1. Download the official AlumTrack CSV template below.</li>
-                <li>
-                  2. Fill in one row per alumnus. The columns follow the same registration
-                  information — Phase 1 to Phase 5.
-                </li>
-                <li>
-                  3. Phase 1 (personal details), Phase 2 (address &amp; contact), and Phase 3
-                  (educational background) are required. Phase 4 (employment) and Phase 5
-                  (organization) may be left blank.
-                </li>
-                <li>
-                  4. The file or table must follow this exact column format and order:{" "}
-                  <span className="font-semibold text-foreground">({CSV_COLUMNS})</span>
-                </li>
-                <li>5. Keep all dates in DD-MM-YYYY format and do not rename the columns.</li>
-                <li>6. Upload the finished file, review the preview, then confirm the import.</li>
+                <li>2. Fill in one row per alumnus. The template covers all five phases:</li>
               </ol>
-              <button className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-brand hover:underline">
+              <ul className="mt-1.5 space-y-1 pl-4 text-xs text-muted-foreground">
+                {CSV_INSTRUCTIONS.map((item) => (
+                  <li key={item.phase}>
+                    <span className="font-semibold text-foreground">{item.phase}</span> —{" "}
+                    {item.detail}
+                  </li>
+                ))}
+              </ul>
+              <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
+                <li>
+                  • Imported rows are marked <span className="font-semibold text-foreground">
+                    verified
+                  </span>{" "}
+                  and can sign in with the default password{" "}
+                  <span className="font-semibold text-foreground">Alumtrack2026!</span>.
+                </li>
+                <li>
+                  • Dates accept DD-MM-YYYY or YYYY-MM-DD. Last Name and First Name are required;
+                  blank optional phases are skipped.
+                </li>
+                <li>
+                  • Headers are matched automatically, so variants such as “Course” or “Contact
+                  Number” also work. Rows with an existing email are updated instead of duplicated.
+                </li>
+              </ul>
+              <details className="mt-3">
+                <summary className="cursor-pointer text-xs font-semibold text-brand">
+                  Recommended column order
+                </summary>
+                <p className="mt-2 break-words rounded bg-muted/60 px-2 py-1.5 text-[11px] text-muted-foreground">
+                  {CSV_COLUMNS}
+                </p>
+              </details>
+              <button
+                type="button"
+                onClick={downloadImportTemplate}
+                className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-brand hover:underline"
+              >
                 <FileSpreadsheet className="size-3.5" /> Download CSV template
               </button>
             </div>
 
             <label className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border px-4 py-6 text-center transition-colors hover:border-brand">
               <Upload className="size-5 text-brand" />
-              <span className="text-xs font-semibold text-foreground">Upload CSV file</span>
+              <span className="text-xs font-semibold text-foreground">
+                {importFile ? "Choose a different CSV file" : "Upload CSV file"}
+              </span>
               <span className="text-[11px] text-muted-foreground">
                 Click to browse or drag and drop — .csv only, up to 5,000 rows.
               </span>
-              <input type="file" accept=".csv" className="hidden" />
+              <input
+                key={importFile?.name ?? "empty"}
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                disabled={importBusy}
+                onChange={(event) => {
+                  void handleImportFile(event.target.files?.[0]);
+                  event.target.value = "";
+                }}
+              />
             </label>
+
+            {importFile && (
+              <div className="rounded-lg border border-brand/40 bg-brand/5 px-3 py-2 text-xs">
+                <p className="font-semibold text-foreground">{importFile.name}</p>
+                <p className="text-muted-foreground">
+                  {(importFile.size / 1024).toFixed(1)} KB · about {importRowCount} data row
+                  {importRowCount === 1 ? "" : "s"}
+                </p>
+              </div>
+            )}
+
+            {importResult && (
+              <div
+                role="status"
+                className={`rounded-lg border px-3 py-2 text-xs ${
+                  importResult.ok
+                    ? "border-success/40 bg-success/10 text-foreground"
+                    : "border-red-300 bg-red-50 text-red-700"
+                }`}
+              >
+                <p className="font-semibold">{importResult.message}</p>
+                {importResult.ok && (
+                  <p className="mt-1 text-muted-foreground">
+                    New accounts: {importResult.created} · Updated: {importResult.updated} · Rows
+                    read: {importResult.totalRows}
+                  </p>
+                )}
+                {importResult.errors.length > 0 && (
+                  <div className="mt-2">
+                    <p className="font-semibold">Rows that need attention:</p>
+                    <ul className="mt-1 max-h-32 space-y-0.5 overflow-y-auto">
+                      {importResult.errors.slice(0, 10).map((message, index) => (
+                        <li key={`${index}-${message}`}>{message}</li>
+                      ))}
+                    </ul>
+                    {importResult.errors.length > 10 && (
+                      <p className="mt-1">+{importResult.errors.length - 10} more…</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={() => setImporting(false)}
-                className="rounded-md border border-border py-2.5 text-sm font-semibold text-foreground hover:border-brand"
+                type="button"
+                onClick={closeImport}
+                disabled={importBusy}
+                className="rounded-md border border-border py-2.5 text-sm font-semibold text-foreground hover:border-brand disabled:opacity-50"
               >
-                Cancel
+                {importResult?.ok ? "Close" : "Cancel"}
               </button>
               <button
-                onClick={() => setImporting(false)}
-                className="rounded-md bg-brand py-2.5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+                type="button"
+                onClick={() => void handleImport()}
+                disabled={!importFile || importBusy}
+                className="inline-flex items-center justify-center gap-1.5 rounded-md bg-brand py-2.5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark disabled:opacity-40"
               >
-                Confirm import
+                {importBusy ? "Importing…" : "Confirm import"}
               </button>
             </div>
           </div>

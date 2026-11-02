@@ -605,7 +605,10 @@ type PrimaryEmploymentRow = RowDataPacket & {
  * admin directory, and GIS map all read the same synced values. The
  * baccalaureate is the primary degree; graduate degrees are only a fallback.
  */
-async function syncPrimaryEducation(connection: Connection, userId: number): Promise<void> {
+export async function syncPrimaryEducation(
+  connection: Connection,
+  userId: number,
+): Promise<void> {
   const [rows] = await connection.execute<PrimaryEducationRow[]>(
     `SELECT degree, college, graduated_on
        FROM alumni_education
@@ -638,7 +641,10 @@ async function syncPrimaryEducation(connection: Connection, userId: number): Pro
  * the alumnus is treated as unemployed, which keeps the map, public directory,
  * and admin dashboard consistent after an edit or deletion.
  */
-async function syncPrimaryEmployment(connection: Connection, userId: number): Promise<void> {
+export async function syncPrimaryEmployment(
+  connection: Connection,
+  userId: number,
+): Promise<void> {
   const [currentRows] = await connection.execute<PrimaryEmploymentRow[]>(
     `SELECT position, company
        FROM alumni_employment

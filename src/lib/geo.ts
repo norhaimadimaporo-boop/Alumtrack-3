@@ -20,6 +20,8 @@ export type ResolvedLocation = {
   precision: GeoPrecision;
   lat: number;
   lng: number;
+  /** False when the address could not be matched and the country fallback was used. */
+  matched: boolean;
 };
 
 type Place = {
@@ -433,7 +435,12 @@ const PH_FALLBACK: Place = {
   precision: "state",
 };
 
-function withLabels(place: Place, cityLabel: string, regionLabel: string): ResolvedLocation {
+function withLabels(
+  place: Place,
+  cityLabel: string,
+  regionLabel: string,
+  matched = true,
+): ResolvedLocation {
   const city = cityLabel.trim() || place.city;
   return {
     country: place.country,
@@ -442,6 +449,7 @@ function withLabels(place: Place, cityLabel: string, regionLabel: string): Resol
     precision: place.precision,
     lat: place.lat,
     lng: place.lng,
+    matched,
   };
 }
 
@@ -494,5 +502,5 @@ export function resolveLocation(
 
   // 6. Unknown Philippine address — keep the pin on the country so the record
   //    still appears on the map instead of silently disappearing.
-  return withLabels(PH_FALLBACK, cityInput ?? "", provinceInput ?? "");
+  return withLabels(PH_FALLBACK, cityInput ?? "", provinceInput ?? "", false);
 }
