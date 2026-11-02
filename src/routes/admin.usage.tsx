@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Activity, MapPinned, LogIn, Users } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
 import { RealAlumniMap } from "@/components/real-alumni-map";
-import { ALUMNI_MAP_PINS, LOGIN_ACTIVITY } from "@/data/gis";
+import { LOGIN_ACTIVITY } from "@/data/gis";
+import { getAlumniMapPinsData } from "@/lib/gis.functions";
 import { BATCHES, COURSES, REGIONS } from "@/data/alumni";
 
 export const Route = createFileRoute("/admin/usage")({
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/admin/usage")({
       },
     ],
   }),
+  loader: async () => getAlumniMapPinsData(),
   component: AdminUsage,
 });
 
@@ -70,6 +72,9 @@ const summary = [
 ];
 
 function AdminUsage() {
+  const mapData = Route.useLoaderData();
+  const pins = mapData.ok ? mapData.pins : [];
+
   return (
     <AdminShell
       title="System Monitoring"
@@ -103,7 +108,7 @@ function AdminUsage() {
           graduate&apos;s status, location, and company.
         </p>
         <div className="mt-4">
-          <RealAlumniMap pins={ALUMNI_MAP_PINS} heightClassName="h-[360px] sm:h-[420px]" />
+          <RealAlumniMap pins={pins} heightClassName="h-[360px] sm:h-[420px]" />
         </div>
       </div>
 

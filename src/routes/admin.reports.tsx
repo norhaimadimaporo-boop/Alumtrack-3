@@ -4,7 +4,7 @@ import { BarChart3, MapPinned } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
 import { BarList, DonutChart, ColumnChart } from "@/components/cluster-map";
 import { RealAlumniMap } from "@/components/real-alumni-map";
-import { ALUMNI_MAP_PINS } from "@/data/gis";
+import { getAlumniMapPinsData } from "@/lib/gis.functions";
 
 import { BATCHES, COLLEGES, COURSES, REGIONS } from "@/data/alumni";
 
@@ -24,6 +24,7 @@ export const Route = createFileRoute("/admin/reports")({
       },
     ],
   }),
+  loader: async () => getAlumniMapPinsData(),
   component: AdminReports,
 });
 
@@ -94,11 +95,12 @@ const AFFILIATIONS = ["Secular", "Non-secular", "Professional", "None"];
 const COUNTRIES = ["Philippines", "Saudi Arabia", "UAE", "Qatar", "Singapore", "Canada", "USA"];
 const EMPLOYMENT_STATUS = ["Employed", "Unemployed", "Self-employed", "Further studies"];
 
-const DOMESTIC_PINS = ALUMNI_MAP_PINS.filter((pin) => pin.country === "Philippines");
-const OVERSEAS_PINS = ALUMNI_MAP_PINS.filter((pin) => pin.country !== "Philippines");
-
 function AdminReports() {
   const [scope, setScope] = useState<"domestic" | "overseas">("domestic");
+  const mapData = Route.useLoaderData();
+  const pins = mapData.ok ? mapData.pins : [];
+  const domesticPins = pins.filter((pin) => pin.country === "Philippines");
+  const overseasPins = pins.filter((pin) => pin.country !== "Philippines");
 
   return (
     <AdminShell
@@ -169,7 +171,7 @@ function AdminReports() {
         </div>
         <div className="mt-4">
           <RealAlumniMap
-            pins={scope === "domestic" ? DOMESTIC_PINS : OVERSEAS_PINS}
+            pins={scope === "domestic" ? domesticPins : overseasPins}
             focusView={scope === "domestic" ? "philippines" : "middle-east"}
             heightClassName="h-[360px] sm:h-[420px]"
           />

@@ -2,6 +2,7 @@ import type { Connection, RowDataPacket, ResultSetHeader } from "mysql2/promise"
 
 import { hashPassword } from "./auth.server";
 import { getPool } from "./db.server";
+import { resolveLocation } from "./geo";
 import { calculateAge, fullName } from "./profile-format";
 import type {
   AddressInput,
@@ -180,6 +181,7 @@ export async function registerAlumniAccount(input: RegistrationInput): Promise<R
     const currentAddress = input.currentAddress;
     const homeAddress = input.sameAddress ? currentAddress : input.homeAddress;
     const region = currentAddress.province.trim() || currentAddress.city.trim() || null;
+    const location = resolveLocation(currentAddress.city, currentAddress.province);
 
     const employment = input.employmentStatus === "employed" ? input.employment : null;
     const organization =
@@ -189,8 +191,9 @@ export async function registerAlumniAccount(input: RegistrationInput): Promise<R
       `INSERT INTO alumni_profiles
          (user_id, last_name, first_name, middle_name, gender, birth_date, age, ethnicity,
           birth_place, religion, mobile_number, contact_email, akan_email, facebook, course,
-          college, batch_year, employment_status, current_position, current_company, current_region)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          college, batch_year, employment_status, current_position, current_company, current_region,
+          current_city, current_country, latitude, longitude)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         userId,
         input.lastName.trim(),
@@ -213,6 +216,10 @@ export async function registerAlumniAccount(input: RegistrationInput): Promise<R
         employment?.position.trim() || null,
         employment?.company.trim() || null,
         region,
+        currentAddress.city.trim() || null,
+        location?.country ?? null,
+        location?.lat ?? null,
+        location?.lng ?? null,
       ],
     );
 

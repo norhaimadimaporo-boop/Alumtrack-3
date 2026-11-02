@@ -3,8 +3,7 @@ import { useMemo, useState } from "react";
 import { Filter, Globe2, MapPinned, RotateCcw } from "lucide-react";
 import { AlumniShell } from "@/components/alumni-shell";
 import { RealAlumniMap } from "@/components/real-alumni-map";
-import { ALUMNI_MAP_PINS } from "@/data/gis";
-import { BATCHES, COURSES } from "@/data/alumni";
+import { getAlumniMapPinsData } from "@/lib/gis.functions";
 import { getMyWorkspaceData } from "@/lib/profile.functions";
 
 export const Route = createFileRoute("/alumni-map")({
@@ -23,15 +22,16 @@ export const Route = createFileRoute("/alumni-map")({
       },
     ],
   }),
-  loader: async () => getMyWorkspaceData(),
+  loader: async () => {
+    const [workspace, map] = await Promise.all([getMyWorkspaceData(), getAlumniMapPinsData()]);
+    return {
+      workspace,
+      pins: map.ok ? map.pins : [],
+      mapError: map.ok ? null : map.message,
+    };
+  },
   component: AlumniMapPage,
 });
-
-const COUNTRIES = Array.from(new Set(ALUMNI_MAP_PINS.map((p) => p.country))).sort((a, b) =>
-  a === "Philippines" ? -1 : b === "Philippines" ? 1 : a.localeCompare(b),
-);
-
-const OVERSEAS_COUNTRIES = COUNTRIES.filter((c) => c !== "Philippines").length;
 
 const GULF_COUNTRIES = ["United Arab Emirates", "Saudi Arabia", "Qatar"];
 
@@ -43,21 +43,44 @@ function focusForCountry(country: string): "region" | "philippines" | "middle-ea
 }
 
 function AlumniMapPage() {
-  const data = Route.useLoaderData();
+  const { workspace: data, pins: allPins, mapError } = Route.useLoaderData();
   const user = data.ok ? data.user : null;
   const [course, setCourse] = useState("");
   const [batch, setBatch] = useState("");
   const [country, setCountry] = useState("");
 
+  const courseOptions = useMemo(
+    () => Array.from(new Set(allPins.map((pin) => pin.course))).sort((a, b) => a.localeCompare(b)),
+    [allPins],
+  );
+
+  const batchOptions = useMemo(
+    () =>
+      Array.from(new Set(allPins.map((pin) => pin.batch)))
+        .filter((value) => value !== "—")
+        .sort((a, b) => b.localeCompare(a)),
+    [allPins],
+  );
+
+  const countries = useMemo(
+    () =>
+      Array.from(new Set(allPins.map((pin) => pin.country))).sort((a, b) =>
+        a === "Philippines" ? -1 : b === "Philippines" ? 1 : a.localeCompare(b),
+      ),
+    [allPins],
+  );
+
+  const overseasCountries = countries.filter((value) => value !== "Philippines").length;
+
   const pins = useMemo(
     () =>
-      ALUMNI_MAP_PINS.filter(
+      allPins.filter(
         (pin) =>
           (!course || pin.course === course) &&
           (!batch || pin.batch === batch) &&
           (!country || pin.country === country),
       ),
-    [course, batch, country],
+    [allPins, course, batch, country],
   );
 
   const employed = pins.filter((p) => p.status === "Employed").length;
@@ -73,7 +96,7 @@ function AlumniMapPage() {
         <span className="px-2 text-xs font-semibold text-foreground">Workplace pins</span>
         <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
           <Globe2 className="size-3.5 text-brand" />
-          {COUNTRIES.length} countries · {OVERSEAS_COUNTRIES} overseas
+          {countries.length} countries · {overseasCountries} overseas
         </span>
       </div>
 
@@ -103,16 +126,16 @@ function AlumniMapPage() {
           </div>
 
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            <MapSelect label="Course" options={[...COURSES]} value={course} onChange={setCourse} />
+            <MapSelect label="Course" options={courseOptions} value={course} onChange={setCourse} />
             <MapSelect
               label="Batch year"
-              options={[...BATCHES]}
+              options={batchOptions}
               value={batch}
               onChange={setBatch}
             />
             <MapSelect
               label="Country"
-              options={COUNTRIES}
+              options={countries}
               value={country}
               onChange={setCountry}
               allLabel="All countries"

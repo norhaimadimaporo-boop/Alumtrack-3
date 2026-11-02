@@ -10,8 +10,9 @@ import {
 import { AlumniShell } from "@/components/alumni-shell";
 import { BarList } from "@/components/cluster-map";
 import { RealAlumniMap } from "@/components/real-alumni-map";
-import { ALUMNI_MAP_PINS, SECTOR_SPLIT } from "@/data/gis";
+import { SECTOR_SPLIT } from "@/data/gis";
 import { POSTS } from "@/data/news";
+import { getAlumniMapPinsData } from "@/lib/gis.functions";
 import { getMyWorkspaceData } from "@/lib/profile.functions";
 import { initials } from "@/lib/profile-format";
 
@@ -31,12 +32,15 @@ export const Route = createFileRoute("/dashboard")({
       },
     ],
   }),
-  loader: async () => getMyWorkspaceData(),
+  loader: async () => {
+    const [workspace, map] = await Promise.all([getMyWorkspaceData(), getAlumniMapPinsData()]);
+    return { workspace, pins: map.ok ? map.pins : [] };
+  },
   component: DashboardPage,
 });
 
 function DashboardPage() {
-  const data = Route.useLoaderData();
+  const { workspace: data, pins } = Route.useLoaderData();
   const profile = data.ok ? data.profile : null;
 
   const firstName = profile?.firstName || "Alumni";
@@ -138,7 +142,7 @@ function DashboardPage() {
           </p>
           <div className="mt-4">
             <RealAlumniMap
-              pins={ALUMNI_MAP_PINS}
+              pins={pins}
               heightClassName="h-[260px] sm:h-[320px]"
               compact
             />

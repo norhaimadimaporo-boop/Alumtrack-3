@@ -2,6 +2,7 @@ import type { Connection, ResultSetHeader, RowDataPacket } from "mysql2/promise"
 
 import { getSessionUser } from "./auth.server";
 import { getPool } from "./db.server";
+import { resolveLocation } from "./geo";
 import {
   calculateAge,
   formatAddress,
@@ -588,6 +589,85 @@ async function logActivity(
   );
 }
 
+type PrimaryEducationRow = RowDataPacket & {
+  degree: string;
+  college: string | null;
+  graduated_on: Date | string | null;
+};
+
+type PrimaryEmploymentRow = RowDataPacket & {
+  position: string | null;
+  company: string | null;
+};
+
+/**
+ * Copy the primary degree into `alumni_profiles` so the sidebar, public search,
+ * admin directory, and GIS map all read the same synced values. The
+ * baccalaureate is the primary degree; graduate degrees are only a fallback.
+ */
+async function syncPrimaryEducation(connection: Connection, userId: number): Promise<void> {
+  const [rows] = await connection.execute<PrimaryEducationRow[]>(
+    `SELECT degree, college, graduated_on
+       FROM alumni_education
+      WHERE user_id = ?
+      ORDER BY FIELD(level, 'Baccalaureate Degree', 'Graduate Degree', 'Post Graduate Degree'),
+               graduated_on IS NULL, graduated_on DESC, id DESC
+      LIMIT 1`,
+    [userId],
+  );
+
+  const primary = rows[0];
+  const iso = primary ? toIsoDate(formatDate(primary.graduated_on)) : "";
+  const batchYear = iso ? Number(iso.slice(0, 4)) : NaN;
+
+  await connection.execute(
+    `UPDATE alumni_profiles
+        SET course = ?, college = ?, batch_year = ?
+      WHERE user_id = ?`,
+    [
+      primary?.degree.trim() || null,
+      primary?.college?.trim() || null,
+      Number.isFinite(batchYear) && batchYear > 0 ? batchYear : null,
+      userId,
+    ],
+  );
+}
+
+/**
+ * Copy the current job into `alumni_profiles`. When no record is marked current
+ * the alumnus is treated as unemployed, which keeps the map, public directory,
+ * and admin dashboard consistent after an edit or deletion.
+ */
+async function syncPrimaryEmployment(connection: Connection, userId: number): Promise<void> {
+  const [currentRows] = await connection.execute<PrimaryEmploymentRow[]>(
+    `SELECT position, company
+       FROM alumni_employment
+      WHERE user_id = ? AND is_current = 1
+      ORDER BY id DESC
+      LIMIT 1`,
+    [userId],
+  );
+
+  const current = currentRows[0];
+
+  if (current) {
+    await connection.execute(
+      `UPDATE alumni_profiles
+          SET employment_status = 'employed', current_position = ?, current_company = ?
+        WHERE user_id = ?`,
+      [optional(current.position), optional(current.company), userId],
+    );
+    return;
+  }
+
+  await connection.execute(
+    `UPDATE alumni_profiles
+        SET employment_status = 'unemployed', current_position = NULL, current_company = NULL
+      WHERE user_id = ?`,
+    [userId],
+  );
+}
+
 export async function updateMyProfile(input: ProfileEditInput): Promise<SaveResult> {
   const resolved = await resolveEditor();
   if (!resolved.ok) return resolved;
@@ -595,6 +675,7 @@ export async function updateMyProfile(input: ProfileEditInput): Promise<SaveResu
   const { editor } = resolved;
   const displayName = fullName(input.firstName, input.middleName, input.lastName);
   const region = input.currentAddress.province.trim() || input.currentAddress.city.trim() || null;
+  const location = resolveLocation(input.currentAddress.city, input.currentAddress.province);
 
   const pool = getPool();
   const connection = await pool.getConnection();
@@ -617,7 +698,11 @@ export async function updateMyProfile(input: ProfileEditInput): Promise<SaveResu
               contact_email = ?,
               akan_email = ?,
               facebook = ?,
-              current_region = ?
+              current_region = ?,
+              current_city = ?,
+              current_country = ?,
+              latitude = ?,
+              longitude = ?
         WHERE user_id = ?`,
       [
         input.firstName.trim(),
@@ -634,6 +719,10 @@ export async function updateMyProfile(input: ProfileEditInput): Promise<SaveResu
         optional(input.akanEmail.trim().toLowerCase()),
         optional(input.facebook),
         region,
+        input.currentAddress.city.trim() || null,
+        location?.country ?? null,
+        location?.lat ?? null,
+        location?.lng ?? null,
         editor.userId,
       ],
     );
@@ -685,11 +774,14 @@ export async function saveMyEducation(input: EducationRecordInput): Promise<Save
     isoOrNull(input.graduatedOn),
   ];
 
+  const pool = getPool();
+  const connection = await pool.getConnection();
+
   try {
-    const pool = getPool();
+    await connection.beginTransaction();
 
     if (input.id) {
-      const [result] = await pool.execute<ResultSetHeader>(
+      const [result] = await connection.execute<ResultSetHeader>(
         `UPDATE alumni_education
             SET level = ?, school_id_no = ?, degree = ?, major = ?, college = ?, school = ?,
                 school_address = ?, graduated_on = ?
@@ -697,10 +789,11 @@ export async function saveMyEducation(input: EducationRecordInput): Promise<Save
         [...values, input.id, editor.userId],
       );
       if (result.affectedRows === 0) {
+        await connection.rollback();
         return { ok: false, message: "That education record could not be found." };
       }
     } else {
-      await pool.execute(
+      await connection.execute(
         `INSERT INTO alumni_education
            (user_id, level, school_id_no, degree, major, college, school, school_address, graduated_on)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -708,13 +801,19 @@ export async function saveMyEducation(input: EducationRecordInput): Promise<Save
       );
     }
 
+    await syncPrimaryEducation(connection, editor.userId);
+
+    await connection.commit();
     return {
       ok: true,
       message: input.id ? "Degree updated successfully!" : "Degree added successfully!",
     };
   } catch (error) {
+    await connection.rollback();
     console.error("[profile] Save education failed:", error);
     return { ok: false, message: "That degree could not be saved right now. Please try again." };
+  } finally {
+    connection.release();
   }
 }
 
@@ -722,18 +821,31 @@ export async function deleteMyEducation(id: number): Promise<SaveResult> {
   const resolved = await resolveEditor();
   if (!resolved.ok) return resolved;
 
+  const pool = getPool();
+  const connection = await pool.getConnection();
+
   try {
-    const [result] = await getPool().execute<ResultSetHeader>(
+    await connection.beginTransaction();
+
+    const [result] = await connection.execute<ResultSetHeader>(
       "DELETE FROM alumni_education WHERE id = ? AND user_id = ?",
       [id, resolved.editor.userId],
     );
     if (result.affectedRows === 0) {
+      await connection.rollback();
       return { ok: false, message: "That education record could not be found." };
     }
+
+    await syncPrimaryEducation(connection, resolved.editor.userId);
+
+    await connection.commit();
     return { ok: true, message: "Degree removed." };
   } catch (error) {
+    await connection.rollback();
     console.error("[profile] Delete education failed:", error);
     return { ok: false, message: "That degree could not be removed right now. Please try again." };
+  } finally {
+    connection.release();
   }
 }
 
@@ -792,14 +904,7 @@ export async function saveMyEmployment(input: EmploymentRecordInput): Promise<Sa
       );
     }
 
-    if (input.isCurrent) {
-      await connection.execute(
-        `UPDATE alumni_profiles
-            SET employment_status = 'employed', current_position = ?, current_company = ?
-          WHERE user_id = ?`,
-        [optional(input.position), optional(input.company), editor.userId],
-      );
-    }
+    await syncPrimaryEmployment(connection, editor.userId);
 
     await connection.commit();
     return {
@@ -819,18 +924,31 @@ export async function deleteMyEmployment(id: number): Promise<SaveResult> {
   const resolved = await resolveEditor();
   if (!resolved.ok) return resolved;
 
+  const pool = getPool();
+  const connection = await pool.getConnection();
+
   try {
-    const [result] = await getPool().execute<ResultSetHeader>(
+    await connection.beginTransaction();
+
+    const [result] = await connection.execute<ResultSetHeader>(
       "DELETE FROM alumni_employment WHERE id = ? AND user_id = ?",
       [id, resolved.editor.userId],
     );
     if (result.affectedRows === 0) {
+      await connection.rollback();
       return { ok: false, message: "That employment record could not be found." };
     }
+
+    await syncPrimaryEmployment(connection, resolved.editor.userId);
+
+    await connection.commit();
     return { ok: true, message: "Employment record removed." };
   } catch (error) {
+    await connection.rollback();
     console.error("[profile] Delete employment failed:", error);
     return { ok: false, message: "That record could not be removed right now. Please try again." };
+  } finally {
+    connection.release();
   }
 }
 

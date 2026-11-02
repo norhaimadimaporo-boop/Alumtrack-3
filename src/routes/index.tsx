@@ -2,9 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search, MapPinned, Newspaper, UserRoundPen, ArrowRight, CalendarDays } from "lucide-react";
 import heroImage from "@/assets/campus-hero.jpg";
 import { POSTS } from "@/data/news";
-import { ALUMNI_MAP_PINS, PUBLIC_STATS, TOP_INDUSTRIES } from "@/data/gis";
+import { PUBLIC_STATS, TOP_INDUSTRIES } from "@/data/gis";
 import { BarList } from "@/components/cluster-map";
 import { RealAlumniMap } from "@/components/real-alumni-map";
+import { getAlumniMapPinsData } from "@/lib/gis.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
+  loader: async () => getAlumniMapPinsData(),
   component: Index,
 });
 
@@ -66,6 +68,8 @@ const FEATURES = [
 
 function Index() {
   const latest = POSTS.slice(0, 3);
+  const mapData = Route.useLoaderData();
+  const pins = mapData.ok ? mapData.pins : [];
 
   return (
     <div>
@@ -149,7 +153,7 @@ function Index() {
               workplaces are plotted — tap a pin for details.
             </p>
             <div className="mt-4">
-              <RealAlumniMap pins={ALUMNI_MAP_PINS} heightClassName="h-[320px] sm:h-[420px]" />
+              <RealAlumniMap pins={pins} heightClassName="h-[320px] sm:h-[420px]" />
             </div>
           </div>
 

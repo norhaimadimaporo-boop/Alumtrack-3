@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "db:setup": "node scripts/setup-database.mjs"
+    "db:setup": "node scripts/setup-database.mjs",
+    "db:migrate": "node scripts/migrate-profile-location.mjs",
+    "db:backfill": "node scripts/backfill-profiles.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
