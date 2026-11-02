@@ -10,7 +10,6 @@ import {
   MapPinned,
   Settings,
 } from "lucide-react";
-import { ME } from "@/data/me";
 import { NotificationBell } from "@/components/notification-bell";
 
 const NOTIFICATIONS = [
@@ -50,11 +49,11 @@ export function AlumniShell({
 }: {
   title: string;
   subtitle?: string;
-  user?: { name?: string; batch?: string; initials?: string };
+  user?: { name?: string; batch?: string; initials?: string } | undefined;
   children: ReactNode;
 }) {
-  const displayName = user?.name || ME.name;
-  const displayBatch = user?.batch || ME.batch;
+  const displayName = user?.name || "Alumni";
+  const displayBatch = user?.batch && user.batch !== "" ? user.batch : "—";
   const displayInitials = user?.initials || "AL";
 
   return (
@@ -68,9 +67,7 @@ export function AlumniShell({
             <span className="block truncate text-sm font-semibold text-foreground">
               {displayName}
             </span>
-            <span className="block text-[11px] text-muted-foreground">
-              Batch {displayBatch}
-            </span>
+            <span className="block text-[11px] text-muted-foreground">Batch {displayBatch}</span>
           </span>
         </div>
 

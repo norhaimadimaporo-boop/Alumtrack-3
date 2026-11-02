@@ -34,13 +34,21 @@ export function Modal({
 export function LabeledInput({
   label,
   defaultValue,
+  value,
+  onChange,
   placeholder,
   type = "text",
+  required = false,
+  disabled = false,
 }: {
   label: string;
   defaultValue?: string | undefined;
+  value?: string | undefined;
+  onChange?: (value: string) => void;
   placeholder?: string | undefined;
   type?: string;
+  required?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <div>
@@ -49,9 +57,13 @@ export function LabeledInput({
       </label>
       <input
         type={type}
-        defaultValue={defaultValue}
+        value={value}
+        defaultValue={value === undefined ? defaultValue : undefined}
+        onChange={onChange ? (event) => onChange(event.target.value) : undefined}
         placeholder={placeholder}
-        className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+        required={required}
+        disabled={disabled}
+        className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-brand disabled:opacity-60"
       />
     </div>
   );

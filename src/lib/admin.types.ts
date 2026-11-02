@@ -37,6 +37,7 @@ export type AdminDashboardData =
   | { ok: false; message: string };
 
 export type AdminEducationRecord = {
+  id?: number;
   level: string;
   schoolIdNo: string;
   degree: string;
@@ -48,6 +49,7 @@ export type AdminEducationRecord = {
 };
 
 export type AdminEmploymentRecord = {
+  id?: number;
   position: string;
   company: string;
   companyAddress: string;
@@ -59,6 +61,7 @@ export type AdminEmploymentRecord = {
 };
 
 export type AdminOrganizationRecord = {
+  id?: number;
   name: string;
   address: string;
   position: string;

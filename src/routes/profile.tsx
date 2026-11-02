@@ -1,9 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { GraduationCap, Briefcase, Users, ShieldCheck } from "lucide-react";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { useState } from "react";
+import { GraduationCap, Briefcase, Users, ShieldCheck, Pencil } from "lucide-react";
 
 import { AlumniShell } from "@/components/alumni-shell";
+import { ProfileEditModal } from "@/components/profile-edit-modal";
 import { Toggle } from "@/components/toggle";
-import { getMyProfileData } from "@/lib/profile.functions";
+import { getMyWorkspaceData } from "@/lib/profile.functions";
 import { initials } from "@/lib/profile-format";
 import type { MyProfile } from "@/lib/admin.types";
 
@@ -23,7 +25,7 @@ export const Route = createFileRoute("/profile")({
       },
     ],
   }),
-  loader: async () => getMyProfileData(),
+  loader: async () => getMyWorkspaceData(),
   component: ProfilePage,
 });
 
@@ -84,6 +86,8 @@ function verificationBadge(profile: MyProfile) {
 
 function ProfilePage() {
   const data = Route.useLoaderData();
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
 
   if (!data.ok) {
     return <EmptyState title="Sign-in required" message={data.message} />;
@@ -101,15 +105,16 @@ function ProfilePage() {
   }
 
   const badge = verificationBadge(profile);
+  const canEdit = data.canEdit && data.editable !== null;
 
   return (
     <AlumniShell
       title="My Profile"
       subtitle="Everything you entered during registration — personal, address and contact details."
       user={{
-        name: profile.fullName,
-        batch: profile.batch,
-        initials: initials(profile.fullName),
+        name: data.user.fullName,
+        batch: data.user.batch,
+        initials: data.user.initials,
       }}
     >
       <div className="rounded-lg border border-border bg-card p-6">
@@ -133,7 +138,21 @@ function ProfilePage() {
               </span>
             </div>
           </div>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+            >
+              <Pencil className="size-4" /> Edit Profile
+            </button>
+          )}
         </div>
+        {!canEdit && (
+          <p className="mt-4 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+            Profile editing becomes available once the OARCC verifies your alumni record.
+          </p>
+        )}
       </div>
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -150,7 +169,9 @@ function ProfilePage() {
             <Field label="Religious affiliation" value={profile.religion} />
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Personal details are locked after registration. Contact OARCC to request a correction.
+            {canEdit
+              ? "Use Edit Profile to keep these details up to date."
+              : "Personal details are locked until your record is verified."}
           </p>
         </Card>
 
@@ -171,9 +192,14 @@ function ProfilePage() {
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <Card title="Educational background">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand">
-            <GraduationCap className="size-4" /> {profile.education.length} record
-            {profile.education.length === 1 ? "" : "s"}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand">
+              <GraduationCap className="size-4" /> {profile.education.length} record
+              {profile.education.length === 1 ? "" : "s"}
+            </div>
+            <Link to="/education" className="text-xs font-semibold text-brand hover:underline">
+              Manage
+            </Link>
           </div>
           {profile.education.length === 0 ? (
             <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
@@ -199,8 +225,13 @@ function ProfilePage() {
         </Card>
 
         <Card title="Employment">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand">
-            <Briefcase className="size-4" /> {profile.status}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand">
+              <Briefcase className="size-4" /> {profile.status}
+            </div>
+            <Link to="/employment" className="text-xs font-semibold text-brand hover:underline">
+              Manage
+            </Link>
           </div>
           {profile.employment.length === 0 ? (
             <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
@@ -235,9 +266,14 @@ function ProfilePage() {
 
       <div className="mt-4">
         <Card title="Organization / group affiliation">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand">
-            <Users className="size-4" /> {profile.organizations.length} affiliation
-            {profile.organizations.length === 1 ? "" : "s"}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand">
+              <Users className="size-4" /> {profile.organizations.length} affiliation
+              {profile.organizations.length === 1 ? "" : "s"}
+            </div>
+            <Link to="/organization" className="text-xs font-semibold text-brand hover:underline">
+              Manage
+            </Link>
           </div>
           {profile.organizations.length === 0 ? (
             <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
@@ -305,6 +341,17 @@ function ProfilePage() {
           />
         </div>
       </div>
+
+      {editing && data.editable && (
+        <ProfileEditModal
+          initial={data.editable}
+          onClose={() => setEditing(false)}
+          onSaved={() => {
+            setEditing(false);
+            void router.invalidate();
+          }}
+        />
+      )}
     </AlumniShell>
   );
 }

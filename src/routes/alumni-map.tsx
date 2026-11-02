@@ -5,6 +5,7 @@ import { AlumniShell } from "@/components/alumni-shell";
 import { RealAlumniMap } from "@/components/real-alumni-map";
 import { ALUMNI_MAP_PINS } from "@/data/gis";
 import { BATCHES, COURSES } from "@/data/alumni";
+import { getMyWorkspaceData } from "@/lib/profile.functions";
 
 export const Route = createFileRoute("/alumni-map")({
   head: () => ({
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/alumni-map")({
       },
     ],
   }),
+  loader: async () => getMyWorkspaceData(),
   component: AlumniMapPage,
 });
 
@@ -41,6 +43,8 @@ function focusForCountry(country: string): "region" | "philippines" | "middle-ea
 }
 
 function AlumniMapPage() {
+  const data = Route.useLoaderData();
+  const user = data.ok ? data.user : null;
   const [course, setCourse] = useState("");
   const [batch, setBatch] = useState("");
   const [country, setCountry] = useState("");
@@ -63,6 +67,7 @@ function AlumniMapPage() {
     <AlumniShell
       title="Alumni Map"
       subtitle="See where fellow graduates work — from Marawi and Metro Manila to Dubai, Riyadh, and Doha."
+      user={user ? { name: user.fullName, batch: user.batch, initials: user.initials } : undefined}
     >
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2">
         <span className="px-2 text-xs font-semibold text-foreground">Workplace pins</span>

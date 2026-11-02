@@ -18,6 +18,20 @@ export function formatDate(value: Date | string | null | undefined): string {
   return `${String(day).padStart(2, "0")}-${String(month).padStart(2, "0")}-${year}`;
 }
 
+/** Convert a display date (DD-MM-YYYY) or ISO date back to YYYY-MM-DD for form inputs. */
+export function toIsoDate(value: string | null | undefined): string {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) return "";
+
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+  if (iso) return trimmed;
+
+  const display = /^(\d{2})-(\d{2})-(\d{4})$/.exec(trimmed);
+  if (display) return `${display[3]}-${display[2]}-${display[1]}`;
+
+  return "";
+}
+
 export function calculateAge(birthDate: Date | string | null | undefined): string {
   const parts = toDateParts(birthDate);
   if (!parts) return "";

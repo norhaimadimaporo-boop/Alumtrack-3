@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Briefcase, MapPin, Building2, CalendarDays } from "lucide-react";
 import { AlumniShell } from "@/components/alumni-shell";
 import { Modal } from "@/components/modal";
+import { getMyWorkspaceData } from "@/lib/profile.functions";
 
 export const Route = createFileRoute("/jobs")({
   head: () => ({
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/jobs")({
       },
     ],
   }),
+  loader: async () => getMyWorkspaceData(),
   component: JobsPage,
 });
 
@@ -131,12 +133,15 @@ const JOBS: Job[] = [
 ];
 
 function JobsPage() {
+  const data = Route.useLoaderData();
+  const user = data.ok ? data.user : null;
   const [selected, setSelected] = useState<Job | null>(null);
 
   return (
     <AlumniShell
       title="Job Offerings"
       subtitle="Click a job to view the full details, then apply."
+      user={user ? { name: user.fullName, batch: user.batch, initials: user.initials } : undefined}
     >
       <ul className="grid gap-3 md:grid-cols-2">
         {JOBS.map((j) => (

@@ -4,6 +4,7 @@ import { Shield, Bell, KeyRound, MapPinned, Users } from "lucide-react";
 import { AlumniShell } from "@/components/alumni-shell";
 import { Modal, LabeledInput, PrimaryButton } from "@/components/modal";
 import { Toggle } from "@/components/toggle";
+import { getMyWorkspaceData } from "@/lib/profile.functions";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/settings")({
       },
     ],
   }),
+  loader: async () => getMyWorkspaceData(),
   component: SettingsPage,
 });
 
@@ -73,10 +75,25 @@ const gisPrivacy = [
 ];
 
 const directoryPrivacy = [
-  { key: "fb", label: "Facebook profile", hint: "Visible in the verified alumni directory.", on: false },
+  {
+    key: "fb",
+    label: "Facebook profile",
+    hint: "Visible in the verified alumni directory.",
+    on: false,
+  },
   { key: "work", label: "Current workplace", hint: "Company and position.", on: true },
-  { key: "reg", label: "Region of employment", hint: "General region, no street address.", on: true },
-  { key: "mob", label: "Mobile number", hint: "Shared with fellow verified alumni only.", on: false },
+  {
+    key: "reg",
+    label: "Region of employment",
+    hint: "General region, no street address.",
+    on: true,
+  },
+  {
+    key: "mob",
+    label: "Mobile number",
+    hint: "Shared with fellow verified alumni only.",
+    on: false,
+  },
 ];
 
 const notifs = [
@@ -86,12 +103,15 @@ const notifs = [
 ];
 
 function SettingsPage() {
+  const data = Route.useLoaderData();
+  const user = data.ok ? data.user : null;
   const [changing, setChanging] = useState(false);
 
   return (
     <AlumniShell
       title="Privacy & Settings"
       subtitle="Choose what other alumni and public visitors can see."
+      user={user ? { name: user.fullName, batch: user.batch, initials: user.initials } : undefined}
     >
       <div className="space-y-4">
         <section className="rounded-lg border border-border bg-card p-5">

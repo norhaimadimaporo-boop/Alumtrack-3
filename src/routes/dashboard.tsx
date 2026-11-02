@@ -1,11 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarDays, Briefcase, UserRound, Eye, ArrowRight, MapPinned } from "lucide-react";
+import {
+  ArrowRight,
+  Briefcase,
+  GraduationCap,
+  MapPinned,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
 import { AlumniShell } from "@/components/alumni-shell";
 import { BarList } from "@/components/cluster-map";
 import { RealAlumniMap } from "@/components/real-alumni-map";
 import { ALUMNI_MAP_PINS, SECTOR_SPLIT } from "@/data/gis";
 import { POSTS } from "@/data/news";
-import { getMyProfileData } from "@/lib/profile.functions";
+import { getMyWorkspaceData } from "@/lib/profile.functions";
 import { initials } from "@/lib/profile-format";
 
 export const Route = createFileRoute("/dashboard")({
@@ -24,7 +31,7 @@ export const Route = createFileRoute("/dashboard")({
       },
     ],
   }),
-  loader: async () => getMyProfileData(),
+  loader: async () => getMyWorkspaceData(),
   component: DashboardPage,
 });
 
@@ -39,13 +46,34 @@ function DashboardPage() {
   const currentCompany = profile?.employment?.[0]?.company || "Unemployed / Not provided";
   const currentRegion = profile?.employment?.[0]?.workLocation || profile?.homeAddress || "—";
   const empCount = profile?.employment?.length ?? 0;
+  const eduCount = profile?.education?.length ?? 0;
   const userInitials = profile ? initials(profile.fullName) : "AL";
 
+  const completionChecks = [
+    Boolean(profile?.firstName && profile?.lastName),
+    Boolean(profile?.birthDate),
+    Boolean(profile?.ethnicity),
+    Boolean(profile?.religion),
+    Boolean(profile?.mobileNumber),
+    Boolean(profile?.contactEmail),
+    Boolean(profile?.currentAddress),
+    Boolean(profile?.homeAddress),
+    eduCount > 0,
+    empCount > 0,
+  ];
+  const completion = Math.round(
+    (completionChecks.filter(Boolean).length / completionChecks.length) * 100,
+  );
+
   const stats = [
-    { label: "Profile completion", value: "100%", icon: UserRound },
+    { label: "Profile completion", value: `${completion}%`, icon: UserRound },
     { label: "Employment records", value: `${empCount}`, icon: Briefcase },
-    { label: "Profile views", value: "42", icon: Eye },
-    { label: "Upcoming events", value: "2", icon: CalendarDays },
+    { label: "Education records", value: `${eduCount}`, icon: GraduationCap },
+    {
+      label: "Verification",
+      value: profile?.verificationStatus === "verified" ? "Verified" : "Pending",
+      icon: ShieldCheck,
+    },
   ];
 
   const posts = POSTS.slice(0, 4);
@@ -75,7 +103,9 @@ function DashboardPage() {
           <div>
             <h2 className="text-sm font-semibold text-foreground">Complete your profile</h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              Add your skills and current employment location to reach 100%.
+              {completion >= 100
+                ? "Your alumni record is complete. Keep it updated after any career move."
+                : "Add your remaining details so OARCC and fellow alumni can reach you."}
             </p>
           </div>
           <Link
@@ -86,7 +116,7 @@ function DashboardPage() {
           </Link>
         </div>
         <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-success" style={{ width: "100%" }} />
+          <div className="h-full rounded-full bg-success" style={{ width: `${completion}%` }} />
         </div>
       </div>
 
