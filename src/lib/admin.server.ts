@@ -1,9 +1,14 @@
 import type { RowDataPacket, ResultSetHeader } from "mysql2/promise";
 
-import { getSessionUser, type AuthUser } from "./auth.server";
+import { getSessionUser, hashPassword, type AuthUser } from "./auth.server";
 import { getPool } from "./db.server";
 import { formatAddress, formatDate, fullName, relativeTime } from "./profile-format";
+import { isAdminRole, type AdminRole } from "./session";
 import type {
+  AdminAccount,
+  AdminAccountInput,
+  AdminAccountList,
+  AdminAccountUpdate,
   AdminActionResult,
   AdminAlumniList,
   AdminAlumnus,
@@ -16,6 +21,17 @@ import type {
 } from "./admin.types";
 
 const UNAUTHORIZED = "Sign in with an administrator account to open the admin dashboard.";
+
+/** Higher rank inherits everything the lower ranks can do. */
+const ADMIN_RANK: Record<AdminRole, number> = { viewer: 0, standard: 1, head: 2 };
+
+function forbiddenMessage(minimum: AdminRole): string {
+  if (minimum === "head") return "Only the Head Admin can manage administrator accounts.";
+  if (minimum === "standard") {
+    return "Your admin account is read-only. Ask a Head Admin or Standard Admin to make this change.";
+  }
+  return UNAUTHORIZED;
+}
 
 type CountRow = RowDataPacket & {
   registered: number;
@@ -130,9 +146,31 @@ type ProfileOwnerRow = RowDataPacket & {
   last_name: string;
 };
 
-async function requireAdmin(): Promise<AuthUser | null> {
+type AdminAccountRow = RowDataPacket & {
+  id: number;
+  email: string;
+  full_name: string | null;
+  admin_role: AdminRole | null;
+  is_active: number;
+  created_at: Date | string;
+  last_login_at: Date | string | null;
+};
+
+type CountTotalRow = RowDataPacket & { total: number };
+
+type AdminAccess = { ok: true; admin: AuthUser } | { ok: false; message: string };
+
+export async function requireAdmin(minimum: AdminRole = "viewer"): Promise<AdminAccess> {
   const user = await getSessionUser();
-  return user && user.role === "admin" ? user : null;
+  if (!user || user.role !== "admin") return { ok: false, message: UNAUTHORIZED };
+
+  // Rows created before RBAC existed default to the standard tier.
+  const role = user.adminRole ?? "standard";
+  if (ADMIN_RANK[role] < ADMIN_RANK[minimum]) {
+    return { ok: false, message: forbiddenMessage(minimum) };
+  }
+
+  return { ok: true, admin: { ...user, adminRole: role } };
 }
 
 function employmentLabel(status: ProfileEmploymentStatus): string {
@@ -164,8 +202,8 @@ function addressFromRow(row: AlumniRow, prefix: "current" | "home"): string {
 }
 
 export async function getAdminDashboard(): Promise<AdminDashboardData> {
-  const admin = await requireAdmin();
-  if (!admin) return { ok: false, message: UNAUTHORIZED };
+  const access = await requireAdmin("viewer");
+  if (!access.ok) return { ok: false, message: access.message };
 
   try {
     const pool = getPool();
@@ -233,8 +271,8 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
 }
 
 export async function listAdminAlumni(): Promise<AdminAlumniList> {
-  const admin = await requireAdmin();
-  if (!admin) return { ok: false, message: UNAUTHORIZED };
+  const access = await requireAdmin("viewer");
+  if (!access.ok) return { ok: false, message: access.message };
 
   try {
     const pool = getPool();
@@ -404,8 +442,9 @@ async function findProfileOwner(profileId: number): Promise<ProfileOwnerRow | nu
 }
 
 export async function verifyAlumniRecord(profileId: number): Promise<AdminActionResult> {
-  const admin = await requireAdmin();
-  if (!admin) return { ok: false, message: UNAUTHORIZED };
+  const access = await requireAdmin("standard");
+  if (!access.ok) return { ok: false, message: access.message };
+  const admin = access.admin;
 
   if (!Number.isInteger(profileId) || profileId <= 0) {
     return { ok: false, message: "Invalid alumni record." };
@@ -441,8 +480,9 @@ export async function verifyAlumniRecord(profileId: number): Promise<AdminAction
 }
 
 export async function deleteAlumniRecord(profileId: number): Promise<AdminActionResult> {
-  const admin = await requireAdmin();
-  if (!admin) return { ok: false, message: UNAUTHORIZED };
+  const access = await requireAdmin("standard");
+  if (!access.ok) return { ok: false, message: access.message };
+  const admin = access.admin;
 
   if (!Number.isInteger(profileId) || profileId <= 0) {
     return { ok: false, message: "Invalid alumni record." };
@@ -490,5 +530,252 @@ export async function deleteAlumniRecord(profileId: number): Promise<AdminAction
     return { ok: false, message: "We could not delete this record right now. Please try again." };
   } finally {
     connection.release();
+  }
+}
+
+const ADMIN_ROLE_LABELS: Record<AdminRole, string> = {
+  head: "Head Admin",
+  standard: "Standard Admin",
+  viewer: "Viewer Admin",
+};
+
+function adminRoleLabel(role: AdminRole): string {
+  return ADMIN_ROLE_LABELS[role];
+}
+
+function toAdminAccount(row: AdminAccountRow, currentUserId: number): AdminAccount {
+  return {
+    id: row.id,
+    email: row.email,
+    fullName: row.full_name ?? "Administrator",
+    role: row.admin_role ?? "standard",
+    active: row.is_active === 1,
+    createdAt: formatDate(row.created_at),
+    lastLogin: row.last_login_at ? formatDate(row.last_login_at) : "Never",
+    isSelf: row.id === currentUserId,
+  };
+}
+
+async function countActiveHeads(excludeId: number): Promise<number> {
+  const [rows] = await getPool().execute<CountTotalRow[]>(
+    `SELECT COUNT(*) AS total
+       FROM users
+      WHERE role = 'admin'
+        AND admin_role = 'head'
+        AND is_active = 1
+        AND id <> ?`,
+    [excludeId],
+  );
+  return Number(rows[0]?.total ?? 0);
+}
+
+async function logAdminActivity(admin: AuthUser, action: string, entityId: number | null) {
+  await getPool().execute(
+    `INSERT INTO activity_log (actor_user_id, actor_name, action, entity_type, entity_id)
+     VALUES (?, ?, ?, 'admin', ?)`,
+    [admin.id, admin.fullName ?? admin.email, action, entityId],
+  );
+}
+
+export async function listAdminAccounts(): Promise<AdminAccountList> {
+  const access = await requireAdmin("head");
+  if (!access.ok) return { ok: false, message: access.message };
+
+  try {
+    const [rows] = await getPool().query<AdminAccountRow[]>(
+      `SELECT id, email, full_name, admin_role, is_active, created_at, last_login_at
+         FROM users
+        WHERE role = 'admin'
+        ORDER BY FIELD(admin_role, 'head', 'standard', 'viewer'), created_at ASC, id ASC`,
+    );
+
+    return {
+      ok: true,
+      accounts: rows.map((row) => toAdminAccount(row, access.admin.id)),
+      currentUserId: access.admin.id,
+    };
+  } catch (error) {
+    console.error("[admin] Admin account list failed:", error);
+    return {
+      ok: false,
+      message: "The admin account list could not be loaded right now. Please try again later.",
+    };
+  }
+}
+
+export async function createAdminAccount(input: AdminAccountInput): Promise<AdminActionResult> {
+  const access = await requireAdmin("head");
+  if (!access.ok) return { ok: false, message: access.message };
+
+  const email = input.email.trim().toLowerCase();
+  const fullName = input.fullName.trim();
+
+  if (!fullName) return { ok: false, message: "Enter the administrator's full name." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, message: "Enter a valid email address." };
+  }
+  if (input.password.length < 8) {
+    return { ok: false, message: "The password must be at least 8 characters long." };
+  }
+  if (!isAdminRole(input.role)) return { ok: false, message: "Choose a valid admin role." };
+
+  try {
+    const pool = getPool();
+    const [existing] = await pool.execute<RowDataPacket[]>(
+      "SELECT id FROM users WHERE email = ? LIMIT 1",
+      [email],
+    );
+    if (existing.length > 0) {
+      return { ok: false, message: "An account with that email address already exists." };
+    }
+
+    const passwordHash = await hashPassword(input.password);
+    const [result] = await pool.execute<ResultSetHeader>(
+      `INSERT INTO users (email, password_hash, role, admin_role, full_name, is_active)
+       VALUES (?, ?, 'admin', ?, ?, 1)`,
+      [email, passwordHash, input.role, fullName],
+    );
+
+    await logAdminActivity(
+      access.admin,
+      `Created ${adminRoleLabel(input.role)} account — ${fullName}`,
+      result.insertId,
+    );
+
+    return {
+      ok: true,
+      message: `${fullName} was added as ${adminRoleLabel(input.role)}.`,
+    };
+  } catch (error) {
+    console.error("[admin] Create admin account failed:", error);
+    return { ok: false, message: "We could not create that admin account right now." };
+  }
+}
+
+export async function updateAdminAccount(input: AdminAccountUpdate): Promise<AdminActionResult> {
+  const access = await requireAdmin("head");
+  if (!access.ok) return { ok: false, message: access.message };
+
+  if (!Number.isInteger(input.id) || input.id <= 0) {
+    return { ok: false, message: "Invalid admin account." };
+  }
+
+  const email = input.email.trim().toLowerCase();
+  const fullName = input.fullName.trim();
+  if (!fullName) return { ok: false, message: "Enter the administrator's full name." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, message: "Enter a valid email address." };
+  }
+  if (!isAdminRole(input.role)) return { ok: false, message: "Choose a valid admin role." };
+  if (input.password !== undefined && input.password !== "" && input.password.length < 8) {
+    return { ok: false, message: "The new password must be at least 8 characters long." };
+  }
+
+  try {
+    const pool = getPool();
+    const [rows] = await pool.execute<AdminAccountRow[]>(
+      `SELECT id, email, full_name, admin_role, is_active, created_at, last_login_at
+         FROM users
+        WHERE id = ? AND role = 'admin'
+        LIMIT 1`,
+      [input.id],
+    );
+    const target = rows[0];
+    if (!target) return { ok: false, message: "That admin account no longer exists." };
+
+    const currentRole = target.admin_role ?? "standard";
+
+    if (target.id === access.admin.id && !input.active) {
+      return { ok: false, message: "You cannot deactivate your own admin account." };
+    }
+
+    const losesHead = currentRole === "head" && (input.role !== "head" || input.active === false);
+    if (losesHead) {
+      const otherHeads = await countActiveHeads(target.id);
+      if (otherHeads === 0) {
+        return { ok: false, message: "At least one active Head Admin must remain." };
+      }
+    }
+
+    const [duplicate] = await pool.execute<RowDataPacket[]>(
+      "SELECT id FROM users WHERE email = ? AND id <> ? LIMIT 1",
+      [email, target.id],
+    );
+    if (duplicate.length > 0) {
+      return { ok: false, message: "Another account already uses that email address." };
+    }
+
+    if (input.password) {
+      const passwordHash = await hashPassword(input.password);
+      await pool.execute(
+        `UPDATE users
+            SET email = ?, full_name = ?, admin_role = ?, is_active = ?, password_hash = ?
+          WHERE id = ? AND role = 'admin'`,
+        [email, fullName, input.role, input.active ? 1 : 0, passwordHash, target.id],
+      );
+    } else {
+      await pool.execute(
+        `UPDATE users
+            SET email = ?, full_name = ?, admin_role = ?, is_active = ?
+          WHERE id = ? AND role = 'admin'`,
+        [email, fullName, input.role, input.active ? 1 : 0, target.id],
+      );
+    }
+
+    await logAdminActivity(
+      access.admin,
+      `Updated ${adminRoleLabel(input.role)} account — ${fullName}`,
+      target.id,
+    );
+
+    return { ok: true, message: `${fullName}'s admin account was updated.` };
+  } catch (error) {
+    console.error("[admin] Update admin account failed:", error);
+    return { ok: false, message: "We could not update that admin account right now." };
+  }
+}
+
+export async function deleteAdminAccount(id: number): Promise<AdminActionResult> {
+  const access = await requireAdmin("head");
+  if (!access.ok) return { ok: false, message: access.message };
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return { ok: false, message: "Invalid admin account." };
+  }
+  if (id === access.admin.id) {
+    return { ok: false, message: "You cannot delete your own admin account." };
+  }
+
+  try {
+    const pool = getPool();
+    const [rows] = await pool.execute<AdminAccountRow[]>(
+      `SELECT id, email, full_name, admin_role, is_active, created_at, last_login_at
+         FROM users
+        WHERE id = ? AND role = 'admin'
+        LIMIT 1`,
+      [id],
+    );
+    const target = rows[0];
+    if (!target) return { ok: false, message: "That admin account no longer exists." };
+
+    const currentRole = target.admin_role ?? "standard";
+    if (currentRole === "head" && target.is_active === 1) {
+      const otherHeads = await countActiveHeads(target.id);
+      if (otherHeads === 0) {
+        return { ok: false, message: "At least one active Head Admin must remain." };
+      }
+    }
+
+    await pool.execute("DELETE FROM users WHERE id = ? AND role = 'admin'", [id]);
+    await logAdminActivity(
+      access.admin,
+      `Deleted admin account — ${target.full_name ?? target.email}`,
+      null,
+    );
+
+    return { ok: true, message: "The admin account was deleted." };
+  } catch (error) {
+    console.error("[admin] Delete admin account failed:", error);
+    return { ok: false, message: "We could not delete that admin account right now." };
   }
 }

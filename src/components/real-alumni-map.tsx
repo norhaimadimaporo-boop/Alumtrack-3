@@ -1,4 +1,5 @@
-import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+import type { Map as LeafletMap } from "leaflet";
 import { Loader2 } from "lucide-react";
 import { MAP_LEGEND, MAP_VIEWS, type AlumniMapPin, type MapViewKey } from "@/data/gis";
 
@@ -54,8 +55,17 @@ export function RealAlumniMap({
 }: RealAlumniMapProps) {
   const [mounted, setMounted] = useState(false);
   const [viewKey, setViewKey] = useState<MapViewKey>(initialView);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => setMounted(true), []);
+
+  // The zoom buttons live outside the map canvas, so they need the live map
+  // instance handed over by the Leaflet child component.
+  const handleMapReady = useCallback((map: LeafletMap | null) => {
+    mapRef.current = map;
+    setMapReady(Boolean(map));
+  }, []);
 
   // The country filter picks the preset that frames it; ignore the first run so
   // the map keeps whatever view the visitor already selected.
@@ -85,17 +95,19 @@ export function RealAlumniMap({
               viewKey={viewKey}
               initialView={initialView}
               heightClassName={heightClassName}
+              onMapReady={handleMapReady}
             />
           </Suspense>
         ) : (
           <MapSkeleton heightClassName={heightClassName} />
         )}
 
-        {/* Floating view presets — top-left */}
+        {/* Floating view presets — top-left of the map canvas */}
         <div
           role="group"
           aria-label="Map view"
-          className="absolute left-3 top-3 z-[900] flex flex-wrap items-center gap-1 rounded-lg border border-border bg-card/95 p-1 shadow-md backdrop-blur"
+          style={{ position: "absolute", top: 12, left: 12, zIndex: 20 }}
+          className="map-view-controls flex flex-wrap items-center gap-1 rounded-lg border border-border bg-card/95 p-1 shadow-md backdrop-blur"
         >
           {MAP_VIEWS.map((option) => (
             <button
@@ -116,9 +128,12 @@ export function RealAlumniMap({
           ))}
         </div>
 
-        {/* Floating map legend — upper-right */}
+        {/* Floating map legend — fixed upper-right, clear of the bottom-left zoom */}
         {showLegend && (
-          <div className="pointer-events-none absolute right-3 top-3 z-[900] max-w-[148px] rounded-lg border border-border bg-card/95 px-2.5 py-2 shadow-md backdrop-blur sm:max-w-none sm:px-3">
+          <div
+            style={{ position: "absolute", top: 12, right: 12, zIndex: 20 }}
+            className="map-legend pointer-events-none max-w-[148px] rounded-lg border border-border bg-card/95 px-2.5 py-2 shadow-md backdrop-blur sm:max-w-none sm:px-3"
+          >
             <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
               Map legend
             </p>
@@ -142,7 +157,7 @@ export function RealAlumniMap({
         )}
 
         {pins.length === 0 && (
-          <div className="pointer-events-none absolute inset-0 z-[850] flex items-center justify-center bg-card/60 p-6">
+          <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center bg-card/60 p-6">
             <p className="rounded-lg border border-border bg-card px-3 py-2 text-center text-xs text-muted-foreground shadow-sm">
               No alumni pins match these filters.
             </p>
@@ -150,12 +165,38 @@ export function RealAlumniMap({
         )}
       </div>
 
-      <p className="mt-2 text-[11px] text-muted-foreground">
-        {pins.length} {pins.length === 1 ? "alumnus" : "alumni"} plotted · tap a pin for details
-        {compact
-          ? "."
-          : " · Philippines at city / municipality level, overseas at state / province level."}
-      </p>
+      <div className="mt-2 flex items-center justify-between gap-3">
+        <p className="min-w-0 text-[11px] text-muted-foreground">
+          {pins.length} {pins.length === 1 ? "alumnus" : "alumni"} plotted · tap a pin for details
+          {compact
+            ? "."
+            : " · Philippines at city / municipality level, overseas at state / province level."}
+        </p>
+
+        {/* Zoom buttons live below the canvas so popups/layers can never cover them. */}
+        <div role="group" aria-label="Map zoom" className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={() => mapRef.current?.zoomIn()}
+            disabled={!mapReady}
+            aria-label="Zoom in"
+            title="Zoom in"
+            className="inline-flex size-7 items-center justify-center rounded-md border border-border bg-background text-sm font-bold leading-none text-foreground shadow-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            onClick={() => mapRef.current?.zoomOut()}
+            disabled={!mapReady}
+            aria-label="Zoom out"
+            title="Zoom out"
+            className="inline-flex size-7 items-center justify-center rounded-md border border-border bg-background text-sm font-bold leading-none text-foreground shadow-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            −
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

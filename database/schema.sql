@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(255) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   role ENUM('alumni', 'admin') NOT NULL DEFAULT 'alumni',
+  -- Admin tier for accounts with role = 'admin'. NULL for alumni accounts.
+  admin_role ENUM('head', 'standard', 'viewer') NULL,
   full_name VARCHAR(150) NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   last_login_at DATETIME NULL,
@@ -16,7 +18,8 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_users_email (email),
-  KEY idx_users_role (role)
+  KEY idx_users_role (role),
+  KEY idx_users_admin_role (admin_role)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -163,13 +166,25 @@ CREATE TABLE IF NOT EXISTS posts (
   type ENUM('Announcement', 'News / Event', 'Job Offering') NOT NULL,
   title VARCHAR(255) NOT NULL,
   content TEXT NULL,
+  excerpt VARCHAR(500) NULL,
   status ENUM('Published', 'Draft') NOT NULL DEFAULT 'Published',
   posted_at DATE NULL,
+  company VARCHAR(255) NULL,
+  location VARCHAR(255) NULL,
+  job_type VARCHAR(100) NULL,
+  salary VARCHAR(160) NULL,
+  deadline DATE NULL,
+  qualifications TEXT NULL,
+  apply_link VARCHAR(500) NULL,
+  images JSON NULL,
+  featured TINYINT(1) NOT NULL DEFAULT 0,
   created_by BIGINT UNSIGNED NULL,
+  updated_by BIGINT UNSIGNED NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_posts_title (title),
   KEY idx_posts_status (status),
+  KEY idx_posts_type (type),
   CONSTRAINT fk_posts_author FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;

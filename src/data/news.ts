@@ -5,6 +5,7 @@ import photoGovJob from "@/assets/posts/job-developer.jpg";
 import photoTracer from "@/assets/posts/tracer-survey.jpg";
 import photoScholarship from "@/assets/posts/scholarship-fund.jpg";
 import photoTechHiring from "@/assets/posts/tech-hiring.jpg";
+import photoOfficeHours from "@/assets/posts/office-hours.jpg";
 
 export type Post = {
   id: number;
@@ -90,3 +91,42 @@ export const POSTS: Post[] = [
     photo: photoTechHiring,
   },
 ];
+
+/**
+ * The rows seeded into MySQL use shorter titles than the static examples
+ * above, so map them explicitly and fall back to a loose normalized match.
+ */
+const PHOTO_ALIASES: Record<string, string> = {
+  "MSU Grand Alumni Homecoming 2026": photoHomecoming,
+  "Alumni data validation drive extended until September": photoLaunch,
+  "Junior Software Developer — Accenture Philippines": photoGovJob,
+  "OARCC office hours during the semestral break": photoOfficeHours,
+};
+
+function normalizeTitle(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/** Best-effort photo for a DB post title, so seeded rows are not left blank. */
+export function findPostPhoto(title: string): string | undefined {
+  const trimmed = title.trim();
+  if (!trimmed) return undefined;
+
+  const alias = PHOTO_ALIASES[trimmed];
+  if (alias) return alias;
+
+  const target = normalizeTitle(trimmed);
+  if (!target) return undefined;
+
+  const exact = POSTS.find((post) => normalizeTitle(post.title) === target);
+  if (exact?.photo) return exact.photo;
+
+  const prefix = POSTS.find((post) => {
+    const candidate = normalizeTitle(post.title);
+    return candidate.startsWith(target) || target.startsWith(candidate);
+  });
+  return prefix?.photo;
+}

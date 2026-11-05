@@ -12,7 +12,12 @@
     "format": "prettier --write .",
     "db:setup": "node scripts/setup-database.mjs",
     "db:migrate": "node scripts/migrate-profile-location.mjs",
-    "db:backfill": "node scripts/backfill-profiles.mjs"
+    "db:admin-rbac": "node scripts/migrate-admin-rbac.mjs",
+    "db:posts": "node scripts/migrate-posts.mjs",
+    "db:backfill": "node scripts/backfill-profiles.mjs",
+    "db:regeocode": "node scripts/regeocode-profiles.mjs",
+    "db:sync": "node scripts/sync-databases.mjs",
+    "deploy:env": "node scripts/configure-vercel-env.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -47,6 +52,7 @@
     "@tanstack/react-router": "^1.170.18",
     "@tanstack/react-start": "^1.168.60",
     "@tanstack/router-plugin": "^1.168.23",
+    "@vercel/blob": "^2.8.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

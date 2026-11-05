@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
+import "leaflet/dist/leaflet.css";
 import appCss from "../styles.css?url";
 import { reportClientError } from "../lib/client-error-reporting";
 import { SiteHeader } from "../components/site-header";

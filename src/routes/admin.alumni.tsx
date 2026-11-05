@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
 import { Modal, LabeledInput, PrimaryButton } from "@/components/modal";
+import { useAdminRole } from "@/hooks/use-session";
 import { COURSES, COLLEGES, REGIONS, BATCHES, initials } from "@/data/alumni";
 import { deleteAlumni, getAdminAlumni, importAlumni, verifyAlumni } from "@/lib/admin.functions";
 import type { AdminAlumnus as Alumnus, AdminImportResult } from "@/lib/admin.types";
@@ -125,6 +126,9 @@ const DEGREE_TYPES = ["Post Graduate Degree", "Graduate Degree", "Baccalaureate 
 function AdminAlumni() {
   const data = Route.useLoaderData();
   const router = useRouter();
+  const adminRole = useAdminRole();
+  // Viewers get the read-only directory; null is the pre-hydration state.
+  const canManage = adminRole === "head" || adminRole === "standard";
   const [query, setQuery] = useState("");
   const [course, setCourse] = useState("");
   const [batch, setBatch] = useState("");
@@ -325,10 +329,7 @@ function AdminAlumni() {
 
   const open = adding || editing !== null;
   const importRowCount = importFile
-    ? Math.max(
-        0,
-        importFile.text.split(/\r?\n/).filter((line) => line.trim() !== "").length - 1,
-      )
+    ? Math.max(0, importFile.text.split(/\r?\n/).filter((line) => line.trim() !== "").length - 1)
     : 0;
 
   return (
@@ -343,21 +344,25 @@ function AdminAlumni() {
           >
             <Download className="size-3.5" /> Export
           </button>
-          <button
-            onClick={openImport}
-            className="inline-flex items-center gap-1.5 rounded-md border border-brand px-3 py-2 text-xs font-semibold text-brand hover:bg-brand hover:text-brand-foreground"
-          >
-            <Upload className="size-3.5" /> Import
-          </button>
-          <button
-            onClick={() => {
-              resetWizard();
-              setAdding(true);
-            }}
-            className="inline-flex items-center gap-1.5 rounded-md bg-brand px-3 py-2 text-xs font-semibold text-brand-foreground hover:bg-brand-dark"
-          >
-            <Plus className="size-3.5" /> Add alumni
-          </button>
+          {canManage && (
+            <>
+              <button
+                onClick={openImport}
+                className="inline-flex items-center gap-1.5 rounded-md border border-brand px-3 py-2 text-xs font-semibold text-brand hover:bg-brand hover:text-brand-foreground"
+              >
+                <Upload className="size-3.5" /> Import
+              </button>
+              <button
+                onClick={() => {
+                  resetWizard();
+                  setAdding(true);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-md bg-brand px-3 py-2 text-xs font-semibold text-brand-foreground hover:bg-brand-dark"
+              >
+                <Plus className="size-3.5" /> Add alumni
+              </button>
+            </>
+          )}
         </div>
       }
     >
@@ -478,7 +483,7 @@ function AdminAlumni() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-3">
-                      {!verified && (
+                      {canManage && !verified && (
                         <button
                           onClick={() => void handleVerify(a)}
                           disabled={busyId === a.id}
@@ -493,12 +498,14 @@ function AdminAlumni() {
                       >
                         <Eye className="size-3" /> View
                       </button>
-                      <button
-                        onClick={() => setDeleting(a)}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-brand hover:underline"
-                      >
-                        <Trash2 className="size-3" /> Delete
-                      </button>
+                      {canManage && (
+                        <button
+                          onClick={() => setDeleting(a)}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-brand hover:underline"
+                        >
+                          <Trash2 className="size-3" /> Delete
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -571,7 +578,7 @@ function AdminAlumni() {
         </Modal>
       )}
 
-      {importing && (
+      {canManage && importing && (
         <Modal title="Import alumni records" onClose={closeImport}>
           <div className="space-y-4">
             <p className="rounded-md border-l-4 border-highlight bg-muted/50 px-3 py-2 text-[11px] text-muted-foreground">
@@ -597,10 +604,9 @@ function AdminAlumni() {
               </ul>
               <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
                 <li>
-                  • Imported rows are marked <span className="font-semibold text-foreground">
-                    verified
-                  </span>{" "}
-                  and can sign in with the default password{" "}
+                  • Imported rows are marked{" "}
+                  <span className="font-semibold text-foreground">verified</span> and can sign in
+                  with the default password{" "}
                   <span className="font-semibold text-foreground">Alumtrack2026!</span>.
                 </li>
                 <li>
@@ -714,7 +720,7 @@ function AdminAlumni() {
         </Modal>
       )}
 
-      {open && (
+      {canManage && open && (
         <Modal
           wide
           title={editing ? "Edit alumni record" : "Add alumni record"}
@@ -1217,7 +1223,7 @@ function AdminAlumni() {
               )}
             </MiniCard>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className={canManage ? "grid grid-cols-2 gap-3" : "grid gap-3"}>
               <button
                 type="button"
                 onClick={() => setViewing(null)}
@@ -1225,22 +1231,24 @@ function AdminAlumni() {
               >
                 Close
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  resetWizard();
-                  setEditing(viewing);
-                  setViewing(null);
-                }}
-                className="inline-flex items-center justify-center gap-1.5 rounded-md bg-brand py-2.5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
-              >
-                <Pencil className="size-3.5" /> Edit record
-              </button>
+              {canManage && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetWizard();
+                    setEditing(viewing);
+                    setViewing(null);
+                  }}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-md bg-brand py-2.5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+                >
+                  <Pencil className="size-3.5" /> Edit record
+                </button>
+              )}
             </div>
           </div>
         </Modal>
       )}
-      {deleting && (
+      {canManage && deleting && (
         <Modal title="Delete alumni record" onClose={() => setDeleting(null)}>
           <p className="text-sm text-muted-foreground">
             Are you sure you want to delete the record of{" "}

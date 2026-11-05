@@ -1,6 +1,40 @@
 export type VerificationStatus = "pending" | "verified" | "rejected";
 export type ProfileEmploymentStatus = "employed" | "unemployed" | "unknown";
 
+/** Three-tier administrator hierarchy: head > standard > viewer. */
+export type AdminAccountRole = "head" | "standard" | "viewer";
+
+export type AdminAccount = {
+  id: number;
+  email: string;
+  fullName: string;
+  role: AdminAccountRole;
+  active: boolean;
+  createdAt: string;
+  lastLogin: string;
+  /** True for the signed-in administrator; blocks self-demotion controls in the UI. */
+  isSelf: boolean;
+};
+
+export type AdminAccountList =
+  { ok: true; accounts: AdminAccount[]; currentUserId: number } | { ok: false; message: string };
+
+export type AdminAccountInput = {
+  fullName: string;
+  email: string;
+  password: string;
+  role: AdminAccountRole;
+};
+
+export type AdminAccountUpdate = {
+  id: number;
+  fullName: string;
+  email: string;
+  role: AdminAccountRole;
+  active: boolean;
+  password?: string | undefined;
+};
+
 export type AdminDashboardStats = {
   registeredAlumni: number;
   pendingVerification: number;

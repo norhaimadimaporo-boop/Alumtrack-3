@@ -7,19 +7,34 @@
  *   2. npm run db:setup
  */
 import { randomBytes, scrypt as scryptCallback } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import mysql from "mysql2/promise";
 
+import { loadEnvFile } from "./load-env.mjs";
+
 const scrypt = promisify(scryptCallback);
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-try {
-  process.loadEnvFile(resolve(root, ".env"));
-} catch {
-  console.warn("No .env file found. Falling back to DB_* environment variables.");
+function sslConfig() {
+  const raw = (process.env.DB_SSL ?? "").trim().toLowerCase();
+  if (!["1", "true", "yes", "required"].includes(raw)) return {};
+  const caBase64 = (process.env.DB_SSL_CA_BASE64 ?? "").trim();
+  const caPath = (process.env.DB_SSL_CA_PATH ?? "").trim();
+  const ca = caBase64
+    ? Buffer.from(caBase64, "base64").toString("utf8")
+    : caPath
+      ? readFileSync(resolve(root, caPath), "utf8")
+      : undefined;
+  return { ssl: ca ? { ca, rejectUnauthorized: true } : { rejectUnauthorized: true } };
+}
+
+const envFileName = process.env.ENV_FILE ?? ".env";
+if (!loadEnvFile(resolve(root, envFileName))) {
+  console.warn(`No ${envFileName} file found. Falling back to DB_* environment variables.`);
 }
 
 const dbName = process.env.DB_NAME ?? "alumtrack";
@@ -33,6 +48,7 @@ const connection = await mysql.createConnection({
   user: process.env.DB_USER ?? "root",
   password: process.env.DB_PASSWORD ?? "",
   multipleStatements: true,
+  ...sslConfig(),
 });
 
 try {
@@ -51,12 +67,14 @@ try {
       email: process.env.SEED_ALUMNI_EMAIL ?? "alumni@alumtrack.test",
       password: process.env.SEED_ALUMNI_PASSWORD ?? "Alumni2026!",
       role: "alumni",
+      adminRole: null,
       fullName: "Demo Alumni",
     },
     {
       email: process.env.SEED_ADMIN_EMAIL ?? "admin@alumtrack.test",
-      password: process.env.SEED_ADMIN_PASSWORD ?? "Admin2026!",
+      password: process.env.SEED_ADMIN_PASSWORD ?? "AlumTrack2026!",
       role: "admin",
+      adminRole: "head",
       fullName: "Demo OARCC Admin",
     },
   ];
@@ -66,10 +84,16 @@ try {
   for (const account of accounts) {
     const passwordHash = await hashPassword(account.password);
     const [result] = await connection.execute(
-      `INSERT INTO users (email, password_hash, role, full_name)
-       VALUES (?, ?, ?, ?)
+      `INSERT INTO users (email, password_hash, role, admin_role, full_name)
+       VALUES (?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE email = VALUES(email)`,
-      [account.email.toLowerCase(), passwordHash, account.role, account.fullName],
+      [
+        account.email.toLowerCase(),
+        passwordHash,
+        account.role,
+        account.adminRole,
+        account.fullName,
+      ],
     );
 
     if (result.affectedRows === 1) {

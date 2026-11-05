@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
 import { BarChart3, MapPinned } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
 import { BarList, DonutChart, ColumnChart } from "@/components/cluster-map";
@@ -96,11 +95,12 @@ const COUNTRIES = ["Philippines", "Saudi Arabia", "UAE", "Qatar", "Singapore", "
 const EMPLOYMENT_STATUS = ["Employed", "Unemployed", "Self-employed", "Further studies"];
 
 function AdminReports() {
-  const [scope, setScope] = useState<"domestic" | "overseas">("domestic");
   const mapData = Route.useLoaderData();
+  // Plot every verified alumnus — domestic and overseas — exactly like the
+  // Home and Alumni Map views. No scope/status filter narrows the map here.
   const pins = mapData.ok ? mapData.pins : [];
-  const domesticPins = pins.filter((pin) => pin.country === "Philippines");
-  const overseasPins = pins.filter((pin) => pin.country !== "Philippines");
+  const domesticCount = pins.filter((pin) => pin.country === "Philippines").length;
+  const overseasCount = pins.length - domesticCount;
 
   return (
     <AdminShell
@@ -148,33 +148,17 @@ function AdminReports() {
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <MapPinned className="size-4 text-brand" /> AlumTrack Map
           </h2>
-          <div className="flex gap-1 rounded-md border border-border p-1">
-            {(
-              [
-                ["domestic", "Philippines"],
-                ["overseas", "Overseas"],
-              ] as const
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setScope(key)}
-                className={`rounded px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  scope === key
-                    ? "bg-brand text-brand-foreground"
-                    : "text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-muted-foreground">
+            <span className="rounded-full border border-border px-2.5 py-1">
+              {domesticCount} in the Philippines
+            </span>
+            <span className="rounded-full border border-border px-2.5 py-1">
+              {overseasCount} overseas
+            </span>
           </div>
         </div>
         <div className="mt-4">
-          <RealAlumniMap
-            pins={scope === "domestic" ? domesticPins : overseasPins}
-            focusView={scope === "domestic" ? "philippines" : "middle-east"}
-            heightClassName="h-[360px] sm:h-[420px]"
-          />
+          <RealAlumniMap pins={pins} heightClassName="h-[360px] sm:h-[420px]" />
         </div>
       </div>
 

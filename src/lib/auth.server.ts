@@ -4,7 +4,7 @@ import type { RowDataPacket } from "mysql2/promise";
 import { getRequestHeader, setResponseHeader } from "@tanstack/react-start/server";
 
 import { getPool } from "./db.server";
-import type { Role } from "./session";
+import type { AdminRole, Role } from "./session";
 
 const scrypt = promisify(scryptCallback) as (
   password: string,
@@ -26,6 +26,7 @@ export type AuthUser = {
   id: number;
   email: string;
   role: Role;
+  adminRole: AdminRole | null;
   fullName: string | null;
 };
 
@@ -34,6 +35,7 @@ type UserRow = RowDataPacket & {
   email: string;
   password_hash: string;
   role: Role;
+  admin_role: AdminRole | null;
   full_name: string | null;
   is_active: number;
 };
@@ -112,11 +114,15 @@ async function createSession(userId: number): Promise<string> {
   return token;
 }
 
-function toAuthUser(row: Pick<UserRow, "id" | "email" | "role" | "full_name">): AuthUser {
+function toAuthUser(
+  row: Pick<UserRow, "id" | "email" | "role" | "admin_role" | "full_name">,
+): AuthUser {
   return {
     id: row.id,
     email: row.email,
     role: row.role,
+    // Legacy admin rows created before RBAC default to the standard tier.
+    adminRole: row.role === "admin" ? (row.admin_role ?? "standard") : null,
     fullName: row.full_name,
   };
 }
@@ -132,7 +138,7 @@ export async function loginUser(input: { email: string; password: string; role: 
     const pool = getPool();
 
     const [rows] = await pool.execute<RowDataPacket[]>(
-      "SELECT id, email, password_hash, role, full_name, is_active FROM users WHERE email = ? LIMIT 1",
+      "SELECT id, email, password_hash, role, admin_role, full_name, is_active FROM users WHERE email = ? LIMIT 1",
       [email],
     );
     const user = rows[0] as UserRow | undefined;
@@ -182,7 +188,7 @@ export async function getSessionUser(): Promise<AuthUser | null> {
 
   try {
     const [rows] = await getPool().execute<RowDataPacket[]>(
-      `SELECT u.id, u.email, u.role, u.full_name
+      `SELECT u.id, u.email, u.role, u.admin_role, u.full_name
          FROM sessions s
          JOIN users u ON u.id = s.user_id
         WHERE s.token_hash = ?

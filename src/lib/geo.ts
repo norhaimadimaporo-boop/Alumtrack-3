@@ -236,7 +236,11 @@ const FOREIGN_CITIES: Array<[string, string, string, number, number]> = [
   ["Jeddah", "Makkah Province", "Saudi Arabia", 21.4858, 39.1925],
   ["Dammam", "Eastern Province", "Saudi Arabia", 26.4207, 50.0888],
   ["Mecca", "Makkah Province", "Saudi Arabia", 21.3891, 39.8579],
+  ["Makkah", "Makkah Province", "Saudi Arabia", 21.3891, 39.8579],
   ["Medina", "Al Madinah Province", "Saudi Arabia", 24.5247, 39.5692],
+  ["Madinah", "Al Madinah Province", "Saudi Arabia", 24.5247, 39.5692],
+  ["Al Madinah", "Al Madinah Province", "Saudi Arabia", 24.5247, 39.5692],
+  ["Medinah", "Al Madinah Province", "Saudi Arabia", 24.5247, 39.5692],
   ["Doha", "Ad Dawhah", "Qatar", 25.2854, 51.531],
   ["Kuwait City", "Al Asimah", "Kuwait", 29.3759, 47.9774],
   ["Manama", "Capital Governorate", "Bahrain", 26.2285, 50.586],
@@ -272,6 +276,158 @@ const FOREIGN_CITIES: Array<[string, string, string, number, number]> = [
   ["Dublin", "Leinster", "Ireland", 53.3498, -6.2603],
   ["Auckland", "Auckland", "New Zealand", -36.8485, 174.7633],
   ["Wellington", "Wellington", "New Zealand", -41.2865, 174.7762],
+  ["Christchurch", "Canterbury", "New Zealand", -43.5321, 172.6362],
+  // China
+  ["Shanghai", "Shanghai", "China", 31.2304, 121.4737],
+  ["Beijing", "Beijing", "China", 39.9042, 116.4074],
+  ["Shenzhen", "Guangdong", "China", 22.5431, 114.0579],
+  ["Guangzhou", "Guangdong", "China", 23.1291, 113.2644],
+  ["Chengdu", "Sichuan", "China", 30.5728, 104.0668],
+  ["Wuhan", "Hubei", "China", 30.5928, 114.3055],
+  ["Xiamen", "Fujian", "China", 24.4798, 118.0894],
+  ["Hangzhou", "Zhejiang", "China", 30.2741, 120.1551],
+  ["Tianjin", "Tianjin", "China", 39.3434, 117.3616],
+  ["Xi'an", "Shaanxi", "China", 34.3416, 108.9398],
+  ["Nanjing", "Jiangsu", "China", 32.0603, 118.7969],
+  ["Qingdao", "Shandong", "China", 36.0671, 120.3826],
+  ["Chongqing", "Chongqing", "China", 29.563, 106.5516],
+  ["Macau", "Macau", "China", 22.1987, 113.5439],
+  // Russia
+  ["Moscow", "Moscow", "Russia", 55.7558, 37.6173],
+  ["Saint Petersburg", "Saint Petersburg", "Russia", 59.9311, 30.3609],
+  ["St Petersburg", "Saint Petersburg", "Russia", 59.9311, 30.3609],
+  ["Novosibirsk", "Novosibirsk Oblast", "Russia", 55.0084, 82.9357],
+  ["Yekaterinburg", "Sverdlovsk Oblast", "Russia", 56.8389, 60.6057],
+  ["Vladivostok", "Primorsky Krai", "Russia", 43.1332, 131.9113],
+  ["Kazan", "Tatarstan", "Russia", 55.7961, 49.1064],
+  // East and Southeast Asia
+  ["Kaohsiung", "Kaohsiung", "Taiwan", 22.6273, 120.3014],
+  ["Taichung", "Taichung", "Taiwan", 24.1477, 120.6736],
+  ["Nagoya", "Aichi", "Japan", 35.1815, 136.9066],
+  ["Kyoto", "Kyoto", "Japan", 35.0116, 135.7681],
+  ["Fukuoka", "Fukuoka", "Japan", 33.5902, 130.4017],
+  ["Sapporo", "Hokkaido", "Japan", 43.0618, 141.3545],
+  ["Yokohama", "Kanagawa", "Japan", 35.4437, 139.638],
+  ["Busan", "Busan", "South Korea", 35.1796, 129.0756],
+  ["Incheon", "Incheon", "South Korea", 37.4563, 126.7052],
+  ["Daegu", "Daegu", "South Korea", 35.8714, 128.6014],
+  ["Penang", "Penang", "Malaysia", 5.4141, 100.3288],
+  ["Johor Bahru", "Johor", "Malaysia", 1.4927, 103.7414],
+  ["Kota Kinabalu", "Sabah", "Malaysia", 5.9804, 116.0735],
+  ["Kuching", "Sarawak", "Malaysia", 1.5533, 110.3592],
+  ["Surabaya", "East Java", "Indonesia", -7.2575, 112.7521],
+  ["Bandung", "West Java", "Indonesia", -6.9175, 107.6191],
+  ["Denpasar", "Bali", "Indonesia", -8.6705, 115.2126],
+  ["Chiang Mai", "Chiang Mai", "Thailand", 18.7883, 98.9853],
+  ["Phuket", "Phuket", "Thailand", 7.8804, 98.3923],
+  ["Hanoi", "Hanoi", "Vietnam", 21.0278, 105.8342],
+  ["Ho Chi Minh", "Ho Chi Minh", "Vietnam", 10.8231, 106.6297],
+  ["Ho Chi Minh City", "Ho Chi Minh", "Vietnam", 10.8231, 106.6297],
+  ["Da Nang", "Da Nang", "Vietnam", 16.0544, 108.2022],
+  // South and West Asia
+  ["Mumbai", "Maharashtra", "India", 19.076, 72.8777],
+  ["New Delhi", "Delhi", "India", 28.6139, 77.209],
+  ["Delhi", "Delhi", "India", 28.6139, 77.209],
+  ["Bangalore", "Karnataka", "India", 12.9716, 77.5946],
+  ["Bengaluru", "Karnataka", "India", 12.9716, 77.5946],
+  ["Chennai", "Tamil Nadu", "India", 13.0827, 80.2707],
+  ["Hyderabad", "Telangana", "India", 17.385, 78.4867],
+  ["Kolkata", "West Bengal", "India", 22.5726, 88.3639],
+  ["Pune", "Maharashtra", "India", 18.5204, 73.8567],
+  ["Karachi", "Sindh", "Pakistan", 24.8607, 67.0011],
+  ["Lahore", "Punjab", "Pakistan", 31.5204, 74.3587],
+  ["Islamabad", "Islamabad", "Pakistan", 33.6844, 73.0479],
+  ["Dhaka", "Dhaka", "Bangladesh", 23.8103, 90.4125],
+  ["Chittagong", "Chittagong", "Bangladesh", 22.3569, 91.7832],
+  ["Colombo", "Western Province", "Sri Lanka", 6.9271, 79.8612],
+  ["Kathmandu", "Bagmati", "Nepal", 27.7172, 85.324],
+  ["Istanbul", "Istanbul", "Turkey", 41.0082, 28.9784],
+  ["Ankara", "Ankara", "Turkey", 39.9334, 32.8597],
+  ["Izmir", "Izmir", "Turkey", 38.4237, 27.1428],
+  ["Ajman", "Ajman", "United Arab Emirates", 25.4052, 55.5136],
+  ["Ras Al Khaimah", "Ras Al Khaimah", "United Arab Emirates", 25.8007, 55.9762],
+  ["Fujairah", "Fujairah", "United Arab Emirates", 25.1288, 56.3265],
+  ["Khobar", "Eastern Province", "Saudi Arabia", 26.2172, 50.1971],
+  ["Dhahran", "Eastern Province", "Saudi Arabia", 26.2361, 50.0393],
+  ["Taif", "Makkah Province", "Saudi Arabia", 21.2703, 40.4158],
+  ["Al Wakrah", "Al Wakrah", "Qatar", 25.1659, 51.5976],
+  ["Al Khor", "Al Khor", "Qatar", 25.6804, 51.4969],
+  ["Al Ahmadi", "Al Ahmadi", "Kuwait", 29.0769, 48.0838],
+  ["Hawalli", "Hawalli", "Kuwait", 29.3328, 48.0286],
+  ["Riffa", "Southern Governorate", "Bahrain", 26.13, 50.555],
+  ["Muharraq", "Muharraq", "Bahrain", 26.2572, 50.6119],
+  ["Salalah", "Dhofar", "Oman", 17.0151, 54.0924],
+  ["Sohar", "Al Batinah North", "Oman", 24.3419, 56.7094],
+  // Europe
+  ["Marseille", "Provence-Alpes-Cote d'Azur", "France", 43.2965, 5.3698],
+  ["Lyon", "Auvergne-Rhone-Alpes", "France", 45.764, 4.8357],
+  ["Nice", "Provence-Alpes-Cote d'Azur", "France", 43.7102, 7.262],
+  ["Toulouse", "Occitanie", "France", 43.6047, 1.4442],
+  ["Birmingham", "England", "United Kingdom", 52.4862, -1.8904],
+  ["Edinburgh", "Scotland", "United Kingdom", 55.9533, -3.1883],
+  ["Glasgow", "Scotland", "United Kingdom", 55.8642, -4.2518],
+  ["Munich", "Bavaria", "Germany", 48.1351, 11.582],
+  ["Frankfurt", "Hesse", "Germany", 50.1109, 8.6821],
+  ["Hamburg", "Hamburg", "Germany", 53.5511, 9.9937],
+  ["Cologne", "North Rhine-Westphalia", "Germany", 50.9375, 6.9603],
+  ["Stuttgart", "Baden-Wurttemberg", "Germany", 48.7758, 9.1829],
+  ["Naples", "Campania", "Italy", 40.8518, 14.2681],
+  ["Turin", "Piedmont", "Italy", 45.0703, 7.6869],
+  ["Florence", "Tuscany", "Italy", 43.7696, 11.2558],
+  ["Venice", "Veneto", "Italy", 45.4408, 12.3155],
+  ["Barcelona", "Catalonia", "Spain", 41.3874, 2.1686],
+  ["Valencia", "Valencia", "Spain", 39.4699, -0.3763],
+  ["Seville", "Andalusia", "Spain", 37.3891, -5.9845],
+  ["Rotterdam", "South Holland", "Netherlands", 51.9244, 4.4777],
+  ["The Hague", "South Holland", "Netherlands", 52.0705, 4.3007],
+  ["Zurich", "Zurich", "Switzerland", 47.3769, 8.5417],
+  ["Geneva", "Geneva", "Switzerland", 46.2044, 6.1432],
+  ["Brussels", "Brussels", "Belgium", 50.8503, 4.3517],
+  ["Vienna", "Vienna", "Austria", 48.2082, 16.3738],
+  ["Lisbon", "Lisbon", "Portugal", 38.7223, -9.1393],
+  ["Athens", "Attica", "Greece", 37.9838, 23.7275],
+  ["Warsaw", "Masovia", "Poland", 52.2297, 21.0122],
+  ["Prague", "Prague", "Czechia", 50.0755, 14.4378],
+  ["Budapest", "Budapest", "Hungary", 47.4979, 19.0402],
+  ["Bucharest", "Bucharest", "Romania", 44.4268, 26.1025],
+  ["Kyiv", "Kyiv", "Ukraine", 50.4501, 30.5234],
+  ["Kiev", "Kyiv", "Ukraine", 50.4501, 30.5234],
+  ["Helsinki", "Uusimaa", "Finland", 60.1699, 24.9384],
+  // Africa, Americas, Oceania
+  ["Cairo", "Cairo", "Egypt", 30.0444, 31.2357],
+  ["Alexandria", "Alexandria", "Egypt", 31.2001, 29.9187],
+  ["Johannesburg", "Gauteng", "South Africa", -26.2041, 28.0473],
+  ["Cape Town", "Western Cape", "South Africa", -33.9249, 18.4241],
+  ["Durban", "KwaZulu-Natal", "South Africa", -29.8587, 31.0218],
+  ["Lagos", "Lagos", "Nigeria", 6.5244, 3.3792],
+  ["Abuja", "Federal Capital Territory", "Nigeria", 9.0765, 7.3986],
+  ["Nairobi", "Nairobi", "Kenya", -1.2921, 36.8219],
+  ["Sao Paulo", "Sao Paulo", "Brazil", -23.5505, -46.6333],
+  ["Rio de Janeiro", "Rio de Janeiro", "Brazil", -22.9068, -43.1729],
+  ["Brasilia", "Federal District", "Brazil", -15.7939, -47.8828],
+  ["Mexico City", "Mexico City", "Mexico", 19.4326, -99.1332],
+  ["Guadalajara", "Jalisco", "Mexico", 20.6597, -103.3496],
+  ["Monterrey", "Nuevo Leon", "Mexico", 25.6866, -100.3161],
+  ["Buenos Aires", "Buenos Aires", "Argentina", -34.6037, -58.3816],
+  ["Santiago", "Santiago Metropolitan", "Chile", -33.4489, -70.6693],
+  ["Montreal", "Quebec", "Canada", 45.5017, -73.5673],
+  ["Calgary", "Alberta", "Canada", 51.0447, -114.0719],
+  ["Ottawa", "Ontario", "Canada", 45.4215, -75.6972],
+  ["Houston", "Texas", "United States", 29.7604, -95.3698],
+  ["Dallas", "Texas", "United States", 32.7767, -96.797],
+  ["Miami", "Florida", "United States", 25.7617, -80.1918],
+  ["Seattle", "Washington", "United States", 47.6062, -122.3321],
+  ["Boston", "Massachusetts", "United States", 42.3601, -71.0589],
+  ["Washington", "District of Columbia", "United States", 38.9072, -77.0369],
+  ["Atlanta", "Georgia", "United States", 33.749, -84.388],
+  ["Las Vegas", "Nevada", "United States", 36.1699, -115.1398],
+  ["San Diego", "California", "United States", 32.7157, -117.1611],
+  ["Phoenix", "Arizona", "United States", 33.4484, -112.074],
+  ["Philadelphia", "Pennsylvania", "United States", 39.9526, -75.1652],
+  ["Brisbane", "Queensland", "Australia", -27.4698, 153.0251],
+  ["Perth", "Western Australia", "Australia", -31.9505, 115.8605],
+  ["Adelaide", "South Australia", "Australia", -34.9285, 138.6007],
+  ["Canberra", "Australian Capital Territory", "Australia", -35.2809, 149.13],
 ];
 
 /** Country centroids, used when only a country name is provided. */
@@ -304,6 +460,35 @@ const FOREIGN_COUNTRIES: Array<[string, string, number, number]> = [
   ["Denmark", "Denmark", 56.2639, 9.5018],
   ["Ireland", "Ireland", 53.1424, -7.6921],
   ["New Zealand", "New Zealand", -40.9006, 174.886],
+  ["China", "China", 35.8617, 104.1954],
+  ["Russia", "Russia", 61.524, 105.3188],
+  ["India", "India", 20.5937, 78.9629],
+  ["Pakistan", "Pakistan", 30.3753, 69.3451],
+  ["Bangladesh", "Bangladesh", 23.685, 90.3563],
+  ["Sri Lanka", "Sri Lanka", 7.8731, 80.7718],
+  ["Nepal", "Nepal", 28.3949, 84.124],
+  ["Turkey", "Turkey", 38.9637, 35.2433],
+  ["Egypt", "Egypt", 26.8206, 30.8025],
+  ["South Africa", "South Africa", -30.5595, 22.9375],
+  ["Nigeria", "Nigeria", 9.082, 8.6753],
+  ["Kenya", "Kenya", -0.0236, 37.9062],
+  ["Brazil", "Brazil", -14.235, -51.9253],
+  ["Mexico", "Mexico", 23.6345, -102.5528],
+  ["Argentina", "Argentina", -38.4161, -63.6167],
+  ["Chile", "Chile", -35.6751, -71.543],
+  ["Vietnam", "Vietnam", 14.0583, 108.2772],
+  ["Switzerland", "Switzerland", 46.8182, 8.2275],
+  ["Belgium", "Belgium", 50.5039, 4.4699],
+  ["Austria", "Austria", 47.5162, 14.5501],
+  ["Portugal", "Portugal", 39.3999, -8.2245],
+  ["Greece", "Greece", 39.0742, 21.8243],
+  ["Poland", "Poland", 51.9194, 19.1451],
+  ["Czechia", "Czechia", 49.8175, 15.473],
+  ["Czech Republic", "Czechia", 49.8175, 15.473],
+  ["Hungary", "Hungary", 47.1625, 19.5033],
+  ["Romania", "Romania", 45.9432, 24.9668],
+  ["Ukraine", "Ukraine", 48.3794, 31.1656],
+  ["Finland", "Finland", 61.9241, 25.7482],
 ];
 
 const PH_REGION_CENTERS: Array<[string, number, number]> = [
@@ -454,53 +639,145 @@ function withLabels(
 }
 
 /**
+ * Gazetteer indexes in lookup order. Overseas entries come first so a city such
+ * as "Shanghai" resolves to China even when the country name is missing.
+ */
+const EXACT_INDEXES: Array<{ rank: number; index: Map<string, Place> }> = [
+  { rank: 0, index: FOREIGN_CITY_INDEX },
+  { rank: 1, index: FOREIGN_COUNTRY_INDEX },
+  { rank: 2, index: PH_CITY_INDEX },
+  { rank: 3, index: PH_PROVINCE_INDEX },
+  { rank: 4, index: PH_REGION_INDEX },
+];
+
+/**
+ * Flattened gazetteer used to spot a known place inside a longer address
+ * segment ("Pudong New Area Shanghai 200000"). Longest names are tried first.
+ */
+const PLACE_SEARCH: Array<{ key: string; place: Place; rank: number }> = (() => {
+  const seen = new Set<string>();
+  const entries: Array<{ key: string; place: Place; rank: number }> = [];
+
+  for (const { rank, index } of EXACT_INDEXES) {
+    for (const [key, place] of index) {
+      if (seen.has(key)) continue;
+      seen.add(key);
+      entries.push({ key, place, rank });
+    }
+  }
+
+  return entries.sort((a, b) => b.key.length - a.key.length || a.rank - b.rank);
+})();
+
+/**
+ * Overseas postal codes. Philippine ZIP codes are four digits, so anything
+ * longer (or in a foreign format) means the address is not local.
+ */
+const INTERNATIONAL_POSTAL_PATTERNS: RegExp[] = [
+  /\b\d{5,6}\b/, // China, USA, Germany, France, Russia, India, ...
+  /\b\d{3}-\d{4}\b/, // Japan
+  /\b\d{4}\s?[A-Z]{2}\b/, // Netherlands
+  /\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b/i, // Canada
+  /\b[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}\b/i, // United Kingdom
+];
+
+function splitAddress(value: string | null | undefined): string[] {
+  return (value ?? "")
+    .split(/[,;|/\r\n]+/)
+    .map((part) => part.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
+
+function phraseIncludes(haystack: string, needle: string): boolean {
+  if (!haystack || !needle) return false;
+  return ` ${haystack} `.includes(` ${needle} `);
+}
+
+function hasInternationalPostalCode(text: string): boolean {
+  return INTERNATIONAL_POSTAL_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+/**
+ * Find the most specific gazetteer entry mentioned inside any of the address
+ * segments. Longer names win so "San Fernando" beats a chance "Fernando" word.
+ */
+function findPlaceInSegments(
+  segments: string[],
+  accept: (rank: number) => boolean,
+): { place: Place; segment: string } | null {
+  let best: { place: Place; segment: string; length: number; rank: number } | null = null;
+
+  for (const segment of segments) {
+    const haystack = normalize(segment);
+    if (!haystack) continue;
+
+    for (const entry of PLACE_SEARCH) {
+      if (!accept(entry.rank) || !phraseIncludes(haystack, entry.key)) continue;
+
+      const better =
+        !best ||
+        entry.key.length > best.length ||
+        (entry.key.length === best.length && entry.rank < best.rank);
+
+      if (better) {
+        best = { place: entry.place, segment, length: entry.key.length, rank: entry.rank };
+      }
+    }
+  }
+
+  return best ? { place: best.place, segment: best.segment } : null;
+}
+
+/**
  * Resolve a free-text city/province pair into map coordinates.
- * Returns `null` only when there is no location text at all.
+ *
+ * Splits the inputs on commas so full addresses ("123 Huaihai Rd, Shanghai
+ * 200000, China") resolve even without an explicit country name. Returns
+ * `null` when there is no location text at all, or when the text looks like an
+ * unrecognized overseas address — plotting those on the Philippines would be
+ * worse than leaving the profile off the map.
  */
 export function resolveLocation(
   cityInput: string | null | undefined,
   provinceInput: string | null | undefined,
 ): ResolvedLocation | null {
-  const city = normalize(cityInput);
-  const province = normalize(provinceInput);
-  if (!city && !province) return null;
+  const cityParts = splitAddress(cityInput);
+  const provinceParts = splitAddress(provinceInput);
+  const segments = [...cityParts, ...provinceParts];
+  const rawText = [cityInput, provinceInput]
+    .map((value) => (value ?? "").trim())
+    .filter(Boolean)
+    .join(", ");
 
-  // 1. Overseas city typed into either field.
-  for (const key of [city, province]) {
-    if (!key) continue;
-    const place = FOREIGN_CITY_INDEX.get(key);
-    if (place) return withLabels(place, cityInput ?? "", provinceInput ?? "");
+  if (segments.length === 0) {
+    if (!rawText) return null;
+    segments.push(rawText);
   }
 
-  // 2. Overseas country typed into either field.
-  for (const key of [city, province]) {
+  // 1. Exact gazetteer lookups. Overseas names are checked before Philippine
+  //    ones, so "Shanghai" wins without needing "China" in the address.
+  for (const segment of segments) {
+    const key = normalize(segment);
     if (!key) continue;
-    const place = FOREIGN_COUNTRY_INDEX.get(key);
-    if (place) return withLabels(place, cityInput ?? "", provinceInput ?? "");
+
+    for (const { index } of EXACT_INDEXES) {
+      const place = index.get(key);
+      if (place) return withLabels(place, segment, "");
+    }
   }
 
-  // 3. Philippine city or municipality.
-  for (const key of [city, province]) {
-    if (!key) continue;
-    const place = PH_CITY_INDEX.get(key);
-    if (place) return withLabels(place, cityInput ?? "", provinceInput ?? "");
-  }
+  // 2. Overseas city/country mentioned inside a longer segment.
+  const overseas = findPlaceInSegments(segments, (rank) => rank <= 1);
+  if (overseas) return withLabels(overseas.place, "", "");
 
-  // 4. Philippine province.
-  for (const key of [city, province]) {
-    if (!key) continue;
-    const place = PH_PROVINCE_INDEX.get(key);
-    if (place) return withLabels(place, cityInput ?? "", provinceInput ?? "");
-  }
+  // 3. Unknown overseas address — do not fall back to Philippine coordinates.
+  if (hasInternationalPostalCode(rawText)) return null;
 
-  // 5. Philippine region name typed into the province field.
-  for (const key of [province, city]) {
-    if (!key) continue;
-    const place = PH_REGION_INDEX.get(key);
-    if (place) return withLabels(place, cityInput ?? "", provinceInput ?? "");
-  }
+  // 4. Philippine place mentioned inside a longer segment.
+  const local = findPlaceInSegments(segments, () => true);
+  if (local) return withLabels(local.place, "", "");
 
-  // 6. Unknown Philippine address — keep the pin on the country so the record
+  // 5. Unknown Philippine address — keep the pin on the country so the record
   //    still appears on the map instead of silently disappearing.
-  return withLabels(PH_FALLBACK, cityInput ?? "", provinceInput ?? "", false);
+  return withLabels(PH_FALLBACK, cityParts[0] ?? cityInput ?? "", provinceParts[0] ?? "", false);
 }

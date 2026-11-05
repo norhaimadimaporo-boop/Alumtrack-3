@@ -1,14 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import {
-  LayoutDashboard,
-  Users,
-  Megaphone,
-  BarChart3,
-  ShieldCheck,
-  Activity,
-} from "lucide-react";
+import { LayoutDashboard, Users, Megaphone, BarChart3, ShieldCheck, Activity } from "lucide-react";
 import { NotificationBell } from "@/components/notification-bell";
+import { useAdminRole } from "@/hooks/use-session";
+import type { AdminRole } from "@/lib/session";
 
 const NOTIFICATIONS = [
   {
@@ -28,13 +23,21 @@ const NOTIFICATIONS = [
   },
 ];
 
+const ADMIN_RANK: Record<AdminRole, number> = { viewer: 0, standard: 1, head: 2 };
+
+const ROLE_LABEL: Record<AdminRole, string> = {
+  head: "Head Admin",
+  standard: "Standard Admin",
+  viewer: "Viewer Admin",
+};
+
 const links = [
-  { to: "/admin", label: "Admin Dashboard", icon: LayoutDashboard },
-  { to: "/admin/alumni", label: "Alumni Directory", icon: Users },
-  { to: "/admin/posts", label: "Engagement Network", icon: Megaphone },
-  { to: "/admin/reports", label: "Reports & Statistics", icon: BarChart3 },
-  { to: "/admin/accounts", label: "Admin Accounts", icon: ShieldCheck },
-  { to: "/admin/usage", label: "System Usage", icon: Activity },
+  { to: "/admin", label: "Admin Dashboard", icon: LayoutDashboard, min: "viewer" },
+  { to: "/admin/alumni", label: "Alumni Directory", icon: Users, min: "viewer" },
+  { to: "/admin/posts", label: "Engagement Network", icon: Megaphone, min: "standard" },
+  { to: "/admin/reports", label: "Reports & Statistics", icon: BarChart3, min: "viewer" },
+  { to: "/admin/accounts", label: "Admin Accounts", icon: ShieldCheck, min: "head" },
+  { to: "/admin/usage", label: "System Usage", icon: Activity, min: "viewer" },
 ] as const;
 
 export function AdminShell({
@@ -48,6 +51,12 @@ export function AdminShell({
   action?: ReactNode;
   children: ReactNode;
 }) {
+  const adminRole = useAdminRole();
+  // Fail safe before hydration: only show links every tier may open.
+  const visibleLinks = links.filter(
+    (link) => ADMIN_RANK[adminRole ?? "viewer"] >= ADMIN_RANK[link.min],
+  );
+
   return (
     <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 md:grid-cols-[230px_1fr]">
       <aside className="md:sticky md:top-24 md:self-start">
@@ -56,11 +65,13 @@ export function AdminShell({
             Administrator
           </p>
           <p className="mt-1 text-sm font-semibold text-foreground">OARCC Main Office</p>
-          <p className="text-[11px] text-muted-foreground">System Administrator</p>
+          <p className="text-[11px] text-muted-foreground">
+            {adminRole ? ROLE_LABEL[adminRole] : "System Administrator"}
+          </p>
         </div>
 
         <nav className="mt-3 flex gap-1 overflow-x-auto rounded-lg border border-border bg-card p-2 md:flex-col md:overflow-visible">
-          {links.map((l) => (
+          {visibleLinks.map((l) => (
             <Link
               key={l.to}
               to={l.to}

@@ -14,6 +14,8 @@ import {
 import { AdminShell } from "@/components/admin-shell";
 import { getAdminDashboardData } from "@/lib/admin.functions";
 import type { AdminDashboardStats } from "@/lib/admin.types";
+import { useAdminRole } from "@/hooks/use-session";
+import type { AdminRole } from "@/lib/session";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -57,32 +59,45 @@ const modules = [
     title: "Manage Alumni Directory",
     desc: "Add, edit, search, delete records and verify alumni professional info.",
     icon: Users,
+    min: "viewer",
   },
   {
     to: "/admin/posts",
     title: "Engagement Network",
     desc: "Post announcements, news & events, and job offerings.",
     icon: Megaphone,
+    min: "standard",
   },
   {
     to: "/admin/reports",
     title: "Generate Reports",
     desc: "Employment statuses, professional development, and graduate statistics.",
     icon: BarChart3,
+    min: "viewer",
   },
   {
     to: "/admin/accounts",
     title: "Manage Admin Accounts",
     desc: "Add new admins, set roles and grants, deactivate or delete accounts.",
     icon: ShieldCheck,
+    min: "head",
   },
   {
     to: "/admin/usage",
     title: "Monitor System Usage",
     desc: "Trace login activity and view the alumni map.",
     icon: Activity,
+    min: "viewer",
   },
-] as const;
+] as const satisfies ReadonlyArray<{
+  to: string;
+  title: string;
+  desc: string;
+  icon: typeof Users;
+  min: AdminRole;
+}>;
+
+const ADMIN_RANK: Record<AdminRole, number> = { viewer: 0, standard: 1, head: 2 };
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat("en-PH").format(value);
@@ -90,6 +105,10 @@ function formatNumber(value: number): string {
 
 function AdminDashboard() {
   const data = Route.useLoaderData();
+  const adminRole = useAdminRole();
+  const visibleModules = modules.filter(
+    (module) => ADMIN_RANK[adminRole ?? "viewer"] >= ADMIN_RANK[module.min],
+  );
 
   if (!data.ok) {
     return (
@@ -142,7 +161,7 @@ function AdminDashboard() {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <ul className="grid gap-3 sm:grid-cols-2">
-          {modules.map((module) => (
+          {visibleModules.map((module) => (
             <li key={module.to}>
               <Link
                 to={module.to}

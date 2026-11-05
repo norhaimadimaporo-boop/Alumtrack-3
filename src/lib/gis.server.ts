@@ -26,8 +26,7 @@ type MapRow = RowDataPacket & {
 };
 
 export type AlumniMapPinsResult =
-  | { ok: true; pins: AlumniMapPin[] }
-  | { ok: false; message: string };
+  { ok: true; pins: AlumniMapPin[] } | { ok: false; message: string };
 
 function abbreviate(firstName: string, middleName: string | null, lastName: string): string {
   const first = firstName.trim();
@@ -69,14 +68,32 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
     const pins: AlumniMapPin[] = [];
 
     for (const row of rows) {
-      const location = resolveLocation(
-        row.current_city?.trim() || row.address_city,
-        row.address_province || row.current_region,
-      );
-      if (!location) continue;
+      const storedLat = toNumber(row.latitude);
+      const storedLng = toNumber(row.longitude);
+      const declaredCountry = row.current_country?.trim() ?? "";
 
-      const lat = toNumber(row.latitude) ?? location.lat;
-      const lng = toNumber(row.longitude) ?? location.lng;
+      // Include the country so an overseas city without its country in the
+      // address ("Shanghai") still resolves to the right coordinates.
+      const location = resolveLocation(
+        row.current_city?.trim() || row.address_city || declaredCountry,
+        [declaredCountry, row.address_province || row.current_region].filter(Boolean).join(", ") ||
+          null,
+      );
+
+      // A Philippine centroid is only a guess. Skip it when the profile is
+      // clearly overseas or when no coordinates were ever stored.
+      const guessedPhilippines = location !== null && !location.matched;
+      const philippineCountry = !declaredCountry || /^philippines?$/i.test(declaredCountry);
+      if (guessedPhilippines && !philippineCountry) continue;
+
+      let lat = storedLat;
+      let lng = storedLng;
+      if (lat === null || lng === null) {
+        if (!location) continue;
+        lat = location.lat;
+        lng = location.lng;
+      }
+
       const employed = row.employment_status === "employed";
       const position = row.current_position?.trim();
 
@@ -86,10 +103,21 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
         role: employed ? position || "Employed" : "Seeking employment",
         status: employed ? "Employed" : "Unemployed",
         company: employed ? row.current_company?.trim() || null : null,
-        city: location.city,
-        region: location.region,
-        country: location.country,
-        precision: location.precision,
+        city:
+          location?.city?.trim() ||
+          row.current_city?.trim() ||
+          row.address_city?.trim() ||
+          declaredCountry ||
+          "Unknown",
+        region:
+          location?.region?.trim() ||
+          row.current_region?.trim() ||
+          row.address_province?.trim() ||
+          "",
+        country: location?.country?.trim() || declaredCountry || "Philippines",
+        precision:
+          location?.precision ??
+          (row.current_city?.trim() || row.address_city?.trim() ? "city" : "state"),
         lat,
         lng,
         course: row.course?.trim() || "Course not provided",

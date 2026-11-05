@@ -11,8 +11,9 @@ import { AlumniShell } from "@/components/alumni-shell";
 import { BarList } from "@/components/cluster-map";
 import { RealAlumniMap } from "@/components/real-alumni-map";
 import { SECTOR_SPLIT } from "@/data/gis";
-import { POSTS } from "@/data/news";
+import { POSTS, findPostPhoto } from "@/data/news";
 import { getAlumniMapPinsData } from "@/lib/gis.functions";
+import { getPublishedPosts } from "@/lib/posts.functions";
 import { getMyWorkspaceData } from "@/lib/profile.functions";
 import { initials } from "@/lib/profile-format";
 
@@ -33,14 +34,22 @@ export const Route = createFileRoute("/dashboard")({
     ],
   }),
   loader: async () => {
-    const [workspace, map] = await Promise.all([getMyWorkspaceData(), getAlumniMapPinsData()]);
-    return { workspace, pins: map.ok ? map.pins : [] };
+    const [workspace, map, published] = await Promise.all([
+      getMyWorkspaceData(),
+      getAlumniMapPinsData(),
+      getPublishedPosts(),
+    ]);
+    return {
+      workspace,
+      pins: map.ok ? map.pins : [],
+      posts: published.ok ? published.posts : [],
+    };
   },
   component: DashboardPage,
 });
 
 function DashboardPage() {
-  const { workspace: data, pins } = Route.useLoaderData();
+  const { workspace: data, pins, posts: storedPosts } = Route.useLoaderData();
   const profile = data.ok ? data.profile : null;
 
   const firstName = profile?.firstName || "Alumni";
@@ -80,7 +89,22 @@ function DashboardPage() {
     },
   ];
 
-  const posts = POSTS.slice(0, 4);
+  const posts =
+    storedPosts.length > 0
+      ? storedPosts.slice(0, 4).map((post) => ({
+          id: post.id,
+          title: post.title,
+          category: post.category,
+          date: post.date,
+          photo: post.images[0] ?? findPostPhoto(post.title),
+        }))
+      : POSTS.slice(0, 4).map((post) => ({
+          id: post.id,
+          title: post.title,
+          category: post.category,
+          date: post.date,
+          photo: post.photo,
+        }));
 
   return (
     <AlumniShell

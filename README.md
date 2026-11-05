@@ -71,12 +71,57 @@ $env:NODE_OPTIONS="--max-old-space-size=4096"; npm run build
 
 ## Deployment
 
-The project is configured for Vercel. Import this repository into Vercel, use the
-default build settings, and add the `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`,
-`DB_NAME`, and (if needed) `DB_SSL` environment variables in the Vercel project
-settings. Vercel's serverless functions must be able to reach your MySQL server over
-the public internet, or through a provider such as PlanetScale, Aiven, or a VPN/tunnel.
-A GitHub Actions workflow checks the production build on pushes and pull requests.
+The project is configured for Vercel. The production build emits Vercel's Build
+Output API (`.vercel/output`) through Nitro when the `VERCEL=1` environment is
+present, so no extra build flags are needed.
+
+### 1. Create the free MySQL database (Aiven)
+
+1. Sign up at <https://aiven.io> (no credit card) and open the console.
+2. **Create service → MySQL → Free plan**, region **Singapore** (closest to PH).
+3. Wait for the service to reach **Running**, then copy the connection details
+   from the **Overview** tab: host, port, user (`avnadmin`), password.
+4. Download **CA certificate** (`ca.pem`) from the same page.
+5. Open **Databases** and create a database named `alumtrack` (or keep
+   `defaultdb`).
+
+Aiven requires TLS, so the app needs `DB_SSL=true` plus the CA certificate. The
+scripts accept `DB_SSL_CA_PATH=ca.pem` locally and upload the equivalent
+`DB_SSL_CA_BASE64` to Vercel automatically.
+
+### 2. Create and seed the database
+
+```powershell
+Copy-Item .env.production.example .env.production
+# edit .env.production with the Aiven values, then:
+$env:ENV_FILE=".env.production"; npm run db:setup
+```
+
+`db:setup` creates the database if needed, applies `database/schema.sql`, and
+seeds the demo accounts. It only touches the database configured in
+`.env.production` for that one command; the local `.env` stays unchanged.
+
+### 3. Upload the environment variables to Vercel
+
+```powershell
+npx vercel link --yes --project alumtrack
+npm run deploy:env            # uploads DB_* to the Production environment
+npm run deploy:env -- --dry-run   # preview without uploading
+```
+
+Values are streamed over stdin, so passwords and the CA certificate never show
+up in the shell history. Every variable is stored as a sensitive secret.
+
+### 4. Deploy
+
+```powershell
+npx vercel deploy --prod --yes
+```
+
+Vercel's serverless functions must be able to reach the MySQL server over the
+public internet. `127.0.0.1` only works locally. Keep `DB_CONNECTION_LIMIT` low
+(2-5) because every serverless instance opens its own pool. A GitHub Actions
+workflow checks the production build on pushes and pull requests.
 
 ## Important limitations
 

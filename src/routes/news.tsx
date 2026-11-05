@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { CalendarDays, ArrowRight, X } from "lucide-react";
-import { POSTS, type Post } from "@/data/news";
+import { POSTS, findPostPhoto, type Post } from "@/data/news";
+import { getPublishedPosts } from "@/lib/posts.functions";
+import type { PostRecord } from "@/lib/posts.types";
 
 export const Route = createFileRoute("/news")({
   head: () => ({
@@ -19,19 +21,47 @@ export const Route = createFileRoute("/news")({
       },
     ],
   }),
+  loader: async () => {
+    const result = await getPublishedPosts();
+    return result.ok ? result.posts : [];
+  },
   component: NewsPage,
 });
 
 const TABS = ["All", "News", "Event", "Job"] as const;
 
-function NewsPage() {
-  const [tab, setTab] = useState<(typeof TABS)[number]>("All");
-  const [open, setOpen] = useState<Post | null>(null);
+type FeedPost = Post & { images: string[] };
 
-  const featured = POSTS.find((p) => p.featured)!;
-  const rest = POSTS.filter((p) => !p.featured).filter(
-    (p) => tab === "All" || p.category === tab,
-  );
+function toFeedPost(post: PostRecord): FeedPost {
+  const excerpt = post.excerpt || post.content.replace(/\s+/g, " ").slice(0, 180);
+  const photo = post.images[0] ?? findPostPhoto(post.title);
+  return {
+    id: post.id,
+    title: post.title,
+    category: post.category,
+    date: post.date,
+    excerpt,
+    body: post.content,
+    featured: post.featured,
+    images: post.images,
+    ...(photo ? { photo } : {}),
+  };
+}
+
+function NewsPage() {
+  const loaded = Route.useLoaderData();
+  const [tab, setTab] = useState<(typeof TABS)[number]>("All");
+  const [open, setOpen] = useState<FeedPost | null>(null);
+
+  const posts: FeedPost[] =
+    loaded.length > 0
+      ? loaded.map(toFeedPost)
+      : POSTS.map((post) => ({ ...post, images: post.photo ? [post.photo] : [] }));
+
+  const featured = posts.find((post) => post.featured) ?? posts[0];
+  const rest = posts
+    .filter((post) => post.id !== featured?.id)
+    .filter((post) => tab === "All" || post.category === tab);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
@@ -42,39 +72,41 @@ function NewsPage() {
         </p>
       </div>
 
-      <button
-        onClick={() => setOpen(featured)}
-        className="mt-8 grid w-full overflow-hidden rounded-sm border border-border bg-card text-left transition-colors hover:border-brand md:grid-cols-[1.1fr_1fr]"
-      >
-        <div className="relative flex min-h-56 items-end bg-brand p-8">
-          {featured.photo && (
-            <img
-              src={featured.photo}
-              alt=""
-              loading="lazy"
-              className="absolute inset-0 size-full object-cover"
-            />
-          )}
-          <span className="relative rounded-sm bg-highlight px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-highlight-foreground">
-            Featured {featured.category}
-          </span>
-        </div>
-        <div className="p-8">
-          <p className="flex items-center gap-2 text-xs text-muted-foreground">
-            <CalendarDays className="size-3.5" />
-            {featured.date}
-          </p>
-          <h2 className="mt-3 text-2xl font-bold leading-snug text-foreground">
-            {featured.title}
-          </h2>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            {featured.excerpt}
-          </p>
-          <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-brand">
-            Read more <ArrowRight className="size-4" />
-          </span>
-        </div>
-      </button>
+      {featured && (
+        <button
+          onClick={() => setOpen(featured)}
+          className="mt-8 grid w-full overflow-hidden rounded-sm border border-border bg-card text-left transition-colors hover:border-brand md:grid-cols-[1.1fr_1fr]"
+        >
+          <div className="relative flex min-h-56 items-end bg-brand p-8">
+            {featured.photo && (
+              <img
+                src={featured.photo}
+                alt=""
+                loading="lazy"
+                className="absolute inset-0 size-full object-cover"
+              />
+            )}
+            <span className="relative rounded-sm bg-highlight px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-highlight-foreground">
+              Featured {featured.category}
+            </span>
+          </div>
+          <div className="p-8">
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <CalendarDays className="size-3.5" />
+              {featured.date}
+            </p>
+            <h2 className="mt-3 text-2xl font-bold leading-snug text-foreground">
+              {featured.title}
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              {featured.excerpt}
+            </p>
+            <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-brand">
+              Read more <ArrowRight className="size-4" />
+            </span>
+          </div>
+        </button>
+      )}
 
       <div className="mt-10 flex flex-wrap gap-2 border-b border-border pb-3">
         {TABS.map((t) => (
@@ -93,6 +125,11 @@ function NewsPage() {
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {rest.length === 0 && (
+          <p className="col-span-full rounded-sm border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
+            No posts in this category yet.
+          </p>
+        )}
         {rest.map((post) => (
           <button
             key={post.id}
@@ -143,20 +180,27 @@ function NewsPage() {
                 <X className="size-5 text-muted-foreground hover:text-brand" />
               </button>
             </div>
-            {open.photo && (
-              <img
-                src={open.photo}
-                alt=""
-                loading="lazy"
-                className="mt-4 w-full rounded-lg object-cover"
-              />
+            {open.images.length > 0 && (
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {open.images.map((url) => (
+                  <img
+                    key={url}
+                    src={url}
+                    alt=""
+                    loading="lazy"
+                    className="w-full rounded-lg object-cover"
+                  />
+                ))}
+              </div>
             )}
             <p className="mt-4 text-xs text-muted-foreground">{open.date}</p>
             <h2 className="mt-1 text-2xl font-bold leading-snug text-foreground">
               {open.title}
             </h2>
             <p className="mt-4 text-sm leading-relaxed text-foreground/85">{open.excerpt}</p>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{open.body}</p>
+            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+              {open.body}
+            </p>
           </div>
         </div>
       )}

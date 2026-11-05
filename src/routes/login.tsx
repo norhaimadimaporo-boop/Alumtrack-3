@@ -43,7 +43,7 @@ function LoginPage() {
         return;
       }
 
-      setSession(result.role);
+      setSession(result.role, result.user.adminRole);
       await navigate({ to: result.role === "admin" ? "/admin" : "/dashboard" });
     } catch (err) {
       console.error(err);
@@ -100,7 +100,7 @@ function LoginPage() {
           <input
             id="login-email"
             type="email"
-            autoComplete="email"
+            autoComplete="on"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -119,7 +119,7 @@ function LoginPage() {
           <input
             id="login-password"
             type="password"
-            autoComplete="current-password"
+            autoComplete="on"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}

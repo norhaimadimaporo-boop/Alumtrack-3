@@ -174,6 +174,27 @@
   background: var(--secondary);
 }
 
+/*
+ * The sticky site header owns z-index 50. The top-left view presets and the
+ * top-right legend sit at z-index 20, while Leaflet's own controls (the
+ * attribution strip) sit at z-index 25 so they stay in front of the tiles.
+ * The zoom buttons no longer live inside the canvas — they render below it in
+ * the footnote bar — so nothing inside the map can cover them.
+ */
+.map-view-controls {
+  z-index: 20 !important;
+}
+
+.map-legend {
+  z-index: 20 !important;
+}
+
+.leaflet-container .leaflet-top,
+.leaflet-container .leaflet-bottom,
+.leaflet-container .leaflet-control {
+  z-index: 25 !important;
+}
+
 /* Teardrop alumni pins: green = employed, yellow = unemployed. */
 .alumni-marker {
   background: transparent;
@@ -218,6 +239,34 @@
   color: var(--highlight-foreground);
 }
 
+/*
+ * Grouped location marker: when several alumni share the same city we show a
+ * round count bubble instead of a teardrop, so "2" or "3" is easy to read.
+ */
+.alumni-pin--cluster {
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  transform: none;
+  font-size: 12px;
+}
+
+.alumni-marker--cluster:hover .alumni-pin--cluster,
+.alumni-marker--cluster:focus-visible .alumni-pin--cluster {
+  transform: scale(1.08);
+}
+
+.alumni-pin--cluster > span {
+  transform: none;
+  font-size: 12px;
+}
+
+/* Mixed group (employed + unemployed alumni in the same city). */
+.alumni-pin--mixed {
+  background: var(--brand);
+  color: var(--brand-foreground);
+}
+
 /* Popup card */
 .leaflet-popup-content-wrapper {
   border-radius: 0.75rem;
@@ -249,25 +298,7 @@
   box-shadow: none;
 }
 
-/* Zoom buttons + attribution */
-.leaflet-touch .leaflet-bar,
-.leaflet-bar {
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
-}
-
-.leaflet-container .leaflet-control-zoom a {
-  background: var(--card);
-  color: var(--foreground);
-  border-color: var(--border);
-}
-
-.leaflet-container .leaflet-control-zoom a:hover {
-  background: var(--muted);
-  color: var(--foreground);
-}
+/* ---------- Leaflet attribution strip ---------- */
 
 .leaflet-control-attribution {
   background: color-mix(in oklab, var(--card) 85%, transparent) !important;

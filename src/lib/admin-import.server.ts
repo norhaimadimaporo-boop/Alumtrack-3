@@ -347,19 +347,19 @@ export function parseCsvDate(raw: string | null | undefined): string | null {
 
   match = /^(\d{1,2})[\s-]+([A-Za-z]+)[\s,-]+(\d{2,4})$/.exec(value);
   if (match) {
-    const month = monthFromName(match[2]);
+    const month = monthFromName(match[2] ?? "");
     if (month) return buildIsoDate(normalizeYear(Number(match[3])), month, Number(match[1]));
   }
 
   match = /^([A-Za-z]+)[\s-]+(\d{1,2})[\s,-]+(\d{2,4})$/.exec(value);
   if (match) {
-    const month = monthFromName(match[1]);
+    const month = monthFromName(match[1] ?? "");
     if (month) return buildIsoDate(normalizeYear(Number(match[3])), month, Number(match[2]));
   }
 
   match = /^([A-Za-z]+)[\s-]+(\d{4})$/.exec(value);
   if (match) {
-    const month = monthFromName(match[1]);
+    const month = monthFromName(match[1] ?? "");
     if (month) return buildIsoDate(Number(match[2]), month, 1);
   }
 
@@ -386,7 +386,7 @@ function splitAddress(raw: string | null | undefined): ParsedAddress {
   let zipCode = "";
   const zipMatch = /(?:^|[,\s])(\d{4,5})\s*$/.exec(value);
   if (zipMatch) {
-    zipCode = zipMatch[1];
+    zipCode = zipMatch[1] ?? "";
     value = value.slice(0, zipMatch.index).replace(/[,\s]+$/, "");
   }
 
@@ -396,17 +396,17 @@ function splitAddress(raw: string | null | undefined): ParsedAddress {
     .filter(Boolean);
 
   if (parts.length === 0) return { ...EMPTY_ADDRESS, zipCode };
-  if (parts.length === 1) return { ...EMPTY_ADDRESS, street: parts[0], zipCode };
+  if (parts.length === 1) return { ...EMPTY_ADDRESS, street: parts[0] ?? "", zipCode };
   if (parts.length === 2) {
-    return { ...EMPTY_ADDRESS, street: parts[0], city: parts[1], zipCode };
+    return { ...EMPTY_ADDRESS, street: parts[0] ?? "", city: parts[1] ?? "", zipCode };
   }
 
   return {
     ...EMPTY_ADDRESS,
-    street: parts[0],
-    subdivision: parts.length >= 4 ? parts[1] : "",
-    city: parts[parts.length - 2],
-    province: parts[parts.length - 1],
+    street: parts[0] ?? "",
+    subdivision: parts.length >= 4 ? (parts[1] ?? "") : "",
+    city: parts[parts.length - 2] ?? "",
+    province: parts[parts.length - 1] ?? "",
     zipCode,
   };
 }
@@ -418,6 +418,10 @@ function bestLocation(
   return resolveLocation(city, province);
 }
 
+function isCityMatch(location: ResolvedLocation | null): boolean {
+  return location?.precision === "city";
+}
+
 /**
  * Try every comma-separated segment (and its neighbours) until the gazetteer
  * recognizes a city or province. City-level matches win over province centroids
@@ -426,7 +430,12 @@ function bestLocation(
 function resolveAddressLocation(raw: string | null | undefined): ResolvedLocation | null {
   const parts = (raw ?? "")
     .split(",")
-    .map((part) => part.trim().replace(/\b\d{4,5}\b/g, "").trim())
+    .map((part) =>
+      part
+        .trim()
+        .replace(/\b\d{4,5}\b/g, "")
+        .trim(),
+    )
     .filter(Boolean);
 
   if (parts.length === 0) return null;
@@ -439,11 +448,11 @@ function resolveAddressLocation(raw: string | null | undefined): ResolvedLocatio
   };
 
   for (let index = 0; index < parts.length; index += 1) {
-    const segment = parts[index];
+    const segment = parts[index] ?? "";
     consider(resolveLocation(segment, parts[index - 1] ?? ""));
     consider(resolveLocation(segment, parts[index + 1] ?? ""));
     consider(resolveLocation(segment, ""));
-    if (best?.precision === "city") break;
+    if (isCityMatch(best)) break;
   }
 
   return best;
@@ -606,6 +615,7 @@ async function importRow(
   const location =
     resolveAddressLocation(presentRaw) ??
     resolveAddressLocation(homeRaw) ??
+    resolveAddressLocation(get("workplaceAddress")) ??
     bestLocation(present.city || presentRaw, present.province);
 
   const providedEmail = get("email").trim().toLowerCase();
@@ -615,10 +625,7 @@ async function importRow(
 
   const currentCity = clamp(location?.city || present.city, 120);
   const currentProvince = clamp(present.province, 120);
-  const currentRegion = clamp(
-    currentProvince || currentCity || location?.region || "",
-    120,
-  );
+  const currentRegion = clamp(currentProvince || currentCity || location?.region || "", 120);
   const currentCountry = clamp(location?.country ?? "", 120);
 
   const latitude = normalizeCoordinate(get("latitude"), 90) ?? location?.lat ?? null;
@@ -647,12 +654,12 @@ async function importRow(
   const statusKey = normalizeKey(rawStatus);
   const hasEmploymentData = Boolean(
     position ||
-      employer ||
-      workplaceAddress ||
-      sector ||
-      workLocation ||
-      lengthOfEmployment ||
-      yearsInOffice,
+    employer ||
+    workplaceAddress ||
+    sector ||
+    workLocation ||
+    lengthOfEmployment ||
+    yearsInOffice,
   );
   const explicitlyUnemployed =
     statusKey.includes("unemploy") || statusKey === "no" || statusKey === "none";
@@ -845,12 +852,23 @@ export async function importAlumniCsv(csv: string): Promise<AdminImportResult> {
     };
   }
 
+  // Bulk import is a write action: viewers are read-only.
+  const adminRole = admin.adminRole ?? "standard";
+  if (adminRole === "viewer") {
+    return {
+      ok: false,
+      message:
+        "Your admin account is read-only. Ask a Head Admin or Standard Admin to import alumni records.",
+      errors: [],
+    };
+  }
+
   const table = parseCsv(csv);
   if (table.length === 0) {
     return { ok: false, message: "The CSV file is empty.", errors: [] };
   }
 
-  const headerMap = buildHeaderMap(table[0]);
+  const headerMap = buildHeaderMap(table[0] ?? []);
   if (!headerMap.has("firstName") || !headerMap.has("lastName")) {
     return {
       ok: false,
@@ -891,7 +909,7 @@ export async function importAlumniCsv(csv: string): Promise<AdminImportResult> {
 
   try {
     for (let index = 0; index < dataRows.length; index += 1) {
-      const row = dataRows[index];
+      const row = dataRows[index] ?? [];
       const rowNumber = index + 2;
       const get = (key: FieldKey): string => {
         const column = headerMap.get(key);

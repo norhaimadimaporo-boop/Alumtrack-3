@@ -4,6 +4,8 @@ import { Briefcase, MapPin, Building2, CalendarDays } from "lucide-react";
 import { AlumniShell } from "@/components/alumni-shell";
 import { Modal } from "@/components/modal";
 import { getMyWorkspaceData } from "@/lib/profile.functions";
+import { getPublishedPosts } from "@/lib/posts.functions";
+import type { PostRecord } from "@/lib/posts.types";
 
 export const Route = createFileRoute("/jobs")({
   head: () => ({
@@ -21,7 +23,13 @@ export const Route = createFileRoute("/jobs")({
       },
     ],
   }),
-  loader: async () => getMyWorkspaceData(),
+  loader: async () => {
+    const [workspace, published] = await Promise.all([getMyWorkspaceData(), getPublishedPosts()]);
+    return {
+      workspace,
+      jobs: published.ok ? published.posts.filter((post) => post.type === "Job Offering") : [],
+    };
+  },
   component: JobsPage,
 });
 
@@ -37,6 +45,7 @@ type Job = {
   description: string;
   qualifications: string[];
   applyLink: string;
+  image?: string;
 };
 
 const JOBS: Job[] = [
@@ -132,10 +141,34 @@ const JOBS: Job[] = [
   },
 ];
 
+const STATIC_JOBS = new Map(JOBS.map((job) => [job.title, job]));
+
+/** Maps a published DB job post onto the card shape, filling gaps from the seeded examples. */
+function toJob(post: PostRecord): Job {
+  const fallback = STATIC_JOBS.get(post.title);
+  const image = post.images[0] ?? fallback?.image;
+  return {
+    id: post.id,
+    title: post.title,
+    company: post.company || fallback?.company || "OARCC",
+    location: post.location || fallback?.location || "—",
+    type: post.jobType || fallback?.type || "Full-time",
+    posted: post.date,
+    salary: post.salary || fallback?.salary || "",
+    deadline: post.deadline || fallback?.deadline || "",
+    description: post.content,
+    qualifications:
+      post.qualifications.length > 0 ? post.qualifications : (fallback?.qualifications ?? []),
+    applyLink: post.applyLink || fallback?.applyLink || "",
+    ...(image ? { image } : {}),
+  };
+}
+
 function JobsPage() {
-  const data = Route.useLoaderData();
+  const { workspace: data, jobs: storedJobs } = Route.useLoaderData();
   const user = data.ok ? data.user : null;
   const [selected, setSelected] = useState<Job | null>(null);
+  const jobs = storedJobs.length > 0 ? storedJobs.map(toJob) : JOBS;
 
   return (
     <AlumniShell
@@ -144,7 +177,7 @@ function JobsPage() {
       user={user ? { name: user.fullName, batch: user.batch, initials: user.initials } : undefined}
     >
       <ul className="grid gap-3 md:grid-cols-2">
-        {JOBS.map((j) => (
+        {jobs.map((j) => (
           <li key={j.id}>
             <button
               onClick={() => setSelected(j)}
@@ -171,6 +204,14 @@ function JobsPage() {
       {selected && (
         <Modal title={selected.title} onClose={() => setSelected(null)}>
           <div className="space-y-4">
+            {selected.image && (
+              <img
+                src={selected.image}
+                alt=""
+                loading="lazy"
+                className="w-full rounded-lg object-cover"
+              />
+            )}
             <div className="space-y-1.5 text-xs text-muted-foreground">
               <p className="flex items-center gap-1.5">
                 <Building2 className="size-3.5 text-brand" /> {selected.company}
@@ -179,39 +220,52 @@ function JobsPage() {
                 <MapPin className="size-3.5 text-brand" /> {selected.location}
               </p>
               <p className="flex items-center gap-1.5">
-                <Briefcase className="size-3.5 text-brand" /> {selected.type} · {selected.salary}
+                <Briefcase className="size-3.5 text-brand" /> {selected.type}
+                {selected.salary ? ` · ${selected.salary}` : ""}
               </p>
-              <p className="flex items-center gap-1.5">
-                <CalendarDays className="size-3.5 text-brand" /> Deadline: {selected.deadline}
-              </p>
+              {selected.deadline && (
+                <p className="flex items-center gap-1.5">
+                  <CalendarDays className="size-3.5 text-brand" /> Deadline: {selected.deadline}
+                </p>
+              )}
             </div>
 
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wide text-foreground">
                 Job description
               </h4>
-              <p className="mt-1.5 text-sm text-muted-foreground">{selected.description}</p>
+              <p className="mt-1.5 whitespace-pre-line text-sm text-muted-foreground">
+                {selected.description}
+              </p>
             </div>
 
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wide text-foreground">
-                Qualifications
-              </h4>
-              <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                {selected.qualifications.map((q) => (
-                  <li key={q}>{q}</li>
-                ))}
-              </ul>
-            </div>
+            {selected.qualifications.length > 0 && (
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wide text-foreground">
+                  Qualifications
+                </h4>
+                <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                  {selected.qualifications.map((q) => (
+                    <li key={q}>{q}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-            <a
-              href={selected.applyLink}
-              target="_blank"
-              rel="noreferrer"
-              className="block w-full rounded-md bg-brand py-2.5 text-center text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
-            >
-              Apply
-            </a>
+            {selected.applyLink ? (
+              <a
+                href={selected.applyLink}
+                target="_blank"
+                rel="noreferrer"
+                className="block w-full rounded-md bg-brand py-2.5 text-center text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+              >
+                Apply
+              </a>
+            ) : (
+              <p className="rounded-md border border-border p-3 text-center text-xs text-muted-foreground">
+                Contact OARCC for application instructions.
+              </p>
+            )}
           </div>
         </Modal>
       )}

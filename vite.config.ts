@@ -25,5 +25,14 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       nitro(),
     ],
+    // Accept any Host header so LAN devices, tunnels and preview domains can
+    // reach the dev/preview server. Production traffic is terminated by
+    // Vercel's edge network, so this does not weaken the deployed app.
+    server: {
+      allowedHosts: true,
+    },
+    preview: {
+      allowedHosts: true,
+    },
   };
 });

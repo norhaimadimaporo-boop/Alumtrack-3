@@ -281,9 +281,9 @@ export const MAP_VIEWS: MapView[] = [
     label: "Asia & Middle East",
     short: "Region",
     hint: "Philippines + Middle East + Southeast Asia",
-    center: [20, 83],
+    center: [20, 86],
     zoom: 3,
-    bounds: { minLng: 30, maxLng: 136, minLat: -4, maxLat: 44 },
+    bounds: { minLng: 28, maxLng: 145, minLat: -6, maxLat: 46 },
   },
   {
     key: "philippines",
@@ -299,9 +299,11 @@ export const MAP_VIEWS: MapView[] = [
     label: "Middle East",
     short: "Gulf",
     hint: "State / province precision",
-    center: [22, 47],
-    zoom: 5,
-    bounds: { minLng: 34, maxLng: 60, minLat: 12, maxLat: 32 },
+    center: [25, 45],
+    zoom: 3,
+    // Spans West KSA (Madinah/Mecca) through East UAE (Dubai/Sharjah) so the
+    // whole Gulf diaspora stays visible in one view.
+    bounds: { minLng: 24, maxLng: 60, minLat: 8, maxLat: 42 },
   },
 ];
 

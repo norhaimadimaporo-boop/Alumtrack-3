@@ -1,19 +1,24 @@
-import { useEffect, useState } from "react";
-import { getSession, type Role } from "@/lib/session";
+import { useSyncExternalStore } from "react";
+import { getAdminRole, getSession, type AdminRole, type Role } from "@/lib/session";
 
-export function useSession() {
-  const [role, setRole] = useState<Role | null>(null);
+function subscribe(onChange: () => void) {
+  window.addEventListener("alumtrack-session", onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener("alumtrack-session", onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
 
-  useEffect(() => {
-    const sync = () => setRole(getSession());
-    sync();
-    window.addEventListener("alumtrack-session", sync);
-    window.addEventListener("storage", sync);
-    return () => {
-      window.removeEventListener("alumtrack-session", sync);
-      window.removeEventListener("storage", sync);
-    };
-  }, []);
+/**
+ * Read the client-side session without breaking SSR hydration: the server
+ * snapshot is always null, then React re-reads localStorage after hydration.
+ */
+export function useSession(): Role | null {
+  return useSyncExternalStore<Role | null>(subscribe, getSession, () => null);
+}
 
-  return role;
+/** The signed-in administrator's tier, or null for alumni/guests. */
+export function useAdminRole(): AdminRole | null {
+  return useSyncExternalStore<AdminRole | null>(subscribe, getAdminRole, () => null);
 }

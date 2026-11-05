@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search, MapPinned, Newspaper, UserRoundPen, ArrowRight, CalendarDays } from "lucide-react";
 import heroImage from "@/assets/campus-hero.jpg";
-import { POSTS } from "@/data/news";
+import { POSTS, findPostPhoto } from "@/data/news";
 import { PUBLIC_STATS, TOP_INDUSTRIES } from "@/data/gis";
 import { BarList } from "@/components/cluster-map";
 import { RealAlumniMap } from "@/components/real-alumni-map";
 import { getAlumniMapPinsData } from "@/lib/gis.functions";
+import { getPublishedPosts } from "@/lib/posts.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -24,7 +25,10 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
-  loader: async () => getAlumniMapPinsData(),
+  loader: async () => {
+    const [map, published] = await Promise.all([getAlumniMapPinsData(), getPublishedPosts()]);
+    return { map, posts: published.ok ? published.posts : [] };
+  },
   component: Index,
 });
 
@@ -67,8 +71,17 @@ const FEATURES = [
 ];
 
 function Index() {
-  const latest = POSTS.slice(0, 3);
-  const mapData = Route.useLoaderData();
+  const { map: mapData, posts: storedPosts } = Route.useLoaderData();
+  const latest =
+    storedPosts.length > 0
+      ? storedPosts.slice(0, 3).map((post) => ({
+          id: post.id,
+          title: post.title,
+          date: post.date,
+          excerpt: post.excerpt || post.content.replace(/\s+/g, " ").slice(0, 160),
+          photo: post.images[0] ?? findPostPhoto(post.title),
+        }))
+      : POSTS.slice(0, 3);
   const pins = mapData.ok ? mapData.pins : [];
 
   return (
