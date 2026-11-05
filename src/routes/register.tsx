@@ -458,7 +458,7 @@ function RegisterPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Alumni Registration</h1>
           <p className="text-sm text-muted-foreground">
-            Complete five phases to create your AlumTrack profile.
+            Complete all five phases—from personal details and contacts to education, employment, and organization affiliation—to create your verified AlumTrack profile.
           </p>
         </div>
       </div>
