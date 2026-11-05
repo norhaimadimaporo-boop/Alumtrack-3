@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Check, ChevronLeft, ChevronRight, GraduationCap, Loader2 } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 
 import { calculateAge } from "@/lib/profile-format";
 import { registerAlumni } from "@/lib/registration.functions";
@@ -452,9 +453,7 @@ function RegisterPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <div className="flex items-center gap-3">
-        <span className="flex size-11 items-center justify-center rounded-full bg-brand text-brand-foreground">
-          <GraduationCap className="size-5" />
-        </span>
+        <BrandMark className="size-14 shrink-0" />
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Alumni Registration</h1>
           <p className="text-sm text-muted-foreground">
