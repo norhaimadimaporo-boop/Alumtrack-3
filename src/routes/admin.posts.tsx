@@ -26,7 +26,13 @@ import {
   updatePostRecord,
   uploadPostImageFile,
 } from "@/lib/posts.functions";
-import type { PostInput, PostRecord, PostStatus, PostType } from "@/lib/posts.types";
+import {
+  POST_TYPE_LABELS,
+  type PostInput,
+  type PostRecord,
+  type PostStatus,
+  type PostType,
+} from "@/lib/posts.types";
 
 export const Route = createFileRoute("/admin/posts")({
   head: () => ({
@@ -74,7 +80,6 @@ function blankPost(type: PostType): PostInput {
     type,
     title: "",
     content: "",
-    excerpt: "",
     status: "Published",
     postedAt: todayIso(),
     company: "",
@@ -95,7 +100,6 @@ function toForm(post: PostRecord): PostInput {
     type: post.type,
     title: post.title,
     content: post.content,
-    excerpt: post.excerpt,
     status: post.status,
     postedAt: post.postedAt || todayIso(),
     company: post.company,
@@ -338,7 +342,7 @@ function AdminPosts() {
               className="rounded-lg border border-border bg-card p-5 text-left transition-colors hover:border-brand disabled:cursor-default disabled:hover:border-border"
             >
               <Icon className="size-5 text-brand" />
-              <p className="mt-3 text-sm font-bold text-foreground">Post {type}</p>
+              <p className="mt-3 text-sm font-bold text-foreground">Post {POST_TYPE_LABELS[type]}</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Publish to the alumni dashboard and public pages.
               </p>
@@ -358,7 +362,7 @@ function AdminPosts() {
                 : "border-border text-muted-foreground hover:border-brand"
             }`}
           >
-            {type}
+            {type === "All" ? "All" : POST_TYPE_LABELS[type]}
           </button>
         ))}
         <span className="mx-1 h-4 w-px bg-border" />
@@ -414,7 +418,7 @@ function AdminPosts() {
                 <span
                   className={`rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${typeStyles[post.type]}`}
                 >
-                  {post.type}
+                  {POST_TYPE_LABELS[post.type]}
                 </span>
                 {post.featured && (
                   <span className="inline-flex items-center gap-1 rounded-sm bg-highlight px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-highlight-foreground">
@@ -493,7 +497,7 @@ function AdminPosts() {
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wide">
               <span className={`rounded-sm px-2 py-0.5 ${typeStyles[viewing.type]}`}>
-                {viewing.type}
+                {POST_TYPE_LABELS[viewing.type]}
               </span>
               <span className="rounded-sm bg-muted px-2 py-0.5 text-muted-foreground">
                 Posted {viewing.date || "—"}
@@ -578,9 +582,6 @@ function AdminPosts() {
               </div>
             ) : (
               <div className="space-y-2">
-                {viewing.excerpt && (
-                  <p className="text-sm font-medium leading-relaxed text-foreground">{viewing.excerpt}</p>
-                )}
                 <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                   {viewing.content}
                 </p>
@@ -630,7 +631,7 @@ function AdminPosts() {
 
       {canManage && composing && (
         <Modal
-          title={composing.id ? "Edit post" : `Post ${composing.type}`}
+          title={composing.id ? "Edit post" : `Post ${POST_TYPE_LABELS[composing.type]}`}
           onClose={() => setComposing(null)}
           wide
         >
@@ -649,7 +650,7 @@ function AdminPosts() {
                 >
                   {TYPES.map((type) => (
                     <option key={type} value={type}>
-                      {type}
+                      {POST_TYPE_LABELS[type]}
                     </option>
                   ))}
                 </select>
@@ -693,21 +694,8 @@ function AdminPosts() {
                   }
                   className="size-4 accent-brand"
                 />
-                Feature this post on the News page
+                Show in the featured banner on Latest Posts
               </label>
-            </div>
-
-            <div>
-              <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Short summary <span className="font-normal normal-case">(optional)</span>
-              </label>
-              <textarea
-                rows={2}
-                value={composing.excerpt}
-                onChange={(event) => setComposing({ ...composing, excerpt: event.target.value })}
-                placeholder="Shown on cards. Leave blank to use the start of the content."
-                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-brand"
-              />
             </div>
 
             {composing.type === "Job Offering" && (

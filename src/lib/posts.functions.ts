@@ -9,6 +9,7 @@ import {
   setPostStatus,
   updatePost,
   uploadPostImage,
+  viewerCanSeeJobs,
 } from "./posts.server";
 
 const postInputSchema = z.object({
@@ -16,7 +17,6 @@ const postInputSchema = z.object({
   type: z.enum(["Announcement", "News / Event", "Job Offering"]),
   title: z.string().max(255),
   content: z.string().max(20_000),
-  excerpt: z.string().max(500),
   status: z.enum(["Published", "Draft"]),
   postedAt: z.string().max(10),
   company: z.string().max(255),
@@ -44,9 +44,14 @@ const imageSchema = z.object({
   dataUrl: z.string().min(32, "Choose an image to upload.").max(4_400_000, "The image is too large."),
 });
 
+/** Job offerings are only returned to signed-in alumni and administrators. */
 export const getPublishedPosts = createServerFn({ method: "GET" }).handler(async () =>
-  listPublishedPosts(),
+  listPublishedPosts({ includeJobs: await viewerCanSeeJobs() }),
 );
+
+export const getPostViewer = createServerFn({ method: "GET" }).handler(async () => ({
+  canSeeJobs: await viewerCanSeeJobs(),
+}));
 
 export const getAdminPosts = createServerFn({ method: "GET" }).handler(async () => listAdminPosts());
 

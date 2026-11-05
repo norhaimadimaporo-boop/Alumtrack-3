@@ -14,9 +14,11 @@
     "db:migrate": "node scripts/migrate-profile-location.mjs",
     "db:admin-rbac": "node scripts/migrate-admin-rbac.mjs",
     "db:posts": "node scripts/migrate-posts.mjs",
+    "db:privacy": "node scripts/migrate-privacy-settings.mjs",
     "db:backfill": "node scripts/backfill-profiles.mjs",
     "db:regeocode": "node scripts/regeocode-profiles.mjs",
     "db:sync": "node scripts/sync-databases.mjs",
+    "db:pull": "node scripts/pull-databases.mjs",
     "deploy:env": "node scripts/configure-vercel-env.mjs"
   },
   "dependencies": {

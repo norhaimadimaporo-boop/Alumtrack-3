@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { GraduationCap, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 import { login } from "@/lib/auth.functions";
 import { setSession } from "@/lib/session";
 
@@ -55,9 +56,9 @@ function LoginPage() {
 
   return (
     <div className="mx-auto flex max-w-md flex-col px-4 py-20">
-      <span className="mx-auto flex size-12 items-center justify-center rounded-lg bg-brand text-brand-foreground">
-        <GraduationCap className="size-6" />
-      </span>
+      <div className="flex justify-center">
+        <BrandMark className="size-20" />
+      </div>
       <h1 className="mt-6 text-center text-2xl font-bold text-foreground">Sign in to AlumTrack</h1>
       <p className="mt-2 text-center text-sm text-muted-foreground">
         Use your MSU alumni credentials to manage your profile.

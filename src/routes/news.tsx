@@ -2,19 +2,19 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { CalendarDays, ArrowRight, X } from "lucide-react";
 import { POSTS, findPostPhoto, type Post } from "@/data/news";
-import { getPublishedPosts } from "@/lib/posts.functions";
-import type { PostRecord } from "@/lib/posts.types";
+import { getPostViewer, getPublishedPosts } from "@/lib/posts.functions";
+import { postExcerpt, type PostRecord } from "@/lib/posts.types";
 
 export const Route = createFileRoute("/news")({
   head: () => ({
     meta: [
-      { title: "News & Events — AlumTrack MSU Main Campus" },
+      { title: "Latest Posts — AlumTrack MSU Main Campus" },
       {
         name: "description",
         content:
-          "Announcements, events, and job postings from the MSU Office of Alumni Relations and Career Center.",
+          "News, events, and job postings from the MSU Office of Alumni Relations and Career Center.",
       },
-      { property: "og:title", content: "News & Events — AlumTrack" },
+      { property: "og:title", content: "Latest Posts — AlumTrack" },
       {
         property: "og:description",
         content: "Latest announcements, alumni events, and job postings from OARCC.",
@@ -22,18 +22,25 @@ export const Route = createFileRoute("/news")({
     ],
   }),
   loader: async () => {
-    const result = await getPublishedPosts();
-    return result.ok ? result.posts : [];
+    const [result, viewer] = await Promise.all([getPublishedPosts(), getPostViewer()]);
+    return { posts: result.ok ? result.posts : [], canSeeJobs: viewer.canSeeJobs };
   },
   component: NewsPage,
 });
 
-const TABS = ["All", "News", "Event", "Job"] as const;
+const TABS = [
+  { value: "All", label: "All Posts" },
+  { value: "News", label: "News" },
+  { value: "Event", label: "Events" },
+  { value: "Job", label: "Jobs" },
+] as const;
+
+type TabValue = (typeof TABS)[number]["value"];
 
 type FeedPost = Post & { images: string[] };
 
 function toFeedPost(post: PostRecord): FeedPost {
-  const excerpt = post.excerpt || post.content.replace(/\s+/g, " ").slice(0, 180);
+  const excerpt = postExcerpt(post.content);
   const photo = post.images[0] ?? findPostPhoto(post.title);
   return {
     id: post.id,
@@ -49,31 +56,34 @@ function toFeedPost(post: PostRecord): FeedPost {
 }
 
 function NewsPage() {
-  const loaded = Route.useLoaderData();
-  const [tab, setTab] = useState<(typeof TABS)[number]>("All");
+  const { posts: loaded, canSeeJobs } = Route.useLoaderData();
+  const [tab, setTab] = useState<TabValue>("All");
   const [open, setOpen] = useState<FeedPost | null>(null);
 
-  const posts: FeedPost[] =
+  const visibleTabs = canSeeJobs ? TABS : TABS.filter((t) => t.value !== "Job");
+
+  const posts: FeedPost[] = (
     loaded.length > 0
       ? loaded.map(toFeedPost)
-      : POSTS.map((post) => ({ ...post, images: post.photo ? [post.photo] : [] }));
+      : POSTS.map((post) => ({ ...post, images: post.photo ? [post.photo] : [] }))
+  ).filter((post) => canSeeJobs || post.category !== "Job");
 
-  const featured = posts.find((post) => post.featured) ?? posts[0];
-  const rest = posts
-    .filter((post) => post.id !== featured?.id)
-    .filter((post) => tab === "All" || post.category === tab);
+  const featuredPosts = posts.filter((post) => post.featured);
+  const listed = posts.filter((post) => tab === "All" || post.category === tab);
+  const heading = featuredPosts.length === 1 ? "Latest Post" : "Latest Posts";
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
       <div className="border-l-4 border-brand pl-4">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">News &amp; Events</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">{heading}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Posted by the Office of Alumni Relations and Career Center.
         </p>
       </div>
 
-      {featured && (
+      {featuredPosts.map((featured) => (
         <button
+          key={featured.id}
           onClick={() => setOpen(featured)}
           className="mt-8 grid w-full overflow-hidden rounded-sm border border-border bg-card text-left transition-colors hover:border-brand md:grid-cols-[1.1fr_1fr]"
         >
@@ -106,31 +116,31 @@ function NewsPage() {
             </span>
           </div>
         </button>
-      )}
+      ))}
 
       <div className="mt-10 flex flex-wrap gap-2 border-b border-border pb-3">
-        {TABS.map((t) => (
+        {visibleTabs.map((t) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={t.value}
+            onClick={() => setTab(t.value)}
             className={`rounded-sm px-4 py-2 text-sm font-medium transition-colors ${
-              tab === t
+              tab === t.value
                 ? "bg-brand text-brand-foreground"
                 : "text-muted-foreground hover:bg-secondary hover:text-foreground"
             }`}
           >
-            {t === "All" ? "All Posts" : t === "News" ? "News" : `${t}s`}
+            {t.label}
           </button>
         ))}
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {rest.length === 0 && (
+        {listed.length === 0 && (
           <p className="col-span-full rounded-sm border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
             No posts in this category yet.
           </p>
         )}
-        {rest.map((post) => (
+        {listed.map((post) => (
           <button
             key={post.id}
             onClick={() => setOpen(post)}
@@ -197,7 +207,6 @@ function NewsPage() {
             <h2 className="mt-1 text-2xl font-bold leading-snug text-foreground">
               {open.title}
             </h2>
-            <p className="mt-4 text-sm leading-relaxed text-foreground/85">{open.excerpt}</p>
             <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
               {open.body}
             </p>

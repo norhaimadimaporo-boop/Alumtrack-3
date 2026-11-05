@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search, MapPinned, Newspaper, UserRoundPen, ArrowRight, CalendarDays } from "lucide-react";
-import heroImage from "@/assets/campus-hero.jpg";
+import heroImage from "@/assets/msu-graduation.jpg";
 import { POSTS, findPostPhoto } from "@/data/news";
 import { PUBLIC_STATS, TOP_INDUSTRIES } from "@/data/gis";
 import { BarList } from "@/components/cluster-map";
 import { RealAlumniMap } from "@/components/real-alumni-map";
 import { getAlumniMapPinsData } from "@/lib/gis.functions";
 import { getPublishedPosts } from "@/lib/posts.functions";
+import { postExcerpt } from "@/lib/posts.types";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -56,7 +57,7 @@ const FEATURES = [
   },
   {
     icon: Newspaper,
-    title: "News & Events",
+    title: "Latest Posts",
     text: "Announcements, homecomings, and job postings published by the OARCC.",
     to: "/news" as const,
     action: "Read updates",
@@ -78,7 +79,7 @@ function Index() {
           id: post.id,
           title: post.title,
           date: post.date,
-          excerpt: post.excerpt || post.content.replace(/\s+/g, " ").slice(0, 160),
+          excerpt: postExcerpt(post.content),
           photo: post.images[0] ?? findPostPhoto(post.title),
         }))
       : POSTS.slice(0, 3);
@@ -89,11 +90,12 @@ function Index() {
       <section className="relative isolate overflow-hidden bg-foreground">
         <img
           src={heroImage}
-          alt="Mindanao State University Marawi campus at golden hour"
-          width={1920}
-          height={1080}
-          className="absolute inset-0 size-full object-cover opacity-35"
+          alt="Mindanao State University graduation ceremony"
+          width={739}
+          height={415}
+          className="absolute inset-0 size-full object-cover"
         />
+        <div className="absolute inset-0 bg-gradient-to-r from-foreground/85 via-foreground/65 to-foreground/35" />
         <div className="relative mx-auto max-w-6xl px-4 py-24 md:py-32">
           <span className="inline-block bg-highlight px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-highlight-foreground">
             Office of Alumni Relations and Career Center
@@ -226,7 +228,7 @@ function Index() {
               to="/news"
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:underline"
             >
-              View all news &amp; events <ArrowRight className="size-4" />
+              View all latest posts <ArrowRight className="size-4" />
             </Link>
           </div>
           <div className="mt-8 grid gap-4 md:grid-cols-3">

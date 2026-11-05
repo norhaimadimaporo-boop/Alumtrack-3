@@ -1,12 +1,16 @@
 import { Link } from "@tanstack/react-router";
 import { Facebook, Mail, MapPin, Phone, Clock } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 
 export function SiteFooter() {
   return (
     <footer className="mt-24 border-t-4 border-brand bg-foreground text-background">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 md:grid-cols-3">
         <div>
-          <p className="text-lg font-bold">AlumTrack</p>
+          <div className="flex items-center gap-3">
+            <BrandMark className="size-12 shrink-0" />
+            <p className="text-lg font-bold">AlumTrack</p>
+          </div>
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-background/70">
             Alumni Tracing System and Online Platform for Mindanao State University — Main
             Campus, Marawi City.
@@ -38,7 +42,7 @@ export function SiteFooter() {
             </li>
             <li>
               <Link to="/news" className="hover:text-highlight">
-                News &amp; Events
+                Latest Posts
               </Link>
             </li>
             <li>

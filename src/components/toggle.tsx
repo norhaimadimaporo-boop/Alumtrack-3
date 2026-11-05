@@ -1,31 +1,53 @@
 import { useState } from "react";
 
+/**
+ * Switch row. Pass `on` + `onChange` to control it from outside, or `defaultOn`
+ * to let it manage its own state (used by the profile preview toggles).
+ */
 export function Toggle({
   label,
   hint,
-  defaultOn,
+  defaultOn = false,
+  on,
+  onChange,
+  disabled = false,
 }: {
   label: string;
-  hint?: string;
-  defaultOn: boolean;
+  hint?: string | undefined;
+  defaultOn?: boolean;
+  on?: boolean;
+  onChange?: (next: boolean) => void;
+  disabled?: boolean;
 }) {
-  const [on, setOn] = useState(defaultOn);
+  const [internal, setInternal] = useState(defaultOn);
+  const isOn = on ?? internal;
+
   return (
     <button
       type="button"
-      onClick={() => setOn((v) => !v)}
-      aria-pressed={on}
-      className="flex w-full items-start justify-between gap-4 py-3 text-left"
+      role="switch"
+      aria-checked={isOn}
+      disabled={disabled}
+      onClick={() => {
+        const next = !isOn;
+        if (on === undefined) setInternal(next);
+        onChange?.(next);
+      }}
+      className="flex w-full items-center justify-between gap-4 py-3 text-left disabled:cursor-not-allowed disabled:opacity-60"
     >
       <span className="min-w-0">
         <span className="block text-sm text-foreground">{label}</span>
         {hint && <span className="mt-0.5 block text-[11px] text-muted-foreground">{hint}</span>}
       </span>
       <span
-        className={`relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors ${on ? "bg-success" : "bg-muted"}`}
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+          isOn ? "bg-success" : "bg-muted"
+        }`}
       >
         <span
-          className={`absolute top-0.5 size-5 rounded-full bg-background shadow transition-all ${on ? "left-[22px]" : "left-0.5"}`}
+          className={`inline-block size-5 rounded-full bg-background shadow transition-transform ${
+            isOn ? "translate-x-5" : "translate-x-0.5"
+          }`}
         />
       </span>
     </button>

@@ -3,8 +3,10 @@ import { del, put } from "@vercel/blob";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
 import { requireAdmin } from "./admin.server";
+import { getSessionUser } from "./auth.server";
 import { getPool } from "./db.server";
 import { formatDate } from "./profile-format";
+import { postExcerpt } from "./posts.types";
 import type {
   PostActionResult,
   PostCategory,
@@ -28,7 +30,6 @@ type PostRow = RowDataPacket & {
   type: PostType;
   title: string;
   content: string | null;
-  excerpt: string | null;
   status: PostStatus;
   posted_at: Date | string | null;
   company: string | null;
@@ -44,7 +45,7 @@ type PostRow = RowDataPacket & {
   author: string | null;
 };
 
-const SELECT_COLUMNS = `p.id, p.type, p.title, p.content, p.excerpt, p.status, p.posted_at,
+const SELECT_COLUMNS = `p.id, p.type, p.title, p.content, p.status, p.posted_at,
        p.company, p.location, p.job_type, p.salary, p.deadline, p.qualifications,
        p.apply_link, p.images, p.featured, p.created_at,
        COALESCE(u.full_name, u.email) AS author`;
@@ -118,7 +119,6 @@ function toPost(row: PostRow): PostRecord {
     category: categoryOf(row.type),
     title: row.title,
     content: row.content ?? "",
-    excerpt: row.excerpt ?? "",
     status: row.status,
     postedAt: isoDate(row.posted_at),
     date: formatDate(row.posted_at ?? row.created_at),
@@ -139,12 +139,6 @@ function toPost(row: PostRow): PostRecord {
 
 function clean(value: string | undefined, max: number): string {
   return (value ?? "").trim().slice(0, max);
-}
-
-function deriveExcerpt(content: string, excerpt: string): string {
-  if (excerpt) return excerpt;
-  const plain = content.replace(/\s+/g, " ").trim();
-  return plain.length > 240 ? `${plain.slice(0, 237)}…` : plain;
 }
 
 function validateInput(input: PostInput): { ok: true; input: PostInput } | { ok: false; message: string } {
@@ -183,7 +177,6 @@ function validateInput(input: PostInput): { ok: true; input: PostInput } | { ok:
       type: input.type,
       title,
       content,
-      excerpt: deriveExcerpt(content, clean(input.excerpt, 500)),
       status: input.status,
       postedAt: normalizeDate(input.postedAt ?? "") ?? new Date().toISOString().slice(0, 10),
       company: clean(input.company, 255),
@@ -197,13 +190,6 @@ function validateInput(input: PostInput): { ok: true; input: PostInput } | { ok:
       featured,
     },
   };
-}
-
-async function clearOtherFeatured(keepId: number | null) {
-  await getPool().execute(
-    `UPDATE posts SET featured = 0 WHERE featured = 1 ${keepId ? "AND id <> ?" : ""}`,
-    keepId ? [keepId] : [],
-  );
 }
 
 async function logPostActivity(
@@ -223,14 +209,23 @@ async function logPostActivity(
   }
 }
 
+/** Guests see News and Events only; signed-in alumni and administrators also see Jobs. */
+export async function viewerCanSeeJobs(): Promise<boolean> {
+  return (await getSessionUser()) !== null;
+}
+
 /** Public feed used by /news, /jobs, the dashboard and the landing page. */
-export async function listPublishedPosts(limit?: number): Promise<PostListResult> {
+export async function listPublishedPosts(
+  options: { limit?: number; includeJobs?: boolean } = {},
+): Promise<PostListResult> {
   try {
+    const limit = options.limit;
     const safeLimit = Number.isFinite(limit) && (limit ?? 0) > 0 ? Math.min(Math.floor(limit!), 100) : null;
+    const jobFilter = options.includeJobs ? "" : "AND p.type <> 'Job Offering'";
     const [rows] = await getPool().query<PostRow[]>(
       `SELECT ${SELECT_COLUMNS}
          ${FROM_POSTS}
-        WHERE p.status = 'Published'
+        WHERE p.status = 'Published' ${jobFilter}
         ORDER BY p.featured DESC, COALESCE(p.posted_at, DATE(p.created_at)) DESC, p.id DESC
         ${safeLimit ? "LIMIT ?" : ""}`,
       safeLimit ? [safeLimit] : [],
@@ -277,8 +272,6 @@ export async function createPost(input: PostInput): Promise<PostActionResult> {
   const post = validated.input;
 
   try {
-    if (post.featured) await clearOtherFeatured(null);
-
     const [result] = await getPool().execute<ResultSetHeader>(
       `INSERT INTO posts
          (type, title, content, excerpt, status, posted_at, company, location, job_type,
@@ -288,7 +281,7 @@ export async function createPost(input: PostInput): Promise<PostActionResult> {
         post.type,
         post.title,
         post.content,
-        post.excerpt,
+        postExcerpt(post.content),
         post.status,
         post.postedAt,
         post.company || null,
@@ -342,8 +335,6 @@ export async function updatePost(input: PostInput): Promise<PostActionResult> {
 
     const previousImages = parseImages(existing[0]?.images ?? null);
 
-    if (post.featured) await clearOtherFeatured(input.id);
-
     await getPool().execute(
       `UPDATE posts
           SET type = ?, title = ?, content = ?, excerpt = ?, status = ?, posted_at = ?,
@@ -355,7 +346,7 @@ export async function updatePost(input: PostInput): Promise<PostActionResult> {
         post.type,
         post.title,
         post.content,
-        post.excerpt,
+        postExcerpt(post.content),
         post.status,
         post.postedAt,
         post.company || null,

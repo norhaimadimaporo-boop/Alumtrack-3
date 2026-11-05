@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Menu, X, GraduationCap } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 import { useSession } from "@/hooks/use-session";
 import { logout as logoutRequest } from "@/lib/auth.functions";
 import { clearSession } from "@/lib/session";
@@ -8,7 +9,7 @@ import { clearSession } from "@/lib/session";
 const publicNav = [
   { to: "/", label: "Home" },
   { to: "/search", label: "Search Alumni" },
-  { to: "/news", label: "News & Events" },
+  { to: "/news", label: "Latest Posts" },
   { to: "/oarcc", label: "OARCC" },
 ] as const;
 
@@ -39,9 +40,7 @@ export function SiteHeader() {
       <div className="h-1 w-full bg-brand" />
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <Link to="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
-          <span className="flex size-9 items-center justify-center rounded-md bg-brand text-brand-foreground">
-            <GraduationCap className="size-5" />
-          </span>
+          <BrandMark className="size-11 shrink-0" />
           <span className="leading-tight">
             <span className="block text-base font-bold tracking-tight text-foreground">
               AlumTrack

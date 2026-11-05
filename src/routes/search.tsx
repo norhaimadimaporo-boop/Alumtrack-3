@@ -10,6 +10,9 @@ import {
   ShieldCheck,
   Lock,
   Database,
+  Phone,
+  Mail,
+  Globe,
 } from "lucide-react";
 import { getPublicAlumni } from "@/lib/search.functions";
 import { initials } from "@/lib/profile-format";
@@ -71,12 +74,13 @@ function SearchPage() {
   const [view, setView] = useState<"grid" | "list">("grid");
 
   const alumni = useMemo(() => (data.ok ? data.alumni : []), [data]);
+  const signedIn = data.ok && data.signedIn;
 
   const options = useMemo(
     () => ({
       courses: pickLabels(alumni.map((a) => a.course)),
       colleges: pickLabels(alumni.map((a) => a.college)),
-      regions: pickLabels(alumni.map((a) => a.region)),
+      regions: pickLabels(alumni.map((a) => a.region ?? "")),
       batches: [...new Set(alumni.map((a) => a.batch).filter((b) => b !== "—"))].sort((a, b) =>
         b.localeCompare(a),
       ),
@@ -91,15 +95,15 @@ function SearchPage() {
     return alumni.filter((a) => {
       if (
         q &&
-        ![a.name, a.job, a.company, a.course, a.college, a.region, a.batch].some((field) =>
-          field.toLowerCase().includes(q),
+        ![a.name, a.job ?? "", a.company ?? "", a.course, a.college, a.region ?? "", a.batch].some(
+          (field) => field.toLowerCase().includes(q),
         )
       ) {
         return false;
       }
       if (!sameValue(a.course, filters.course)) return false;
       if (!sameValue(a.college, filters.college)) return false;
-      if (!sameValue(a.region, filters.region)) return false;
+      if (!sameValue(a.region ?? "", filters.region)) return false;
       if (filters.batch && a.batch !== filters.batch) return false;
       return true;
     });
@@ -233,7 +237,7 @@ function SearchPage() {
               }
             >
               {results.map((a) => (
-                <AlumniCard key={a.id} alumnus={a} view={view} />
+                <AlumniCard key={a.id} alumnus={a} view={view} signedIn={signedIn} />
               ))}
             </div>
           )}
@@ -302,7 +306,15 @@ function FilterSelect({
   );
 }
 
-function AlumniCard({ alumnus, view }: { alumnus: PublicAlumnus; view: "grid" | "list" }) {
+function AlumniCard({
+  alumnus,
+  view,
+  signedIn,
+}: {
+  alumnus: PublicAlumnus;
+  view: "grid" | "list";
+  signedIn: boolean;
+}) {
   const statusColor =
     alumnus.status === "Employed"
       ? "bg-success/12 text-success"
@@ -347,9 +359,11 @@ function AlumniCard({ alumnus, view }: { alumnus: PublicAlumnus; view: "grid" | 
           >
             {alumnus.status}
           </span>
-          <p className="mt-3 flex items-center gap-1.5 border-t border-border pt-3 text-[10px] text-muted-foreground">
-            <Lock className="size-3" /> Contact details hidden — sign in as alumni to view
-          </p>
+          {!signedIn && (
+            <p className="mt-3 flex items-center gap-1.5 border-t border-border pt-3 text-[10px] text-muted-foreground">
+              <Lock className="size-3" /> Shared contact details — sign in as alumni to view more
+            </p>
+          )}
         </>
       )}
     </article>
@@ -362,13 +376,37 @@ function Details({ alumnus, inline }: { alumnus: PublicAlumnus; inline?: boolean
       <div className="flex gap-2">
         <Briefcase className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
         <dd className="text-foreground">
-          {alumnus.job} · <span className="text-muted-foreground">{alumnus.company}</span>
+          {alumnus.job !== null ? (
+            <>
+              {alumnus.job} · <span className="text-muted-foreground">{alumnus.company}</span>
+            </>
+          ) : (
+            <span className="text-muted-foreground">Job details are private</span>
+          )}
         </dd>
       </div>
       <div className="flex gap-2">
         <MapPin className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-        <dd className="text-muted-foreground">{alumnus.region}</dd>
+        <dd className="text-muted-foreground">{alumnus.region ?? "Region is private"}</dd>
       </div>
+      {alumnus.mobile && (
+        <div className="flex gap-2">
+          <Phone className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+          <dd className="text-foreground">{alumnus.mobile}</dd>
+        </div>
+      )}
+      {alumnus.emails.map((email) => (
+        <div key={email} className="flex gap-2">
+          <Mail className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+          <dd className="break-all text-foreground">{email}</dd>
+        </div>
+      ))}
+      {alumnus.facebook && (
+        <div className="flex gap-2">
+          <Globe className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+          <dd className="break-all text-foreground">{alumnus.facebook}</dd>
+        </div>
+      )}
     </dl>
   );
 }

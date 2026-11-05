@@ -147,6 +147,29 @@ CREATE TABLE IF NOT EXISTS alumni_organizations (
   CONSTRAINT fk_organizations_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
+-- Per-account privacy and notification preferences. A missing row means the
+-- defaults below, so existing accounts need no backfill.
+CREATE TABLE IF NOT EXISTS alumni_privacy_settings (
+  user_id BIGINT UNSIGNED NOT NULL,
+  public_show_contact TINYINT(1) NOT NULL DEFAULT 0,
+  public_show_email TINYINT(1) NOT NULL DEFAULT 0,
+  public_show_employment TINYINT(1) NOT NULL DEFAULT 1,
+  public_include_region_stats TINYINT(1) NOT NULL DEFAULT 1,
+  gis_show_workplace TINYINT(1) NOT NULL DEFAULT 1,
+  gis_nearby_discovery TINYINT(1) NOT NULL DEFAULT 1,
+  gis_city_only TINYINT(1) NOT NULL DEFAULT 0,
+  directory_show_facebook TINYINT(1) NOT NULL DEFAULT 0,
+  directory_show_workplace TINYINT(1) NOT NULL DEFAULT 1,
+  directory_show_region TINYINT(1) NOT NULL DEFAULT 1,
+  directory_show_mobile TINYINT(1) NOT NULL DEFAULT 0,
+  notify_events TINYINT(1) NOT NULL DEFAULT 1,
+  notify_jobs TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id),
+  CONSTRAINT fk_privacy_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
 -- Audit trail for actions performed inside the admin console.
 CREATE TABLE IF NOT EXISTS activity_log (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

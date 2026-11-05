@@ -23,6 +23,8 @@ type MapRow = RowDataPacket & {
   longitude: number | string | null;
   address_city: string | null;
   address_province: string | null;
+  gis_show_workplace: number | null;
+  gis_city_only: number | null;
 };
 
 export type AlumniMapPinsResult =
@@ -35,6 +37,11 @@ function abbreviate(firstName: string, middleName: string | null, lastName: stri
   const trimmedLast = lastName.trim();
   const lastInitial = trimmedLast ? `${trimmedLast.charAt(0).toUpperCase()}.` : "";
   return [first, middleInitial, lastInitial].filter(Boolean).join(" ");
+}
+
+/** About 11 km at one decimal place: enough to show a city, not a workplace. */
+function coarsen(value: number): number {
+  return Math.round(value * 10) / 10;
 }
 
 function toNumber(value: number | string | null): number | null {
@@ -57,10 +64,12 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
               p.course, p.batch_year, p.employment_status, p.current_position,
               p.current_company, p.current_region, p.current_city, p.current_country,
               p.latitude, p.longitude,
-              cur.city AS address_city, cur.province AS address_province
+              cur.city AS address_city, cur.province AS address_province,
+              ps.gis_show_workplace, ps.gis_city_only
          FROM alumni_profiles p
          JOIN users u ON u.id = p.user_id AND u.is_active = 1
     LEFT JOIN alumni_addresses cur ON cur.user_id = p.user_id AND cur.kind = 'current'
+    LEFT JOIN alumni_privacy_settings ps ON ps.user_id = p.user_id
         WHERE p.verification_status = 'verified'
      ORDER BY p.last_name ASC, p.first_name ASC`,
     );
@@ -68,6 +77,10 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
     const pins: AlumniMapPin[] = [];
 
     for (const row of rows) {
+      // Owners who switch off the GIS workplace pin are left off the map entirely.
+      if (row.gis_show_workplace === 0) continue;
+      const cityOnly = row.gis_city_only === 1;
+
       const storedLat = toNumber(row.latitude);
       const storedLng = toNumber(row.longitude);
       const declaredCountry = row.current_country?.trim() ?? "";
@@ -102,7 +115,7 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
         name: abbreviate(row.first_name, row.middle_name, row.last_name),
         role: employed ? position || "Employed" : "Seeking employment",
         status: employed ? "Employed" : "Unemployed",
-        company: employed ? row.current_company?.trim() || null : null,
+        company: employed && !cityOnly ? row.current_company?.trim() || null : null,
         city:
           location?.city?.trim() ||
           row.current_city?.trim() ||
@@ -118,8 +131,8 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
         precision:
           location?.precision ??
           (row.current_city?.trim() || row.address_city?.trim() ? "city" : "state"),
-        lat,
-        lng,
+        lat: cityOnly ? coarsen(lat) : lat,
+        lng: cityOnly ? coarsen(lng) : lng,
         course: row.course?.trim() || "Course not provided",
         batch: row.batch_year ? String(row.batch_year) : "—",
       });
