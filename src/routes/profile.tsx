@@ -8,6 +8,7 @@ import { Toggle } from "@/components/toggle";
 import { getMyWorkspaceData } from "@/lib/profile.functions";
 import { initials } from "@/lib/profile-format";
 import type { MyProfile } from "@/lib/admin.types";
+import type { AddressInput } from "@/lib/registration.types";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -36,6 +37,43 @@ function Field({ label, value }: { label: string; value: string }) {
         {label}
       </p>
       <p className="mt-1 text-sm text-foreground">{value || "—"}</p>
+    </div>
+  );
+}
+
+type TextAddressKey = "country" | "province" | "city" | "subdivision" | "street" | "block" | "houseNo" | "zipCode";
+
+const ADDRESS_LABELS: Array<[TextAddressKey, string]> = [
+  ["country", "Country"],
+  ["province", "Province / State / Region"],
+  ["city", "City / Municipality"],
+  ["subdivision", "Subdivision / Barangay"],
+  ["street", "Street"],
+  ["block", "Block"],
+  ["houseNo", "House No."],
+  ["zipCode", "Zip Code"],
+];
+
+/** Shows only the address parts that have a value; blank optional fields are left out. */
+function AddressSummary({ title, address }: { title: string; address: AddressInput }) {
+  const rows = ADDRESS_LABELS.filter(([key]) => (address[key] ?? "").trim() !== "");
+  return (
+    <div>
+      <p className="text-[11px] font-bold uppercase tracking-wide text-brand">{title}</p>
+      {rows.length === 0 ? (
+        <p className="mt-1 text-sm text-muted-foreground">No address on file.</p>
+      ) : (
+        <dl className="mt-2 grid gap-3 sm:grid-cols-2">
+          {rows.map(([key, label]) => (
+            <div key={key}>
+              <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {label}
+              </dt>
+              <dd className="mt-1 text-sm text-foreground">{address[key]}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
     </div>
   );
 }
@@ -177,8 +215,8 @@ function ProfilePage() {
 
         <div className="space-y-4">
           <Card title="Address">
-            <Field label="Current address" value={profile.currentAddress} />
-            <Field label="Home address" value={profile.homeAddress} />
+            <AddressSummary title="Current address" address={profile.currentAddressParts} />
+            <AddressSummary title="Home address" address={profile.homeAddressParts} />
           </Card>
 
           <Card title="Contact details">

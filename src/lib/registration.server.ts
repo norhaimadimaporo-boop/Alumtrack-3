@@ -2,7 +2,7 @@ import type { Connection, RowDataPacket, ResultSetHeader } from "mysql2/promise"
 
 import { hashPassword } from "./auth.server";
 import { getPool } from "./db.server";
-import { resolveLocation } from "./geo";
+import { savedLocation } from "./geo";
 import { calculateAge, fullName } from "./profile-format";
 import type {
   AddressInput,
@@ -40,8 +40,8 @@ async function insertAddress(
 ): Promise<void> {
   await connection.execute(
     `INSERT INTO alumni_addresses
-       (user_id, kind, building, house_no, block, street, subdivision, city, province, zip_code)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (user_id, kind, building, house_no, block, street, subdivision, city, province, country, zip_code)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       userId,
       kind,
@@ -52,6 +52,7 @@ async function insertAddress(
       optional(address.subdivision),
       optional(address.city),
       optional(address.province),
+      optional(address.country),
       optional(address.zipCode),
     ],
   );
@@ -181,7 +182,7 @@ export async function registerAlumniAccount(input: RegistrationInput): Promise<R
     const currentAddress = input.currentAddress;
     const homeAddress = input.sameAddress ? currentAddress : input.homeAddress;
     const region = currentAddress.province.trim() || currentAddress.city.trim() || null;
-    const location = resolveLocation(currentAddress.city, currentAddress.province);
+    const location = savedLocation(currentAddress);
 
     const employment = input.employmentStatus === "employed" ? input.employment : null;
     const organization =
@@ -217,9 +218,9 @@ export async function registerAlumniAccount(input: RegistrationInput): Promise<R
         employment?.company.trim() || null,
         region,
         currentAddress.city.trim() || null,
-        location?.country ?? null,
-        location?.lat ?? null,
-        location?.lng ?? null,
+        location.country,
+        location.lat,
+        location.lng,
       ],
     );
 

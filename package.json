@@ -19,7 +19,9 @@
     "db:regeocode": "node scripts/regeocode-profiles.mjs",
     "db:sync": "node scripts/sync-databases.mjs",
     "db:pull": "node scripts/pull-databases.mjs",
-    "deploy:env": "node scripts/configure-vercel-env.mjs"
+    "deploy:env": "node scripts/configure-vercel-env.mjs",
+    "db:geo": "node scripts/build-geo-data.mjs",
+    "db:address-country": "node scripts/migrate-address-country.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -80,12 +82,15 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@aivangogh/ph-address": "^2026.2.4",
+    "@countrystatecity/countries": "^3.0.1",
     "@eslint/js": "^9.32.0",
     "@types/leaflet": "^1.9.22",
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.2.0",
+    "country-state-city": "^3.2.1",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.6",

@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS alumni_addresses (
   block VARCHAR(50) NULL,
   street VARCHAR(150) NULL,
   subdivision VARCHAR(150) NULL,
+  country VARCHAR(120) NULL,
   city VARCHAR(120) NULL,
   province VARCHAR(120) NULL,
   zip_code VARCHAR(20) NULL,

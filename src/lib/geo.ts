@@ -781,3 +781,33 @@ export function resolveLocation(
   //    still appears on the map instead of silently disappearing.
   return withLabels(PH_FALLBACK, cityParts[0] ?? cityInput ?? "", provinceParts[0] ?? "", false);
 }
+
+/** Valid latitude/longitude or null; out-of-range values from a bad request are dropped. */
+function validCoordinate(value: number | null | undefined, limit: number): number | null {
+  return typeof value === "number" && Number.isFinite(value) && Math.abs(value) <= limit ? value : null;
+}
+
+/**
+ * Location to store for an address. Coordinates chosen from the Country →
+ * Province → City dropdowns are used as-is so the map pin lands on the exact
+ * place; a typed place falls back to the offline gazetteer.
+ */
+export function savedLocation(address: {
+  country: string;
+  city: string;
+  province: string;
+  latitude?: number | null | undefined;
+  longitude?: number | null | undefined;
+}): { country: string | null; lat: number | null; lng: number | null } {
+  const country = address.country.trim() || null;
+  const lat = validCoordinate(address.latitude, 90);
+  const lng = validCoordinate(address.longitude, 180);
+  if (lat !== null && lng !== null) return { country, lat, lng };
+
+  const location = resolveLocation(address.city, address.province);
+  return {
+    country: country ?? location?.country ?? null,
+    lat: location?.lat ?? null,
+    lng: location?.lng ?? null,
+  };
+}

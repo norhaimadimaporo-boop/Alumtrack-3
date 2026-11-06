@@ -1,0 +1,3 @@
+Location data (countries, states/provinces, cities) is derived from the
+@countrystatecity/countries dataset, licensed under the Open Database License (ODbL) 1.0.
+Regenerate with: npm run db:geo

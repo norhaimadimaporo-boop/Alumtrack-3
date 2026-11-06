@@ -11,10 +11,16 @@ export type AddressInput = {
   houseNo: string;
   block: string;
   street: string;
+  /** Subdivision / Barangay. */
   subdivision: string;
   city: string;
+  /** Province / State / Region. */
   province: string;
+  country: string;
   zipCode: string;
+  /** Map coordinates taken from the selected city (current address only). */
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type EducationInput = {

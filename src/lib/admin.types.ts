@@ -1,3 +1,5 @@
+import type { AddressInput } from "./registration.types";
+
 export type VerificationStatus = "pending" | "verified" | "rejected";
 export type ProfileEmploymentStatus = "employed" | "unemployed" | "unknown";
 
@@ -182,6 +184,9 @@ export type MyProfile = {
   verificationStatus: VerificationStatus;
   currentAddress: string;
   homeAddress: string;
+  /** Structured address parts; the profile view only renders the non-empty ones. */
+  currentAddressParts: AddressInput;
+  homeAddressParts: AddressInput;
   education: AdminEducationRecord[];
   employment: AdminEmploymentRecord[];
   organizations: AdminOrganizationRecord[];

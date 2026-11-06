@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start";
+﻿import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import {
@@ -40,8 +40,11 @@ const addressSchema = z.object({
   street: optionalText(150),
   subdivision: optionalText(150),
   city: requiredText(120, "Enter your city or municipality."),
-  province: requiredText(120, "Enter your province."),
+  province: requiredText(120, "Enter your province or state."),
+  country: requiredText(120, "Enter your country."),
   zipCode: optionalText(20),
+  latitude: z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
 });
 
 const isoDateOrEmpty = z

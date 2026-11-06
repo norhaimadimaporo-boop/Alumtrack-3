@@ -2,7 +2,7 @@ import type { Connection, ResultSetHeader, RowDataPacket } from "mysql2/promise"
 
 import { getSessionUser } from "./auth.server";
 import { getPool } from "./db.server";
-import { resolveLocation } from "./geo";
+import { savedLocation } from "./geo";
 import {
   calculateAge,
   formatAddress,
@@ -65,6 +65,7 @@ type ProfileRow = RowDataPacket & {
   current_subdivision: string | null;
   current_city: string | null;
   current_province: string | null;
+  current_country: string | null;
   current_zip_code: string | null;
   home_building: string | null;
   home_house_no: string | null;
@@ -73,7 +74,10 @@ type ProfileRow = RowDataPacket & {
   home_subdivision: string | null;
   home_city: string | null;
   home_province: string | null;
+  home_country: string | null;
   home_zip_code: string | null;
+  latitude: number | string | null;
+  longitude: number | string | null;
 };
 
 type EducationRow = RowDataPacket & {
@@ -181,11 +185,14 @@ async function loadProfileBundle(userId: number): Promise<ProfileBundle | null> 
             cur.building AS current_building, cur.house_no AS current_house_no,
             cur.block AS current_block, cur.street AS current_street,
             cur.subdivision AS current_subdivision, cur.city AS current_city,
-            cur.province AS current_province, cur.zip_code AS current_zip_code,
+            cur.province AS current_province, cur.country AS current_country,
+            cur.zip_code AS current_zip_code,
             home.building AS home_building, home.house_no AS home_house_no,
             home.block AS home_block, home.street AS home_street,
             home.subdivision AS home_subdivision, home.city AS home_city,
-            home.province AS home_province, home.zip_code AS home_zip_code
+            home.province AS home_province, home.country AS home_country,
+            home.zip_code AS home_zip_code,
+            p.latitude, p.longitude
        FROM alumni_profiles p
   LEFT JOIN alumni_addresses cur ON cur.user_id = p.user_id AND cur.kind = 'current'
   LEFT JOIN alumni_addresses home ON home.user_id = p.user_id AND home.kind = 'home'
@@ -269,7 +276,7 @@ function addressInputFromRow(
   row: ProfileRow,
   prefix: "current" | "home",
 ): ProfileEditInput["currentAddress"] {
-  return {
+  const address: ProfileEditInput["currentAddress"] = {
     building: row[`${prefix}_building`] ?? "",
     houseNo: row[`${prefix}_house_no`] ?? "",
     block: row[`${prefix}_block`] ?? "",
@@ -277,8 +284,20 @@ function addressInputFromRow(
     subdivision: row[`${prefix}_subdivision`] ?? "",
     city: row[`${prefix}_city`] ?? "",
     province: row[`${prefix}_province`] ?? "",
+    country: row[`${prefix}_country`] ?? "",
     zipCode: row[`${prefix}_zip_code`] ?? "",
   };
+  if (prefix === "current") {
+    address.latitude = toCoordinate(row.latitude);
+    address.longitude = toCoordinate(row.longitude);
+  }
+  return address;
+}
+
+function toCoordinate(value: number | string | null): number | null {
+  if (value === null || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function buildMyProfile(bundle: ProfileBundle): MyProfile {
@@ -318,6 +337,8 @@ function buildMyProfile(bundle: ProfileBundle): MyProfile {
     verificationStatus: row.verification_status,
     currentAddress: addressFromRow(row, "current"),
     homeAddress: addressFromRow(row, "home"),
+    currentAddressParts: addressInputFromRow(row, "current"),
+    homeAddressParts: addressInputFromRow(row, "home"),
     education,
     employment,
     organizations,
@@ -550,8 +571,8 @@ async function upsertAddress(
 ): Promise<void> {
   await connection.execute(
     `INSERT INTO alumni_addresses
-       (user_id, kind, building, house_no, block, street, subdivision, city, province, zip_code)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       (user_id, kind, building, house_no, block, street, subdivision, city, province, country, zip_code)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE
        building = VALUES(building),
        house_no = VALUES(house_no),
@@ -560,6 +581,7 @@ async function upsertAddress(
        subdivision = VALUES(subdivision),
        city = VALUES(city),
        province = VALUES(province),
+       country = VALUES(country),
        zip_code = VALUES(zip_code)`,
     [
       userId,
@@ -571,6 +593,7 @@ async function upsertAddress(
       optional(address.subdivision),
       optional(address.city),
       optional(address.province),
+      optional(address.country),
       optional(address.zipCode),
     ],
   );
@@ -675,7 +698,7 @@ export async function updateMyProfile(input: ProfileEditInput): Promise<SaveResu
   const { editor } = resolved;
   const displayName = fullName(input.firstName, input.middleName, input.lastName);
   const region = input.currentAddress.province.trim() || input.currentAddress.city.trim() || null;
-  const location = resolveLocation(input.currentAddress.city, input.currentAddress.province);
+  const location = savedLocation(input.currentAddress);
 
   const pool = getPool();
   const connection = await pool.getConnection();
@@ -720,9 +743,9 @@ export async function updateMyProfile(input: ProfileEditInput): Promise<SaveResu
         optional(input.facebook),
         region,
         input.currentAddress.city.trim() || null,
-        location?.country ?? null,
-        location?.lat ?? null,
-        location?.lng ?? null,
+        location.country,
+        location.lat,
+        location.lng,
         editor.userId,
       ],
     );

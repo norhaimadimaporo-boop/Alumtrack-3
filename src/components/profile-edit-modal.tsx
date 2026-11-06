@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { AddressFields } from "@/components/address-fields";
 import { Modal } from "@/components/modal";
 import { updateMyProfileData } from "@/lib/profile.functions";
 import type { ProfileEditInput } from "@/lib/profile.types";
@@ -49,7 +50,7 @@ function TextField({
   );
 }
 
-function AddressFields({
+function AddressBlock({
   title,
   value,
   onChange,
@@ -58,24 +59,10 @@ function AddressFields({
   value: AddressInput;
   onChange: (next: AddressInput) => void;
 }) {
-  const set = (key: keyof AddressInput) => (next: string) => onChange({ ...value, [key]: next });
-
   return (
     <fieldset className="rounded-lg border border-border p-4">
       <legend className="px-1 text-xs font-bold uppercase tracking-wide text-brand">{title}</legend>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <TextField label="House no." value={value.houseNo} onChange={set("houseNo")} />
-        <TextField label="Block / Lot" value={value.block} onChange={set("block")} />
-        <TextField label="Street" value={value.street} onChange={set("street")} />
-        <TextField
-          label="Subdivision / Building"
-          value={value.subdivision}
-          onChange={set("subdivision")}
-        />
-        <TextField label="Barangay / City" value={value.city} onChange={set("city")} required />
-        <TextField label="Province" value={value.province} onChange={set("province")} required />
-        <TextField label="Zip code" value={value.zipCode} onChange={set("zipCode")} />
-      </div>
+      <AddressFields value={value} onChange={onChange} />
     </fieldset>
   );
 }
@@ -209,7 +196,7 @@ export function ProfileEditModal({
 
         {tab === "address" && (
           <div className="space-y-4">
-            <AddressFields
+            <AddressBlock
               title="Current address"
               value={form.currentAddress}
               onChange={(value) => set("currentAddress", value)}
@@ -223,7 +210,7 @@ export function ProfileEditModal({
               />
               My home address is the same as my current address
             </label>
-            <AddressFields
+            <AddressBlock
               title="Home address"
               value={form.homeAddress}
               onChange={(value) => set("homeAddress", value)}

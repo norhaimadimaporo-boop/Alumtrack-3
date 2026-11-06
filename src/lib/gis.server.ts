@@ -83,15 +83,19 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
 
       const storedLat = toNumber(row.latitude);
       const storedLng = toNumber(row.longitude);
+      const hasStored = storedLat !== null && storedLng !== null;
       const declaredCountry = row.current_country?.trim() ?? "";
 
       // Include the country so an overseas city without its country in the
-      // address ("Shanghai") still resolves to the right coordinates.
-      const location = resolveLocation(
-        row.current_city?.trim() || row.address_city || declaredCountry,
-        [declaredCountry, row.address_province || row.current_region].filter(Boolean).join(", ") ||
-          null,
-      );
+      // address ("Shanghai") still resolves to the right coordinates. Stored
+      // coordinates (from the Country → Province → City dropdowns) take priority.
+      const location = hasStored
+        ? null
+        : resolveLocation(
+            row.current_city?.trim() || row.address_city || declaredCountry,
+            [declaredCountry, row.address_province || row.current_region].filter(Boolean).join(", ") ||
+              null,
+          );
 
       // A Philippine centroid is only a guess. Skip it when the profile is
       // clearly overseas or when no coordinates were ever stored.
@@ -117,20 +121,20 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
         status: employed ? "Employed" : "Unemployed",
         company: employed && !cityOnly ? row.current_company?.trim() || null : null,
         city:
-          location?.city?.trim() ||
           row.current_city?.trim() ||
+          location?.city?.trim() ||
           row.address_city?.trim() ||
           declaredCountry ||
           "Unknown",
         region:
-          location?.region?.trim() ||
           row.current_region?.trim() ||
+          location?.region?.trim() ||
           row.address_province?.trim() ||
           "",
-        country: location?.country?.trim() || declaredCountry || "Philippines",
-        precision:
-          location?.precision ??
-          (row.current_city?.trim() || row.address_city?.trim() ? "city" : "state"),
+        country: declaredCountry || location?.country?.trim() || "Philippines",
+        precision: row.current_city?.trim()
+          ? "city"
+          : (location?.precision ?? (row.address_city?.trim() ? "city" : "state")),
         lat: cityOnly ? coarsen(lat) : lat,
         lng: cityOnly ? coarsen(lng) : lng,
         course: row.course?.trim() || "Course not provided",
