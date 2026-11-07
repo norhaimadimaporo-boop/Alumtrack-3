@@ -1,6 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import type { Map as LeafletMap } from "leaflet";
-import { Loader2, Maximize2 } from "lucide-react";
+import { Loader2, Maximize2, X } from "lucide-react";
 import { MAP_LEGEND, MAP_VIEWS, type AlumniMapPin, type MapViewKey } from "@/data/gis";
 
 /**
@@ -103,19 +103,19 @@ export function RealAlumniMap({
         {mounted ? (
           <Suspense
             fallback={
-              <MapSkeleton heightClassName={fullscreen ? "h-[calc(100vh-180px)] min-h-[700px]" : heightClassName} />
+              <MapSkeleton heightClassName={fullscreen ? "h-[calc(100vh-120px)]" : heightClassName} />
             }
           >
             <LeafletAlumniMap
               pins={pins}
               viewKey={viewKey}
               initialView={initialView}
-              heightClassName={fullscreen ? "h-[calc(100vh-180px)] min-h-[700px]" : heightClassName}
+              heightClassName={fullscreen ? "h-[calc(100vh-120px)]" : heightClassName}
               onMapReady={handleMapReady}
             />
           </Suspense>
         ) : (
-          <MapSkeleton heightClassName={fullscreen ? "h-[calc(100vh-180px)] min-h-[700px]" : heightClassName} />
+          <MapSkeleton heightClassName={fullscreen ? "h-[calc(100vh-120px)]" : heightClassName} />
         )}
 
         {/* Floating view presets — top-left of the map canvas */}
@@ -214,11 +214,11 @@ export function RealAlumniMap({
           <button
             type="button"
             onClick={() => setFullscreen((open) => !open)}
-            aria-label={fullscreen ? "Exit fullscreen map" : "Open fullscreen map"}
-            title={fullscreen ? "Exit fullscreen map" : "Full display (fullscreen)"}
+            aria-label={fullscreen ? "Close fullscreen map" : "Open fullscreen map"}
+            title={fullscreen ? "Close fullscreen map" : "Full display (fullscreen)"}
             className="inline-flex size-7 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-sm transition-colors hover:bg-muted"
           >
-            <Maximize2 className="size-4" />
+            {fullscreen ? <X className="size-4" /> : <Maximize2 className="size-4" />}
           </button>
         </div>
       </div>
