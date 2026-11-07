@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Plus,
   Search,
@@ -18,11 +18,23 @@ import {
   UserRound,
 } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
+import { AddressFields } from "@/components/address-fields";
 import { Modal, LabeledInput, PrimaryButton } from "@/components/modal";
 import { useAdminRole } from "@/hooks/use-session";
 import { COURSES, COLLEGES, REGIONS, BATCHES, initials } from "@/data/alumni";
-import { deleteAlumni, getAdminAlumni, importAlumni, verifyAlumni } from "@/lib/admin.functions";
+import { toast } from "sonner";
+
+import {
+  createAlumni,
+  deleteAlumni,
+  getAdminAlumni,
+  importAlumni,
+  updateAlumni,
+  verifyAlumni,
+} from "@/lib/admin.functions";
 import type { AdminAlumnus as Alumnus, AdminImportResult } from "@/lib/admin.types";
+import { calculateAge, toIsoDate } from "@/lib/profile-format";
+import type { AddressInput } from "@/lib/registration.types";
 
 export const Route = createFileRoute("/admin/alumni")({
   head: () => ({
@@ -45,6 +57,20 @@ export const Route = createFileRoute("/admin/alumni")({
 });
 
 const idNumber = (a: Alumnus) => `${a.batch}-${30000 + a.id * 137}`;
+
+function emptyAddress(): AddressInput {
+  return {
+    building: "",
+    houseNo: "",
+    block: "",
+    street: "",
+    subdivision: "",
+    city: "",
+    province: "",
+    country: "",
+    zipCode: "",
+  };
+}
 
 const EXPORT_FIELDS = [
   "Last Name",
@@ -123,6 +149,28 @@ const PHASE_STEPS = [
 
 const DEGREE_TYPES = ["Post Graduate Degree", "Graduate Degree", "Baccalaureate Degree"] as const;
 
+type DegreeDetail = {
+  schoolIdNo: string;
+  degree: string;
+  major: string;
+  college: string;
+  school: string;
+  schoolAddress: string;
+  graduatedOn: string;
+};
+
+function emptyDegreeDetail(): DegreeDetail {
+  return {
+    schoolIdNo: "",
+    degree: "",
+    major: "",
+    college: "",
+    school: "",
+    schoolAddress: "",
+    graduatedOn: "",
+  };
+}
+
 function AdminAlumni() {
   const data = Route.useLoaderData();
   const router = useRouter();
@@ -148,7 +196,40 @@ function AdminAlumni() {
   const [exporting, setExporting] = useState(false);
   const [fields, setFields] = useState<string[]>([...EXPORT_FIELDS]);
   const [step, setStep] = useState(0);
+  const [currentAddress, setCurrentAddress] = useState<AddressInput>(emptyAddress);
+  const [homeAddress, setHomeAddress] = useState<AddressInput>(emptyAddress);
   const [sameAddress, setSameAddress] = useState(false);
+  const [wizardGender, setWizardGender] = useState("");
+  const [wizardDob, setWizardDob] = useState("");
+  const [wizardAge, setWizardAge] = useState("");
+  const [wizardFullName, setWizardFullName] = useState("");
+  const [wizardEthnicity, setWizardEthnicity] = useState("");
+  const [wizardBirthPlace, setWizardBirthPlace] = useState("");
+  const [wizardReligion, setWizardReligion] = useState("");
+  const [wizardMobile, setWizardMobile] = useState("");
+  const [wizardContactEmail, setWizardContactEmail] = useState("");
+  const [wizardAkanEmail, setWizardAkanEmail] = useState("");
+  const [wizardFacebook, setWizardFacebook] = useState("");
+  const [wizardDegreeDetails, setWizardDegreeDetails] = useState<
+    Partial<Record<string, DegreeDetail>>
+  >({});
+  const [wizardCourse, setWizardCourse] = useState("");
+  const [wizardCollege, setWizardCollege] = useState("");
+  const [wizardBatch, setWizardBatch] = useState("");
+  const [wizardRegion, setWizardRegion] = useState("");
+  const [wizardPosition, setWizardPosition] = useState("");
+  const [wizardCompany, setWizardCompany] = useState("");
+  const [wizardCompanyAddress, setWizardCompanyAddress] = useState("");
+  const [wizardLength, setWizardLength] = useState("");
+  const [wizardYears, setWizardYears] = useState("");
+  const [wizardWorkLoc, setWizardWorkLoc] = useState("");
+  const [wizardSector, setWizardSector] = useState("");
+  const [wizardOrgName, setWizardOrgName] = useState("");
+  const [wizardOrgAddress, setWizardOrgAddress] = useState("");
+  const [wizardOrgPosition, setWizardOrgPosition] = useState("");
+  const [wizardOrgContact, setWizardOrgContact] = useState("");
+  const [wizardOrgEmail, setWizardOrgEmail] = useState("");
+  const [wizardOrgSince, setWizardOrgSince] = useState("");
   const [degreeTypes, setDegreeTypes] = useState<string[]>([]);
   const [employed, setEmployed] = useState<"employed" | "unemployed" | "">("");
   const [affiliated, setAffiliated] = useState<"yes" | "no" | "">("");
@@ -158,13 +239,73 @@ function AdminAlumni() {
     text: string;
   } | null>(null);
 
+  const initWizard = (record: Alumnus | null) => {
+    setCurrentAddress(record?.currentAddressParts ?? emptyAddress());
+    setHomeAddress(record?.homeAddressParts ?? emptyAddress());
+    setSameAddress(false);
+    setWizardGender(record?.gender ?? "");
+    setWizardDob(record?.birthDate ? toIsoDate(record.birthDate) : "");
+    setWizardAge(record?.age ?? "");
+    setWizardFullName(record?.name ?? "");
+    setWizardEthnicity(record?.ethnicity ?? "");
+    setWizardBirthPlace(record?.birthPlace ?? "");
+    setWizardReligion(record?.religion ?? "");
+    setWizardMobile(record?.mobileNumber ?? "");
+    setWizardContactEmail(record?.contactEmail ?? "");
+    setWizardAkanEmail(record?.akanEmail ?? "");
+    setWizardFacebook(record?.facebook ?? "");
+    const education = record?.education ?? [];
+    setDegreeTypes(education.map((entry) => entry.level));
+    const details: Partial<Record<string, DegreeDetail>> = {};
+    for (const entry of education) {
+      details[entry.level] = {
+        schoolIdNo: entry.schoolIdNo ?? "",
+        degree: entry.degree ?? "",
+        major: entry.major ?? "",
+        college: entry.college ?? "",
+        school: entry.school ?? "",
+        schoolAddress: entry.schoolAddress ?? "",
+        graduatedOn: entry.graduatedOn ? toIsoDate(entry.graduatedOn) : "",
+      };
+    }
+    setWizardDegreeDetails(details);
+    setWizardCourse(record?.course ?? COURSES[0]);
+    setWizardCollege(record?.college ?? COLLEGES[0]);
+    setWizardBatch(record?.batch ?? BATCHES[0]);
+    setWizardRegion(record?.region ?? REGIONS[0]);
+    const currentEmployment =
+      record?.employment.find((entry) => entry.isCurrent) ?? record?.employment[0];
+    setEmployed(
+      record?.employmentStatus === "employed" || record?.employmentStatus === "unemployed"
+        ? record.employmentStatus
+        : "",
+    );
+    setWizardPosition(currentEmployment?.position ?? record?.job ?? "");
+    setWizardCompany(currentEmployment?.company ?? record?.company ?? "");
+    setWizardCompanyAddress(currentEmployment?.companyAddress ?? "");
+    setWizardLength(currentEmployment?.lengthOfEmployment ?? "");
+    setWizardYears(currentEmployment?.yearsInOffice ?? "");
+    setWizardWorkLoc(currentEmployment?.workLocation ?? "");
+    setWizardSector(currentEmployment?.sector ?? "");
+    const organization = record?.organizations[0];
+    setAffiliated(organization ? "yes" : "");
+    setWizardOrgName(organization?.name ?? "");
+    setWizardOrgAddress(organization?.address ?? "");
+    setWizardOrgPosition(organization?.position ?? "");
+    setWizardOrgContact(organization?.contactNo ?? "");
+    setWizardOrgEmail(organization?.email ?? "");
+    setWizardOrgSince(organization?.memberSince ? toIsoDate(organization.memberSince) : "");
+  };
+
   const resetWizard = () => {
     setStep(0);
-    setSameAddress(false);
-    setDegreeTypes([]);
-    setEmployed("");
-    setAffiliated("");
+    initWizard(null);
   };
+
+  // Auto-calculate age (years) from date of birth.
+  useEffect(() => {
+    setWizardAge(calculateAge(wizardDob) || "");
+  }, [wizardDob]);
 
   const handleVerify = async (record: Alumnus) => {
     setBusyId(record.id);
@@ -202,6 +343,83 @@ function AdminAlumni() {
       });
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const payload = {
+        fullName: wizardFullName,
+        gender: wizardGender,
+        birthDate: wizardDob,
+        ethnicity: wizardEthnicity,
+        birthPlace: wizardBirthPlace,
+        religion: wizardReligion,
+        currentAddress,
+        homeAddress: sameAddress ? currentAddress : homeAddress,
+        mobileNumber: wizardMobile,
+        contactEmail: wizardContactEmail,
+        akanEmail: wizardAkanEmail,
+        facebook: wizardFacebook,
+        education: degreeTypes.map((level) => ({
+          level,
+          ...(wizardDegreeDetails[level] ?? emptyDegreeDetail()),
+        })),
+        course: wizardCourse,
+        college: wizardCollege,
+        batch: wizardBatch,
+        region: wizardRegion,
+        employmentStatus:
+          employed === "employed" || employed === "unemployed" ? employed : "unknown",
+        employment:
+          employed === "employed"
+            ? {
+                position: wizardPosition,
+                company: wizardCompany,
+                companyAddress: wizardCompanyAddress,
+                lengthOfEmployment: wizardLength,
+                yearsInOffice: wizardYears,
+                workLocation: wizardWorkLoc,
+                sector: wizardSector,
+              }
+            : null,
+        organization:
+          affiliated === "yes"
+            ? {
+                name: wizardOrgName,
+                address: wizardOrgAddress,
+                position: wizardOrgPosition,
+                contactNo: wizardOrgContact,
+                email: wizardOrgEmail,
+                memberSince: wizardOrgSince,
+              }
+            : null,
+      };
+      const result = editing
+        ? await updateAlumni({ data: { id: editing.id, ...payload } })
+        : await createAlumni({ data: payload });
+      if (result.ok) {
+        toast.success(
+          editing ? "Alumni record updated successfully!" : "Alumni record added successfully!",
+        );
+        setActionMessage({ tone: "success", text: result.message });
+        setAdding(false);
+        setEditing(null);
+        await router.invalidate();
+      } else {
+        setActionMessage({ tone: "error", text: result.message });
+      }
+    } catch (error) {
+      console.error(error);
+      setActionMessage({
+        tone: "error",
+        text: "We could not save this record right now. Please try again.",
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -489,7 +707,7 @@ function AdminAlumni() {
                           disabled={busyId === a.id}
                           className="text-xs font-semibold text-success hover:underline disabled:opacity-50"
                         >
-                          {busyId === a.id ? "Verifying…" : "Verify"}
+                          {busyId === a.id ? "Approving…" : "Approve"}
                         </button>
                       )}
                       <button
@@ -733,15 +951,9 @@ function AdminAlumni() {
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
-              setAdding(false);
-              setEditing(null);
+              if (!saving) void handleSave();
             }}
           >
-            <p className="rounded-md border-l-4 border-highlight bg-muted/50 px-3 py-2 text-[11px] text-muted-foreground">
-              Direct add and edit from the admin console is not connected to the database yet. New
-              alumni accounts are created through the public registration form, and the records in
-              this directory are read live from MySQL. The verify and delete actions are fully live.
-            </p>
 
             <ol className="flex flex-wrap gap-1.5">
               {PHASE_STEPS.map((s, i) => (
@@ -768,16 +980,42 @@ function AdminAlumni() {
                 <p className="text-[11px] font-bold uppercase tracking-wide text-brand">
                   Phase 1 — Personal details
                 </p>
-                <LabeledInput label="Full name" defaultValue={editing?.name} />
+                <LabeledInput label="Full name" value={wizardFullName} onChange={setWizardFullName} />
                 <LabeledInput label="ID Number" defaultValue={editing ? idNumber(editing) : ""} />
                 <div className="grid grid-cols-2 gap-3">
-                  <LabeledInput label="Gender" />
-                  <LabeledInput label="Date of birth" placeholder="DD-MM-YYYY" />
-                  <LabeledInput label="Age" />
-                  <LabeledInput label="Ethnicity / Tribe" />
+                  <label className="block">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Gender
+                    </span>
+                    <select
+                      value={wizardGender}
+                      onChange={(e) => setWizardGender(e.target.value)}
+                      className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-brand"
+                      aria-label="Gender"
+                    >
+                      <option value="" disabled>
+                        Select Gender
+                      </option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select>
+                  </label>
+                  <LabeledInput
+                    label="Date of birth"
+                    type="date"
+                    value={wizardDob}
+                    onChange={setWizardDob}
+                  />
+                  <LabeledInput label="Age" value={wizardAge} disabled />
+                  <LabeledInput label="Ethnicity / Tribe" value={wizardEthnicity} onChange={setWizardEthnicity} placeholder="e.g. Maranao" />
                 </div>
-                <LabeledInput label="Place of birth" />
-                <LabeledInput label="Religious affiliation" />
+                <LabeledInput
+                  label="Place of birth"
+                  value={wizardBirthPlace}
+                  onChange={setWizardBirthPlace}
+                  placeholder="Barangay, City/Municipality, Province"
+                />
+                <LabeledInput label="Religious affiliation" value={wizardReligion} onChange={setWizardReligion} />
               </div>
             )}
 
@@ -790,7 +1028,7 @@ function AdminAlumni() {
                   <p className="text-xs font-bold uppercase tracking-wide text-foreground">
                     Current address
                   </p>
-                  <AddressFields />
+                  <AddressFields value={currentAddress} onChange={setCurrentAddress} />
                 </div>
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wide text-foreground">
@@ -800,26 +1038,48 @@ function AdminAlumni() {
                     <input
                       type="checkbox"
                       checked={sameAddress}
-                      onChange={(e) => setSameAddress(e.target.checked)}
+                      onChange={(e) => {
+                        setSameAddress(e.target.checked);
+                        if (e.target.checked) setHomeAddress(currentAddress);
+                      }}
                       className="size-4 accent-brand"
                     />
                     Same as current address
                   </label>
-                  {!sameAddress && <AddressFields />}
+                  {!sameAddress && (
+                    <AddressFields value={homeAddress} onChange={setHomeAddress} />
+                  )}
                 </div>
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wide text-foreground">
                     Contact details
                   </p>
                   <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                    <LabeledInput label="Active mobile number" placeholder="09XX XXX XXXX" />
-                    <LabeledInput label="Active email address" type="email" />
+                    <LabeledInput
+                      label="Active mobile number"
+                      value={wizardMobile}
+                      onChange={setWizardMobile}
+                      placeholder="09XX XXX XXXX"
+                    />
+                    <LabeledInput
+                      label="Active email address"
+                      type="email"
+                      value={wizardContactEmail}
+                      onChange={setWizardContactEmail}
+                    />
                     <LabeledInput
                       label="Akan email address"
                       type="email"
+                      value={wizardAkanEmail}
+                      onChange={setWizardAkanEmail}
                       placeholder="you@msumain.edu.ph"
                     />
-                    <LabeledInput label="Facebook account" placeholder="facebook.com/username" />
+                    <LabeledInput
+                      label="Facebook account"
+                      value={wizardFacebook}
+                      onChange={setWizardFacebook}
+                      placeholder="facebook.com/username"
+                    />
                   </div>
                 </div>
               </div>
@@ -868,13 +1128,78 @@ function AdminAlumni() {
                   <div key={d} className="rounded-md border border-border p-4">
                     <p className="text-[11px] font-bold uppercase tracking-wide text-brand">{d}</p>
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <LabeledInput label="School ID No." placeholder="e.g. 2020-30124" />
-                      <LabeledInput label="Degree" />
-                      <LabeledInput label="Major" />
-                      <LabeledInput label="Name of college" />
-                      <LabeledInput label="University / school attended" />
-                      <LabeledInput label="University / school address" />
-                      <LabeledInput label="Date graduated" placeholder="DD-MM-YYYY" />
+                      <LabeledInput
+                        label="School ID No."
+                        value={wizardDegreeDetails[d]?.schoolIdNo ?? ""}
+                        onChange={(value) =>
+                          setWizardDegreeDetails((prev) => ({
+                            ...prev,
+                            [d]: { ...(prev[d] ?? emptyDegreeDetail()), schoolIdNo: value },
+                          }))
+                        }
+                        placeholder="e.g. 2020-30124"
+                      />
+                      <LabeledInput
+                        label="Degree"
+                        value={wizardDegreeDetails[d]?.degree ?? ""}
+                        onChange={(value) =>
+                          setWizardDegreeDetails((prev) => ({
+                            ...prev,
+                            [d]: { ...(prev[d] ?? emptyDegreeDetail()), degree: value },
+                          }))
+                        }
+                      />
+                      <LabeledInput
+                        label="Major"
+                        value={wizardDegreeDetails[d]?.major ?? ""}
+                        onChange={(value) =>
+                          setWizardDegreeDetails((prev) => ({
+                            ...prev,
+                            [d]: { ...(prev[d] ?? emptyDegreeDetail()), major: value },
+                          }))
+                        }
+                      />
+                      <LabeledInput
+                        label="Name of college"
+                        value={wizardDegreeDetails[d]?.college ?? ""}
+                        onChange={(value) =>
+                          setWizardDegreeDetails((prev) => ({
+                            ...prev,
+                            [d]: { ...(prev[d] ?? emptyDegreeDetail()), college: value },
+                          }))
+                        }
+                      />
+                      <LabeledInput
+                        label="University / school attended"
+                        value={wizardDegreeDetails[d]?.school ?? ""}
+                        onChange={(value) =>
+                          setWizardDegreeDetails((prev) => ({
+                            ...prev,
+                            [d]: { ...(prev[d] ?? emptyDegreeDetail()), school: value },
+                          }))
+                        }
+                      />
+                      <LabeledInput
+                        label="University / school address"
+                        value={wizardDegreeDetails[d]?.schoolAddress ?? ""}
+                        onChange={(value) =>
+                          setWizardDegreeDetails((prev) => ({
+                            ...prev,
+                            [d]: { ...(prev[d] ?? emptyDegreeDetail()), schoolAddress: value },
+                          }))
+                        }
+                      />
+                      <LabeledInput
+                        label="Date graduated"
+                        type="date"
+                        value={wizardDegreeDetails[d]?.graduatedOn ?? ""}
+                        onChange={(value) =>
+                          setWizardDegreeDetails((prev) => ({
+                            ...prev,
+                            [d]: { ...(prev[d] ?? emptyDegreeDetail()), graduatedOn: value },
+                          }))
+                        }
+                      />
                     </div>
                   </div>
                 ))}
@@ -885,7 +1210,8 @@ function AdminAlumni() {
                       Course
                     </label>
                     <select
-                      defaultValue={editing?.course ?? COURSES[0]}
+                      value={wizardCourse}
+                      onChange={(e) => setWizardCourse(e.target.value)}
                       className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
                     >
                       {COURSES.map((c) => (
@@ -898,7 +1224,8 @@ function AdminAlumni() {
                       College
                     </label>
                     <select
-                      defaultValue={editing?.college ?? COLLEGES[0]}
+                      value={wizardCollege}
+                      onChange={(e) => setWizardCollege(e.target.value)}
                       className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
                     >
                       {COLLEGES.map((c) => (
@@ -911,7 +1238,8 @@ function AdminAlumni() {
                       Batch year
                     </label>
                     <select
-                      defaultValue={editing?.batch ?? BATCHES[0]}
+                      value={wizardBatch}
+                      onChange={(e) => setWizardBatch(e.target.value)}
                       className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
                     >
                       {BATCHES.map((b) => (
@@ -924,7 +1252,8 @@ function AdminAlumni() {
                       Region
                     </label>
                     <select
-                      defaultValue={editing?.region ?? REGIONS[0]}
+                      value={wizardRegion}
+                      onChange={(e) => setWizardRegion(e.target.value)}
                       className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
                     >
                       {REGIONS.map((r) => (
@@ -965,15 +1294,18 @@ function AdminAlumni() {
                 {employed === "employed" && (
                   <div className="mt-4 space-y-3 rounded-md border border-border p-4">
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <LabeledInput label="Present position / job" defaultValue={editing?.job} />
+                      <LabeledInput label="Present position / job" value={wizardPosition} onChange={setWizardPosition} />
                       <LabeledInput
                         label="Present company / agency name"
-                        defaultValue={editing?.company}
+                        value={wizardCompany}
+                        onChange={setWizardCompany}
                       />
-                      <LabeledInput label="Company address" />
-                      <LabeledInput label="Length of employment" placeholder="e.g. 3 years" />
+                      <LabeledInput label="Company address" value={wizardCompanyAddress} onChange={setWizardCompanyAddress} />
+                      <LabeledInput label="Length of employment" value={wizardLength} onChange={setWizardLength} placeholder="e.g. 3 years" />
                       <LabeledInput
                         label="Years assumed in current office / agency"
+                        value={wizardYears}
+                        onChange={setWizardYears}
                         placeholder="e.g. 2"
                       />
                     </div>
@@ -981,6 +1313,8 @@ function AdminAlumni() {
                       label="Location of employment"
                       name="location"
                       options={["Local", "Abroad"]}
+                      value={wizardWorkLoc}
+                      onChange={setWizardWorkLoc}
                     />
                     <CheckRow
                       label="Present employment sector"
@@ -990,6 +1324,8 @@ function AdminAlumni() {
                         "Non-Government / Private Institution",
                         "Freelance / Entrepreneurial",
                       ]}
+                      value={wizardSector}
+                      onChange={setWizardSector}
                     />
                   </div>
                 )}
@@ -1025,12 +1361,12 @@ function AdminAlumni() {
                 {affiliated === "yes" && (
                   <div className="mt-4 rounded-md border border-border p-4">
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <LabeledInput label="Group / organization name" />
-                      <LabeledInput label="Group / organization address" />
-                      <LabeledInput label="Position" />
-                      <LabeledInput label="Contact no." />
-                      <LabeledInput label="Email address" type="email" />
-                      <LabeledInput label="Membership since" placeholder="DD-MM-YYYY" />
+                      <LabeledInput label="Group / organization name" value={wizardOrgName} onChange={setWizardOrgName} />
+                      <LabeledInput label="Group / organization address" value={wizardOrgAddress} onChange={setWizardOrgAddress} />
+                      <LabeledInput label="Position" value={wizardOrgPosition} onChange={setWizardOrgPosition} />
+                      <LabeledInput label="Contact no." value={wizardOrgContact} onChange={setWizardOrgContact} />
+                      <LabeledInput label="Email address" type="email" value={wizardOrgEmail} onChange={setWizardOrgEmail} />
+                      <LabeledInput label="Membership since" type="date" value={wizardOrgSince} onChange={setWizardOrgSince} />
                     </div>
                   </div>
                 )}
@@ -1055,8 +1391,8 @@ function AdminAlumni() {
                   Next phase
                 </button>
               ) : (
-                <PrimaryButton type="submit" disabled>
-                  Save not connected yet
+                <PrimaryButton type="submit" disabled={saving}>
+                  {saving ? "Saving…" : "Save changes"}
                 </PrimaryButton>
               )}
             </div>
@@ -1116,9 +1452,18 @@ function AdminAlumni() {
               <Row label="Religious affiliation" value={viewing.religion || "—"} />
             </MiniCard>
 
+            <MiniCard icon={MapPin} title="Addresses">
+              <p className="pt-1 text-[11px] font-bold uppercase tracking-wide text-brand">
+                Present address
+              </p>
+              <AddressBreakdown parts={viewing.currentAddressParts} />
+              <p className="mt-3 border-t border-border pt-3 text-[11px] font-bold uppercase tracking-wide text-brand">
+                Home address
+              </p>
+              <AddressBreakdown parts={viewing.homeAddressParts} />
+            </MiniCard>
+
             <MiniCard icon={Phone} title="Contact details">
-              <Row label="Present address" value={viewing.currentAddress || "—"} />
-              <Row label="Home address" value={viewing.homeAddress || "—"} />
               <Row label="Mobile number" value={viewing.mobileNumber || "—"} />
               <Row label="Email address" value={viewing.contactEmail || viewing.email} />
               <Row label="Akan email address" value={viewing.akanEmail || "—"} />
@@ -1235,7 +1580,8 @@ function AdminAlumni() {
                 <button
                   type="button"
                   onClick={() => {
-                    resetWizard();
+                    setStep(0);
+                    initWizard(viewing);
                     setEditing(viewing);
                     setViewing(null);
                   }}
@@ -1296,27 +1642,33 @@ function MiniCard({
   );
 }
 
+/** Complete address breakdown in fixed order: Country → Province → City → Barangay → Street/Block/House. */
+function AddressBreakdown({ parts }: { parts: AddressInput | undefined }) {
+  const rows: Array<[string, string | undefined]> = [
+    ["Country", parts?.country],
+    ["Province / State", parts?.province],
+    ["City / Municipality", parts?.city],
+    ["Subdivision / Barangay", parts?.subdivision],
+    ["Street", parts?.street],
+    ["Block", parts?.block],
+    ["House No.", parts?.houseNo],
+    ["Zip Code", parts?.zipCode],
+  ];
+  return (
+    <>
+      {rows.map(([label, value]) => (
+        <Row key={label} label={label} value={value?.trim() || "—"} />
+      ))}
+    </>
+  );
+}
+
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <p className="flex flex-wrap justify-between gap-2">
       <span>{label}</span>
       <span className="font-semibold text-foreground">{value}</span>
     </p>
-  );
-}
-
-function AddressFields() {
-  return (
-    <div className="mt-2 grid gap-3 sm:grid-cols-2">
-      <LabeledInput label="Building" />
-      <LabeledInput label="House No." />
-      <LabeledInput label="Block" />
-      <LabeledInput label="Street" />
-      <LabeledInput label="Subdivision" />
-      <LabeledInput label="City / Municipality" />
-      <LabeledInput label="Province" />
-      <LabeledInput label="Zip code" />
-    </div>
   );
 }
 
@@ -1351,7 +1703,7 @@ function Radio({
   );
 }
 
-function CheckRow({ label, name, options }: { label: string; name: string; options: string[] }) {
+function CheckRow({ label, name, options, value, onChange }: { label: string; name: string; options: string[]; value?: string; onChange?: (value: string) => void }) {
   return (
     <div>
       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -1361,9 +1713,17 @@ function CheckRow({ label, name, options }: { label: string; name: string; optio
         {options.map((o) => (
           <label
             key={o}
-            className="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm text-foreground hover:border-brand"
+            className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm text-foreground hover:border-brand ${
+              value === o ? "border-brand bg-brand/5 text-brand" : "border-border"
+            }`}
           >
-            <input type="radio" name={name} className="size-4 accent-brand" />
+            <input
+              type="radio"
+              name={name}
+              checked={value === o}
+              onChange={() => onChange?.(o)}
+              className="size-4 accent-brand"
+            />
             {o}
           </label>
         ))}

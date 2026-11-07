@@ -18,6 +18,8 @@ function isRole(value: unknown): value is Role {
 type SessionPayload = {
   role: Role;
   adminRole: AdminRole | null;
+  /** Exact full name of the signed-in admin (for the sidebar header). */
+  fullName?: string | null;
 };
 
 /**
@@ -29,11 +31,16 @@ function parseSession(raw: string | null): SessionPayload | null {
   if (isRole(raw)) return { role: raw, adminRole: null };
 
   try {
-    const data = JSON.parse(raw) as { role?: unknown; adminRole?: unknown } | null;
+    const data = JSON.parse(raw) as {
+      role?: unknown;
+      adminRole?: unknown;
+      fullName?: unknown;
+    } | null;
     if (!data || !isRole(data.role)) return null;
     return {
       role: data.role,
       adminRole: data.role === "admin" && isAdminRole(data.adminRole) ? data.adminRole : null,
+      fullName: typeof data.fullName === "string" && data.fullName.trim() ? data.fullName : null,
     };
   } catch {
     return null;
@@ -58,11 +65,21 @@ export function getAdminRole(): AdminRole | null {
   return readSession()?.adminRole ?? null;
 }
 
-export function setSession(role: Role, adminRole: AdminRole | null = null) {
+/** Exact full name of the signed-in admin (e.g. "Ampatua Asmerah"). */
+export function getAdminName(): string | null {
+  return readSession()?.fullName ?? null;
+}
+
+export function setSession(
+  role: Role,
+  adminRole: AdminRole | null = null,
+  fullName: string | null = null,
+) {
   if (typeof window === "undefined") return;
   const payload: SessionPayload = {
     role,
     adminRole: role === "admin" ? adminRole : null,
+    fullName: role === "admin" && fullName?.trim() ? fullName.trim() : null,
   };
   window.localStorage.setItem(KEY, JSON.stringify(payload));
   notifySessionChanged();

@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { BarChart3, MapPinned } from "lucide-react";
+import { useMemo, useState } from "react";
+import { BarChart3, MapPinned, Search } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
 import { BarList, DonutChart, ColumnChart } from "@/components/cluster-map";
 import { RealAlumniMap } from "@/components/real-alumni-map";
-import { getAlumniMapPinsData } from "@/lib/gis.functions";
-
-import { BATCHES, COLLEGES, COURSES, REGIONS } from "@/data/alumni";
+import { getReportRecords } from "@/lib/reports.functions";
+import type { ReportRecord } from "@/lib/reports.types";
 
 export const Route = createFileRoute("/admin/reports")({
   head: () => ({
@@ -23,84 +23,192 @@ export const Route = createFileRoute("/admin/reports")({
       },
     ],
   }),
-  loader: async () => getAlumniMapPinsData(),
+  loader: async () => getReportRecords(),
   component: AdminReports,
 });
 
-const employment = [
-  { label: "Graduates", value: "4,182" },
-  { label: "Employed alumni", value: "3,264" },
-  { label: "Unemployed alumni", value: "918" },
-  { label: "Employed locally", value: "2,731" },
-  { label: "Employed abroad", value: "533" },
-];
+type Filters = {
+  batch: string;
+  college: string;
+  course: string;
+  tribe: string;
+  religion: string;
+  province: string;
+  gender: string;
+  affiliation: string;
+  employment: string;
+  region: string;
+  country: string;
+};
 
-const GRADUATES_PER_YEAR = [
-  { label: "2026 — Undergraduate", value: 812 },
-  { label: "2026 — Masteral", value: 143 },
-  { label: "2025 — Undergraduate", value: 774 },
-  { label: "2025 — Masteral", value: 131 },
-  { label: "2024 — Undergraduate", value: 738 },
-  { label: "2024 — Masteral", value: 118 },
-];
+const emptyFilters: Filters = {
+  batch: "",
+  college: "",
+  course: "",
+  tribe: "",
+  religion: "",
+  province: "",
+  gender: "",
+  affiliation: "",
+  employment: "",
+  region: "",
+  country: "",
+};
 
-const TRIBAL_SPLIT = [
-  { label: "Muslim graduates", value: 62 },
-  { label: "Non-Muslim graduates", value: 38 },
-];
+const YEAR_FROM = 2012;
+const YEAR_TO = 2026;
 
-const BY_PROVINCE = [
-  { label: "Lanao del Sur", value: 1684 },
-  { label: "Lanao del Norte", value: 902 },
-  { label: "Maguindanao del Norte", value: 486 },
-  { label: "Misamis Oriental", value: 421 },
-  { label: "Metro Manila", value: 318 },
-  { label: "Others", value: 371 },
-];
+function sameValue(value: string, filter: string) {
+  return !filter || value.trim().toLowerCase() === filter.trim().toLowerCase();
+}
 
-const BY_GENDER = [
-  { label: "Female", value: 2295 },
-  { label: "Male", value: 1887 },
-];
-
-const BY_AFFILIATION = [
-  { label: "Secular organizations", value: 1462 },
-  { label: "Non-secular organizations", value: 1108 },
-  { label: "No affiliation", value: 1612 },
-];
-
-const EMPLOYMENT_BY_PLACE = [
-  { label: "BARMM", value: 1204 },
-  { label: "Region X — Northern Mindanao", value: 731 },
-  { label: "NCR", value: 496 },
-  { label: "Saudi Arabia", value: 214 },
-  { label: "UAE / Qatar", value: 187 },
-  { label: "Others (abroad)", value: 132 },
-];
-
-const PROVINCES = [
-  "Lanao del Sur",
-  "Lanao del Norte",
-  "Maguindanao del Norte",
-  "Misamis Oriental",
-  "Davao del Sur",
-  "Metro Manila",
-  "Cebu",
-];
-const TRIBES = ["Maranao", "Maguindanaon", "Tausug", "Iranun", "Cebuano", "Ilocano", "Others"];
-const RELIGIONS = ["Islam", "Roman Catholic", "Protestant", "Iglesia ni Cristo", "Others"];
-const GENDERS = ["Female", "Male"];
-const AFFILIATIONS = ["Secular", "Non-secular", "Professional", "None"];
-const COUNTRIES = ["Philippines", "Saudi Arabia", "UAE", "Qatar", "Singapore", "Canada", "USA"];
-const EMPLOYMENT_STATUS = ["Employed", "Unemployed", "Self-employed", "Further studies"];
+function uniqueSorted(values: string[]) {
+  return [...new Set(values.map((v) => v.trim()).filter((v) => v && v !== "—" && v !== "Not provided"))].sort(
+    (a, b) => a.localeCompare(b),
+  );
+}
 
 function AdminReports() {
-  const mapData = Route.useLoaderData();
-  // Plot every verified alumnus — domestic and overseas — exactly like the
-  // Home and Alumni Map views. No scope/status filter narrows the map here.
-  const pins = mapData.ok ? mapData.pins : [];
+  const data = Route.useLoaderData();
+  const [filters, setFilters] = useState<Filters>(emptyFilters);
+
+  const all = useMemo<ReportRecord[]>(() => (data.ok ? data.records : []), [data]);
+  const set = (key: keyof Filters, value: string) => setFilters((f) => ({ ...f, [key]: value }));
+
+  const options = useMemo(
+    () => ({
+      batches: [...new Set(all.map((r) => r.batch).filter((b) => /^\d{4}$/.test(b)))].sort(
+        (a, b) => Number(b) - Number(a),
+      ),
+      colleges: uniqueSorted(all.map((r) => r.college)),
+      courses: uniqueSorted(all.map((r) => r.course)),
+      tribes: uniqueSorted(all.map((r) => r.ethnicity)),
+      religions: uniqueSorted(all.map((r) => r.religion)),
+      provinces: uniqueSorted(all.map((r) => r.province)),
+      genders: uniqueSorted(all.map((r) => r.gender)),
+      affiliations: ["Secular", "Non-secular", "No affiliation"].filter((label) =>
+        all.some((r) => r.affiliation === label),
+      ),
+      employments: ["Employed", "Unemployed"].filter((label) =>
+        all.some(
+          (r) =>
+            (label === "Employed" && r.employmentStatus === "employed") ||
+            (label === "Unemployed" && r.employmentStatus === "unemployed"),
+        ),
+      ),
+      regions: uniqueSorted(all.map((r) => r.region)),
+      countries: uniqueSorted(all.map((r) => r.country)),
+    }),
+    [all],
+  );
+
+  const filtered = useMemo(
+    () =>
+      all.filter((r) => {
+        if (filters.batch && r.batch !== filters.batch) return false;
+        if (!sameValue(r.college, filters.college)) return false;
+        if (!sameValue(r.course, filters.course)) return false;
+        if (!sameValue(r.ethnicity, filters.tribe)) return false;
+        if (!sameValue(r.religion, filters.religion)) return false;
+        if (!sameValue(r.province, filters.province)) return false;
+        if (!sameValue(r.gender, filters.gender)) return false;
+        if (!sameValue(r.affiliation, filters.affiliation)) return false;
+        if (filters.employment) {
+          const employed = r.employmentStatus === "employed";
+          if (filters.employment === "Employed" && !employed) return false;
+          if (filters.employment === "Unemployed" && employed) return false;
+        }
+        if (!sameValue(r.region, filters.region)) return false;
+        if (!sameValue(r.country, filters.country)) return false;
+        return true;
+      }),
+    [all, filters],
+  );
+
+  const kpis = useMemo(() => {
+    const total = filtered.length;
+    const employedList = filtered.filter((r) => r.employmentStatus === "employed");
+    const employed = employedList.length;
+    const unemployed = filtered.filter((r) => r.employmentStatus === "unemployed").length;
+    const local = employedList.filter((r) => !r.abroad).length;
+    const abroad = employedList.filter((r) => r.abroad).length;
+    const format = (n: number) => new Intl.NumberFormat("en-PH").format(n);
+    return [
+      { label: "Total graduates", value: format(total) },
+      { label: "Employed", value: format(employed) },
+      { label: "Unemployed", value: format(unemployed) },
+      { label: "Employed locally", value: format(local) },
+      { label: "Employed abroad", value: format(abroad) },
+    ];
+  }, [filtered]);
+
+  const pins = useMemo(
+    () => filtered.flatMap((r) => (r.pin ? [r.pin] : [])),
+    [filtered],
+  );
   const domesticCount = pins.filter((pin) => pin.country === "Philippines").length;
   const overseasCount = pins.length - domesticCount;
+
+  const perYear = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of filtered) {
+      if (/^\d{4}$/.test(r.batch)) counts.set(r.batch, (counts.get(r.batch) ?? 0) + 1);
+    }
+    const items = [];
+    for (let year = YEAR_FROM; year <= YEAR_TO; year += 1) {
+      const label = String(year);
+      items.push({ label, value: counts.get(label) ?? 0 });
+    }
+    // Include any out-of-range years present in data.
+    const extra = [...counts.keys()]
+      .filter((y) => Number(y) < YEAR_FROM || Number(y) > YEAR_TO)
+      .sort((a, b) => Number(a) - Number(b));
+    for (const label of extra) items.push({ label, value: counts.get(label) ?? 0 });
+    return items;
+  }, [filtered]);
+
+  const tribalSplit = useMemo(() => {
+    const muslim = filtered.filter((r) => /islam/i.test(r.religion)).length;
+    return [
+      { label: "Muslim graduates", value: muslim },
+      { label: "Non-Muslim graduates", value: filtered.length - muslim },
+    ];
+  }, [filtered]);
+
+  const byProvince = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of filtered) {
+      if (!/^philippines?$/i.test(r.country)) continue;
+      const province = r.province.trim() || "Not provided";
+      counts.set(province, (counts.get(province) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
+  }, [filtered]);
+
+  const byGender = useMemo(() => {
+    const count = (wanted: string) =>
+      filtered.filter((r) => r.gender.trim().toLowerCase() === wanted).length;
+    const items = [
+      { label: "Female", value: count("female") },
+      { label: "Male", value: count("male") },
+    ];
+    const other = filtered.length - count("female") - count("male");
+    if (other > 0) items.push({ label: "Not provided", value: other });
+    return items;
+  }, [filtered]);
+
+  const byAffiliation = useMemo(
+    () => [
+      { label: "Secular organizations", value: filtered.filter((r) => r.affiliation === "Secular").length },
+      { label: "Non-secular organizations", value: filtered.filter((r) => r.affiliation === "Non-secular").length },
+      { label: "No affiliation", value: filtered.filter((r) => r.affiliation === "No affiliation").length },
+    ],
+    [filtered],
+  );
+
+  const activeCount = Object.values(filters).filter(Boolean).length;
 
   return (
     <AdminShell
@@ -108,37 +216,43 @@ function AdminReports() {
       subtitle="Tracer study analytics and GIS distribution of graduates."
     >
       <section className="rounded-lg border border-border bg-card p-4">
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-          GIS &amp; report filters
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+            GIS &amp; report filters
+          </p>
+          {activeCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setFilters(emptyFilters)}
+              className="text-xs font-medium text-brand hover:underline"
+            >
+              Clear all ({activeCount})
+            </button>
+          )}
+        </div>
+        {!data.ok && (
+          <p className="mt-2 text-xs text-red-600">{data.message}</p>
+        )}
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <FilterSelect label="Batch year" options={[...BATCHES]} />
-          <FilterSelect label="College" options={[...COLLEGES]} />
-          <FilterSelect label="Course" options={[...COURSES]} />
-          <FilterSelect label="Tribe" options={TRIBES} />
-          <FilterSelect label="Religion" options={RELIGIONS} />
-          <FilterSelect label="Province" options={PROVINCES} />
-          <FilterSelect label="Gender" options={GENDERS} />
-          <FilterSelect
-            label="Group affiliation"
-            options={AFFILIATIONS}
-            allLabel="All group affiliations"
-          />
-          <FilterSelect
-            label="Employment status"
-            options={EMPLOYMENT_STATUS}
-            allLabel="All employment statuses"
-          />
-          <FilterSelect label="Region" options={[...REGIONS]} />
-          <FilterSelect label="Country" options={COUNTRIES} allLabel="All countries" />
+          <FilterSelect label="Batch year" options={options.batches} value={filters.batch} onChange={(v) => set("batch", v)} />
+          <FilterSelect label="College" options={options.colleges} value={filters.college} onChange={(v) => set("college", v)} />
+          <FilterSelect label="Course" options={options.courses} value={filters.course} onChange={(v) => set("course", v)} />
+          <FilterSelect label="Tribe" options={options.tribes} value={filters.tribe} onChange={(v) => set("tribe", v)} />
+          <FilterSelect label="Religion" options={options.religions} value={filters.religion} onChange={(v) => set("religion", v)} />
+          <FilterSelect label="Province" options={options.provinces} value={filters.province} onChange={(v) => set("province", v)} />
+          <FilterSelect label="Gender" options={options.genders} value={filters.gender} onChange={(v) => set("gender", v)} />
+          <FilterSelect label="Group affiliation" options={options.affiliations} value={filters.affiliation} onChange={(v) => set("affiliation", v)} allLabel="All group affiliations" />
+          <FilterSelect label="Employment status" options={options.employments} value={filters.employment} onChange={(v) => set("employment", v)} allLabel="All employment statuses" />
+          <FilterSelect label="Region" options={options.regions} value={filters.region} onChange={(v) => set("region", v)} />
+          <FilterSelect label="Country" options={options.countries} value={filters.country} onChange={(v) => set("country", v)} allLabel="All countries" />
         </div>
       </section>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {employment.map((e) => (
-          <div key={e.label} className="rounded-lg border border-border bg-card p-4">
-            <p className="text-2xl font-bold text-foreground">{e.value}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{e.label}</p>
+        {kpis.map((kpi) => (
+          <div key={kpi.label} className="rounded-lg border border-border bg-card p-4">
+            <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{kpi.label}</p>
           </div>
         ))}
       </div>
@@ -162,24 +276,78 @@ function AdminReports() {
         </div>
       </div>
 
+      <div className="mt-4 rounded-lg border border-border bg-card p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Search className="size-4 text-brand" /> Filtered Alumni Results
+          </h2>
+          <p className="text-[11px] font-semibold text-muted-foreground">
+            Showing {filtered.length} of {all.length}
+          </p>
+        </div>
+        <div className="mt-3 max-h-80 overflow-y-auto rounded-lg border border-border">
+          {filtered.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+              No alumni match the selected filters. Try clearing a filter.
+            </p>
+          ) : (
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead className="sticky top-0 border-b border-border bg-muted/80 text-[11px] uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-2 font-semibold">Name</th>
+                  <th className="px-4 py-2 font-semibold">Course</th>
+                  <th className="px-4 py-2 font-semibold">Batch</th>
+                  <th className="px-4 py-2 font-semibold">Location</th>
+                  <th className="px-4 py-2 font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filtered.map((r) => (
+                  <tr key={r.id}>
+                    <td className="px-4 py-2.5 text-xs font-semibold text-foreground">{r.name}</td>
+                    <td className="px-4 py-2.5 text-xs text-muted-foreground">{r.course}</td>
+                    <td className="px-4 py-2.5 text-xs text-muted-foreground">{r.batch}</td>
+                    <td className="px-4 py-2.5 text-xs text-muted-foreground">
+                      {[r.city !== "—" ? r.city : "", r.province, r.country]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </td>
+                    <td className="px-4 py-2.5 text-xs text-muted-foreground">
+                      {r.employmentStatus === "employed"
+                        ? "Employed"
+                        : r.employmentStatus === "unemployed"
+                          ? "Unemployed"
+                          : "Not provided"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Panel title="1. No. of graduates per year (masteral & undergrad)" icon>
-          <ColumnChart items={GRADUATES_PER_YEAR} />
+          <div className="overflow-x-auto">
+            <div className="min-w-[640px]">
+              <ColumnChart items={perYear} />
+            </div>
+          </div>
         </Panel>
         <Panel title="2. Tribal percentage — Muslim / Non-Muslim graduates" icon>
-          <DonutChart items={TRIBAL_SPLIT} />
+          <DonutChart items={tribalSplit} />
         </Panel>
         <Panel title="3. No. of graduates by province" icon>
-          <BarList items={BY_PROVINCE} suffix="" />
+          <div className="max-h-60 overflow-y-auto pr-1">
+            <BarList items={byProvince} suffix="" />
+          </div>
         </Panel>
         <Panel title="4. No. of graduates by gender" icon>
-          <ColumnChart items={BY_GENDER} tone="success" />
+          <ColumnChart items={byGender} tone="success" />
         </Panel>
         <Panel title="5. Group affiliations (secular / non-secular)" icon>
-          <DonutChart items={BY_AFFILIATION} />
-        </Panel>
-        <Panel title="6. Employment distribution by region and country" icon>
-          <BarList items={EMPLOYMENT_BY_PLACE} suffix="" tone="success" />
+          <DonutChart items={byAffiliation} />
         </Panel>
       </div>
     </AdminShell>
@@ -210,15 +378,20 @@ function FilterSelect({
   label,
   options,
   allLabel,
+  value,
+  onChange,
 }: {
   label: string;
   options: string[];
   allLabel?: string;
+  value: string;
+  onChange: (value: string) => void;
 }) {
   return (
     <select
       aria-label={label}
-      defaultValue=""
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
       className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-muted-foreground outline-none focus:border-brand"
     >
       <option value="">{allLabel ?? `All ${label.toLowerCase()}s`}</option>

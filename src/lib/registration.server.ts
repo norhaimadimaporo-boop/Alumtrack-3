@@ -193,8 +193,8 @@ export async function registerAlumniAccount(input: RegistrationInput): Promise<R
          (user_id, last_name, first_name, middle_name, gender, birth_date, age, ethnicity,
           birth_place, religion, mobile_number, contact_email, akan_email, facebook, course,
           college, batch_year, employment_status, current_position, current_company, current_region,
-          current_city, current_country, latitude, longitude)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          current_city, current_country, latitude, longitude, verification_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
       [
         userId,
         input.lastName.trim(),
@@ -249,7 +249,8 @@ export async function registerAlumniAccount(input: RegistrationInput): Promise<R
 
     return {
       ok: true,
-      message: "Your alumni profile has been submitted to the OARCC for verification.",
+      message:
+        "Registration submitted! Your account is currently under review by the OARCC Admin team. Please wait for verification before logging in.",
     };
   } catch (error) {
     await connection.rollback();

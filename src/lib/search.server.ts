@@ -14,12 +14,16 @@ type PublicAlumniRow = RowDataPacket & {
   course: string | null;
   college: string | null;
   batch_year: number | null;
+  /** Fallback batch year from educational details: Baccalaureate, else latest. */
+  bac_grad_year: number | string | null;
+  max_grad_year: number | string | null;
   employment_status: ProfileEmploymentStatus;
   current_position: string | null;
   current_company: string | null;
   current_region: string | null;
   current_city: string | null;
   current_province: string | null;
+  current_country: string | null;
   employment_position: string | null;
   employment_company: string | null;
   mobile_number: string | null;
@@ -60,8 +64,16 @@ export async function listPublicAlumni(): Promise<PublicAlumniResult> {
     const signedIn = (await getSessionUser()) !== null;
     const [rows] = await getPool().query<PublicAlumniRow[]>(
       `SELECT p.id, p.first_name, p.middle_name, p.last_name, p.course, p.college,
-              p.batch_year, p.employment_status, p.current_position, p.current_company,
+              p.batch_year,
+              (SELECT YEAR(graduated_on) FROM alumni_education
+                WHERE user_id = p.user_id AND level = 'Baccalaureate Degree'
+                  AND graduated_on IS NOT NULL
+                ORDER BY graduated_on DESC LIMIT 1) AS bac_grad_year,
+              (SELECT MAX(YEAR(graduated_on)) FROM alumni_education
+                WHERE user_id = p.user_id AND graduated_on IS NOT NULL) AS max_grad_year,
+              p.employment_status, p.current_position, p.current_company,
               p.current_region, cur.city AS current_city, cur.province AS current_province,
+              cur.country AS current_country,
               emp.position AS employment_position, emp.company AS employment_company,
               p.mobile_number, p.contact_email, p.akan_email, p.facebook,
               ps.public_show_contact, ps.public_show_email, ps.public_show_employment,
@@ -80,34 +92,55 @@ export async function listPublicAlumni(): Promise<PublicAlumniResult> {
     );
 
     const alumni: PublicAlumnus[] = rows.map((row) => {
+      // Job Title / Company gated by "Current workplace" (plus the public
+      // switch for everyone — public switches still apply).
       const showJob =
         enabled(row.public_show_employment, true) &&
         (!signedIn || enabled(row.directory_show_workplace, true));
-      const showRegion = !signedIn || enabled(row.directory_show_region, true);
+      // Location detail gated by "Region of employment" (directory). Signed-in
+      // viewers with the switch OFF see neither general nor detailed location
+      // (strict hide). Guests always get the general region only.
+      const showDetailed = signedIn && enabled(row.directory_show_region, true);
+      const showGeneralRegion = !signedIn || showDetailed;
+      // Contact & links: show only the fields whose switches are ON.
+      // Email has no directory switch — `publicShowEmail` gates it for everyone.
       const showMobile =
         enabled(row.public_show_contact, false) &&
         (!signedIn || enabled(row.directory_show_mobile, false));
       const showEmail = enabled(row.public_show_email, false);
       const showFacebook = signedIn && enabled(row.directory_show_facebook, false);
 
-      const region =
+      const generalRegion =
         row.current_region?.trim() ||
         formatAddress([row.current_city, row.current_province]) ||
         "Not provided";
+      const detailedLocation =
+        formatAddress([row.current_city, row.current_province, row.current_country]) ||
+        generalRegion;
+      const toYear = (value: number | string | null): number | null => {
+        if (value === null || value === undefined) return null;
+        const year = Number(value);
+        return Number.isFinite(year) && year > 0 ? Math.floor(year) : null;
+      };
+      const batchYear = toYear(row.batch_year) ?? toYear(row.bac_grad_year) ?? toYear(row.max_grad_year);
 
       return {
         id: row.id,
         name: fullName(row.first_name, row.middle_name ?? "", row.last_name),
+        firstName: row.first_name,
+        middleName: row.middle_name ?? "",
+        lastName: row.last_name,
         course: row.course?.trim() || "Course not provided",
         college: row.college?.trim() || "College not provided",
-        batch: row.batch_year ? String(row.batch_year) : "—",
+        batch: batchYear ? String(batchYear) : "—",
         job: showJob
           ? row.current_position?.trim() || row.employment_position?.trim() || "Not provided"
           : null,
         company: showJob
           ? row.current_company?.trim() || row.employment_company?.trim() || "Not provided"
           : null,
-        region: showRegion ? region : null,
+        region: showGeneralRegion ? generalRegion : null,
+        location: showDetailed ? detailedLocation : null,
         status: statusLabel(row.employment_status),
         mobile: showMobile ? row.mobile_number?.trim() || null : null,
         emails: showEmail

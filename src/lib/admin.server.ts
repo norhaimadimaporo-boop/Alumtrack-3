@@ -2,7 +2,9 @@ import type { RowDataPacket, ResultSetHeader } from "mysql2/promise";
 
 import { getSessionUser, hashPassword, type AuthUser } from "./auth.server";
 import { getPool } from "./db.server";
-import { formatAddress, formatDate, fullName, relativeTime } from "./profile-format";
+import { manilaClock, manilaDate } from "./manila-time";
+import { formatAddress, formatDate, fullName, calculateAge, relativeTime } from "./profile-format";
+import { savedLocation } from "./geo";
 import { isAdminRole, type AdminRole } from "./session";
 import type {
   AdminAccount,
@@ -10,6 +12,8 @@ import type {
   AdminAccountList,
   AdminAccountUpdate,
   AdminActionResult,
+  AdminAlumniSaveInput,
+  AdminAlumniUpdateInput,
   AdminAlumniList,
   AdminAlumnus,
   AdminDashboardData,
@@ -44,6 +48,7 @@ type CountRow = RowDataPacket & {
 
 type ActivityRow = RowDataPacket & {
   id: number;
+  actor_name: string | null;
   action: string;
   entity_type: string | null;
   created_at: Date | string;
@@ -81,6 +86,8 @@ type AlumniRow = RowDataPacket & {
   course: string | null;
   college: string | null;
   batch_year: number | null;
+  bac_grad_year: number | string | null;
+  max_grad_year: number | string | null;
   employment_status: ProfileEmploymentStatus;
   current_position: string | null;
   current_company: string | null;
@@ -94,6 +101,7 @@ type AlumniRow = RowDataPacket & {
   current_subdivision: string | null;
   current_city: string | null;
   current_province: string | null;
+  current_country: string | null;
   current_zip_code: string | null;
   home_building: string | null;
   home_house_no: string | null;
@@ -102,6 +110,7 @@ type AlumniRow = RowDataPacket & {
   home_subdivision: string | null;
   home_city: string | null;
   home_province: string | null;
+  home_country: string | null;
   home_zip_code: string | null;
 };
 
@@ -188,6 +197,23 @@ function activityKind(
   return "admin";
 }
 
+function addressPartsFromRow(
+  row: AlumniRow,
+  prefix: "current" | "home",
+): import("./registration.types").AddressInput {
+  return {
+    building: row[`${prefix}_building`] ?? "",
+    houseNo: row[`${prefix}_house_no`] ?? "",
+    block: row[`${prefix}_block`] ?? "",
+    street: row[`${prefix}_street`] ?? "",
+    subdivision: row[`${prefix}_subdivision`] ?? "",
+    city: row[`${prefix}_city`] ?? "",
+    province: row[`${prefix}_province`] ?? "",
+    country: row[`${prefix}_country`] ?? "",
+    zipCode: row[`${prefix}_zip_code`] ?? "",
+  };
+}
+
 function addressFromRow(row: AlumniRow, prefix: "current" | "home"): string {
   return formatAddress([
     row[`${prefix}_building`],
@@ -219,10 +245,10 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
            (SELECT COUNT(*) FROM users WHERE role = 'admin' AND is_active = 1) AS admins`,
       ),
       pool.query<ActivityRow[]>(
-        `SELECT id, action, entity_type, created_at
+        `SELECT id, actor_name, action, entity_type, created_at
            FROM activity_log
           ORDER BY created_at DESC, id DESC
-          LIMIT 6`,
+          LIMIT 200`,
       ),
       pool.query<RecentAlumniRow[]>(
         `SELECT id, first_name, middle_name, last_name, course, batch_year,
@@ -245,12 +271,23 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
         activePosts: Number(statRow?.active_posts ?? 0),
         adminAccounts: Number(statRow?.admins ?? 0),
       },
-      activity: activityRows.map((row) => ({
-        id: String(row.id),
-        text: row.action,
-        time: relativeTime(row.created_at),
-        kind: activityKind(row.entity_type),
-      })),
+      activity: activityRows.map((row) => {
+        const stampDate =
+          row.created_at instanceof Date ? row.created_at : new Date(row.created_at);
+        const valid = !Number.isNaN(stampDate.getTime());
+        const date = valid ? manilaDate(stampDate) : `—`;
+        const clock = valid ? manilaClock(stampDate) : `—`;
+        return {
+          id: String(row.id),
+          text: row.action,
+          time: relativeTime(row.created_at),
+          kind: activityKind(row.entity_type),
+          actorName: row.actor_name?.trim() || "—",
+          date,
+          clock,
+          stamp: valid ? stampDate.toISOString() : "",
+        };
+      }),
       recentRegistrations: recentRows.map((row) => ({
         id: row.id,
         name: fullName(row.first_name, row.middle_name ?? "", row.last_name),
@@ -281,16 +318,25 @@ export async function listAdminAlumni(): Promise<AdminAlumniList> {
       `SELECT p.id, p.user_id, u.email AS account_email, p.last_name, p.first_name,
               p.middle_name, p.gender, p.birth_date, p.age, p.ethnicity, p.birth_place,
               p.religion, p.mobile_number, p.contact_email, p.akan_email, p.facebook,
-              p.course, p.college, p.batch_year, p.employment_status, p.current_position,
+              p.course, p.college, p.batch_year,
+              (SELECT YEAR(graduated_on) FROM alumni_education
+                WHERE user_id = p.user_id AND level = 'Baccalaureate Degree'
+                  AND graduated_on IS NOT NULL
+                ORDER BY graduated_on DESC LIMIT 1) AS bac_grad_year,
+              (SELECT MAX(YEAR(graduated_on)) FROM alumni_education
+                WHERE user_id = p.user_id AND graduated_on IS NOT NULL) AS max_grad_year,
+              p.employment_status, p.current_position,
               p.current_company, p.current_region, p.verification_status, p.created_at,
               cur.building AS current_building, cur.house_no AS current_house_no,
               cur.block AS current_block, cur.street AS current_street,
               cur.subdivision AS current_subdivision, cur.city AS current_city,
-              cur.province AS current_province, cur.zip_code AS current_zip_code,
+              cur.province AS current_province, cur.country AS current_country,
+              cur.zip_code AS current_zip_code,
               home.building AS home_building, home.house_no AS home_house_no,
               home.block AS home_block, home.street AS home_street,
               home.subdivision AS home_subdivision, home.city AS home_city,
-              home.province AS home_province, home.zip_code AS home_zip_code
+              home.province AS home_province, home.country AS home_country,
+              home.zip_code AS home_zip_code
          FROM alumni_profiles p
          JOIN users u ON u.id = p.user_id
     LEFT JOIN alumni_addresses cur ON cur.user_id = p.user_id AND cur.kind = 'current'
@@ -374,11 +420,19 @@ export async function listAdminAlumni(): Promise<AdminAlumniList> {
       organizationByUser.set(row.user_id, list);
     }
 
+    const toYear = (value: number | string | null): number | null => {
+      if (value === null || value === undefined) return null;
+      const year = Number(value);
+      return Number.isFinite(year) && year > 0 ? Math.floor(year) : null;
+    };
+
     const alumni: AdminAlumnus[] = rows.map((row) => {
       const education = educationByUser.get(row.user_id) ?? [];
       const employment = employmentByUser.get(row.user_id) ?? [];
       const organizations = organizationByUser.get(row.user_id) ?? [];
       const currentEmployment = employment.find((record) => record.isCurrent) ?? employment[0];
+      const batchYear =
+        toYear(row.batch_year) ?? toYear(row.bac_grad_year) ?? toYear(row.max_grad_year);
 
       return {
         id: row.id,
@@ -400,7 +454,7 @@ export async function listAdminAlumni(): Promise<AdminAlumniList> {
         facebook: row.facebook ?? "",
         course: row.course ?? "Course not provided",
         college: row.college ?? "College not provided",
-        batch: row.batch_year ? String(row.batch_year) : "—",
+        batch: batchYear ? String(batchYear) : "—",
         status: employmentLabel(row.employment_status),
         employmentStatus: row.employment_status,
         job: row.current_position ?? currentEmployment?.position ?? "Not provided",
@@ -414,6 +468,8 @@ export async function listAdminAlumni(): Promise<AdminAlumniList> {
         createdAt: formatDate(row.created_at),
         currentAddress: addressFromRow(row, "current"),
         homeAddress: addressFromRow(row, "home"),
+        currentAddressParts: addressPartsFromRow(row, "current"),
+        homeAddressParts: addressPartsFromRow(row, "home"),
         education,
         employment,
         organizations,
@@ -528,6 +584,351 @@ export async function deleteAlumniRecord(profileId: number): Promise<AdminAction
     await connection.rollback();
     console.error("[admin] Delete alumnus failed:", error);
     return { ok: false, message: "We could not delete this record right now. Please try again." };
+  } finally {
+    connection.release();
+  }
+}
+
+function splitFullName(fullName: string): { first: string; middle: string; last: string } {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { first: "", middle: "", last: "" };
+  if (parts.length === 1) return { first: parts[0], middle: "", last: "" };
+  return {
+    first: parts[0],
+    middle: parts.slice(1, -1).join(" "),
+    last: parts[parts.length - 1],
+  };
+}
+
+function toBatchYear(batch: string): number | null {
+  const year = Number(batch);
+  return Number.isFinite(year) && year > 1900 && year < 2100 ? Math.floor(year) : null;
+}
+
+async function saveEducation(
+  connection: import("mysql2/promise").Connection,
+  userId: number,
+  education: AdminAlumniSaveInput["education"],
+) {
+  await connection.execute("DELETE FROM alumni_education WHERE user_id = ?", [userId]);
+  for (const entry of education) {
+    if (!entry.degree.trim() || !entry.school.trim()) continue;
+    await connection.execute(
+      `INSERT INTO alumni_education
+         (user_id, level, school_id_no, degree, major, college, school, school_address, graduated_on)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userId,
+        entry.level,
+        entry.schoolIdNo.trim() || null,
+        entry.degree.trim(),
+        entry.major.trim() || null,
+        entry.college.trim() || null,
+        entry.school.trim(),
+        entry.schoolAddress.trim() || null,
+        entry.graduatedOn || null,
+      ],
+    );
+  }
+}
+
+async function saveEmployment(
+  connection: import("mysql2/promise").Connection,
+  userId: number,
+  employment: AdminAlumniSaveInput["employment"],
+) {
+  await connection.execute("DELETE FROM alumni_employment WHERE user_id = ?", [userId]);
+  if (!employment) return;
+  await connection.execute(
+    `INSERT INTO alumni_employment
+       (user_id, is_current, position, company, company_address, length_of_employment,
+        years_in_office, work_location, sector)
+     VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      userId,
+      employment.position.trim() || null,
+      employment.company.trim() || null,
+      employment.companyAddress.trim() || null,
+      employment.lengthOfEmployment.trim() || null,
+      employment.yearsInOffice.trim() || null,
+      employment.workLocation.trim() || null,
+      employment.sector.trim() || null,
+    ],
+  );
+}
+
+async function saveOrganization(
+  connection: import("mysql2/promise").Connection,
+  userId: number,
+  organization: AdminAlumniSaveInput["organization"],
+) {
+  await connection.execute("DELETE FROM alumni_organizations WHERE user_id = ?", [userId]);
+  if (!organization || !organization.name.trim()) return;
+  await connection.execute(
+    `INSERT INTO alumni_organizations
+       (user_id, name, address, position, contact_no, email, member_since)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      userId,
+      organization.name.trim(),
+      organization.address.trim() || null,
+      organization.position.trim() || null,
+      organization.contactNo.trim() || null,
+      organization.email.trim().toLowerCase() || null,
+      organization.memberSince || null,
+    ],
+  );
+}
+
+async function upsertAddressRow(
+  connection: import("mysql2/promise").Connection,
+  userId: number,
+  kind: "current" | "home",
+  address: AdminAlumniSaveInput["currentAddress"],
+) {
+  const opt = (v: string) => v?.trim() || null;
+  await connection.execute(
+    `INSERT INTO alumni_addresses
+       (user_id, kind, building, house_no, block, street, subdivision, city, province, country, zip_code)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       building = VALUES(building),
+       house_no = VALUES(house_no),
+       block = VALUES(block),
+       street = VALUES(street),
+       subdivision = VALUES(subdivision),
+       city = VALUES(city),
+       province = VALUES(province),
+       country = VALUES(country),
+       zip_code = VALUES(zip_code)`,
+    [
+      userId,
+      kind,
+      opt(address.building),
+      opt(address.houseNo),
+      opt(address.block),
+      opt(address.street),
+      opt(address.subdivision),
+      opt(address.city),
+      opt(address.province),
+      opt(address.country),
+      opt(address.zipCode),
+    ],
+  );
+}
+
+function profileFields(input: AdminAlumniSaveInput) {
+  const { first, middle, last } = splitFullName(input.fullName);
+  const location = savedLocation(input.currentAddress);
+  const employment = input.employmentStatus === "employed" ? input.employment : null;
+  return {
+    first,
+    middle,
+    last,
+    displayName: fullName(first, middle, last) || input.fullName.trim(),
+    batchYear: toBatchYear(input.batch),
+    employment,
+    region: input.region.trim() || input.currentAddress.province.trim() || input.currentAddress.city.trim() || null,
+    location,
+  };
+}
+
+export async function updateAlumniRecord(
+  input: AdminAlumniUpdateInput,
+): Promise<AdminActionResult> {
+  const access = await requireAdmin("standard");
+  if (!access.ok) return { ok: false, message: access.message };
+  const admin = access.admin;
+
+  if (!Number.isInteger(input.id) || input.id <= 0) {
+    return { ok: false, message: "Invalid alumni record." };
+  }
+  if (!input.fullName.trim()) {
+    return { ok: false, message: "Enter the alumni's full name." };
+  }
+
+  const pool = getPool();
+  const connection = await pool.getConnection();
+  try {
+    const [owners] = await connection.execute<ProfileOwnerRow[]>(
+      `SELECT p.user_id, p.first_name, p.middle_name, p.last_name
+         FROM alumni_profiles p
+        WHERE p.id = ?
+        LIMIT 1`,
+      [input.id],
+    );
+    const owner = owners[0];
+    if (!owner) return { ok: false, message: "That alumni record no longer exists." };
+    const userId = owner.user_id;
+    const fields = profileFields(input);
+
+    await connection.beginTransaction();
+
+    await connection.execute("UPDATE users SET full_name = ? WHERE id = ?", [
+      fields.displayName,
+      userId,
+    ]);
+
+    await connection.execute(
+      `UPDATE alumni_profiles
+          SET last_name = ?, first_name = ?, middle_name = ?, gender = ?, birth_date = ?,
+              age = ?, ethnicity = ?, birth_place = ?, religion = ?, mobile_number = ?,
+              contact_email = ?, akan_email = ?, facebook = ?, course = ?, college = ?,
+              batch_year = ?, employment_status = ?, current_position = ?, current_company = ?,
+              current_region = ?, current_city = ?, current_country = ?, latitude = ?, longitude = ?
+        WHERE id = ?`,
+      [
+        fields.last,
+        fields.first,
+        fields.middle || null,
+        input.gender || "Prefer not to say",
+        input.birthDate || null,
+        calculateAge(input.birthDate) || null,
+        input.ethnicity.trim(),
+        input.birthPlace.trim(),
+        input.religion.trim(),
+        input.mobileNumber.trim(),
+        (input.contactEmail.trim() || `${fields.displayName.toLowerCase().replace(/\s+/g, ".")}@alumtrack.local`),
+        input.akanEmail.trim().toLowerCase() || null,
+        input.facebook.trim() || null,
+        input.course.trim() || null,
+        input.college.trim() || null,
+        fields.batchYear,
+        input.employmentStatus,
+        fields.employment?.position.trim() || null,
+        fields.employment?.company.trim() || null,
+        fields.region,
+        input.currentAddress.city.trim() || null,
+        fields.location.country,
+        fields.location.lat,
+        fields.location.lng,
+        input.id,
+      ],
+    );
+
+    await upsertAddressRow(connection, userId, "current", input.currentAddress);
+    await upsertAddressRow(connection, userId, "home", input.homeAddress);
+    await saveEducation(connection, userId, input.education);
+    await saveEmployment(connection, userId, fields.employment);
+    await saveOrganization(connection, userId, input.organization);
+
+    await connection.execute(
+      `INSERT INTO activity_log (actor_user_id, actor_name, action, entity_type, entity_id)
+       VALUES (?, ?, ?, 'admin', ?)`,
+      [
+        admin.id,
+        admin.fullName ?? admin.email,
+        `Updated alumni record — ${fields.displayName}`,
+        input.id,
+      ],
+    );
+
+    await connection.commit();
+    return { ok: true, message: "Alumni record updated successfully!" };
+  } catch (error) {
+    await connection.rollback();
+    console.error("[admin] Update alumnus failed:", error);
+    return { ok: false, message: "We could not update this record right now. Please try again." };
+  } finally {
+    connection.release();
+  }
+}
+
+/** Admin direct-create: inserts a verified alumni record (import-style). */
+export async function createAlumniRecord(
+  input: AdminAlumniSaveInput,
+): Promise<AdminActionResult> {
+  const access = await requireAdmin("standard");
+  if (!access.ok) return { ok: false, message: access.message };
+  const admin = access.admin;
+
+  if (!input.fullName.trim()) {
+    return { ok: false, message: "Enter the alumni's full name." };
+  }
+
+  const fields = profileFields(input);
+  const email = (input.contactEmail.trim() || `${fields.displayName.toLowerCase().replace(/[^a-z0-9]+/g, ".")}@alumtrack.local`).toLowerCase();
+  const pool = getPool();
+  const connection = await pool.getConnection();
+  try {
+    const [existing] = await connection.execute<ProfileOwnerRow[]>(
+      "SELECT id FROM users WHERE email = ? LIMIT 1",
+      [email],
+    );
+    if (existing.length > 0) {
+      return { ok: false, message: "An account with this email already exists. Use Edit instead." };
+    }
+
+    const passwordHash = await hashPassword("Alumtrack2026!");
+    await connection.beginTransaction();
+
+    const [userResult] = await connection.execute<ResultSetHeader>(
+      "INSERT INTO users (email, password_hash, role, full_name) VALUES (?, ?, 'alumni', ?)",
+      [email, passwordHash, fields.displayName],
+    );
+    const userId = userResult.insertId;
+
+    const [profileResult] = await connection.execute<ResultSetHeader>(
+      `INSERT INTO alumni_profiles
+         (user_id, last_name, first_name, middle_name, gender, birth_date, age, ethnicity,
+          birth_place, religion, mobile_number, contact_email, akan_email, facebook, course,
+          college, batch_year, employment_status, current_position, current_company, current_region,
+          current_city, current_country, latitude, longitude, verification_status, verified_at, verified_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'verified', UTC_TIMESTAMP(), ?)`,
+      [
+        userId,
+        fields.last,
+        fields.first,
+        fields.middle || null,
+        input.gender || "Prefer not to say",
+        input.birthDate || null,
+        calculateAge(input.birthDate) || null,
+        input.ethnicity.trim(),
+        input.birthPlace.trim(),
+        input.religion.trim(),
+        input.mobileNumber.trim(),
+        email,
+        input.akanEmail.trim().toLowerCase() || null,
+        input.facebook.trim() || null,
+        input.course.trim() || null,
+        input.college.trim() || null,
+        fields.batchYear,
+        input.employmentStatus,
+        fields.employment?.position.trim() || null,
+        fields.employment?.company.trim() || null,
+        fields.region,
+        input.currentAddress.city.trim() || null,
+        fields.location.country,
+        fields.location.lat,
+        fields.location.lng,
+        admin.id,
+      ],
+    );
+    const profileId = profileResult.insertId;
+
+    await upsertAddressRow(connection, userId, "current", input.currentAddress);
+    await upsertAddressRow(connection, userId, "home", input.homeAddress);
+    await saveEducation(connection, userId, input.education);
+    await saveEmployment(connection, userId, fields.employment);
+    await saveOrganization(connection, userId, input.organization);
+
+    await connection.execute(
+      `INSERT INTO activity_log (actor_user_id, actor_name, action, entity_type, entity_id)
+       VALUES (?, ?, ?, 'admin', ?)`,
+      [
+        admin.id,
+        admin.fullName ?? admin.email,
+        `Added alumni record — ${fields.displayName}`,
+        profileId,
+      ],
+    );
+
+    await connection.commit();
+    return { ok: true, message: "Alumni record added successfully!" };
+  } catch (error) {
+    await connection.rollback();
+    console.error("[admin] Create alumnus failed:", error);
+    return { ok: false, message: "We could not add this record right now. Please try again." };
   } finally {
     connection.release();
   }

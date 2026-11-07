@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { getAdminRole, getSession, type AdminRole, type Role } from "@/lib/session";
+import { getAdminName, getAdminRole, getSession, type AdminRole, type Role } from "@/lib/session";
 
 function subscribe(onChange: () => void) {
   window.addEventListener("alumtrack-session", onChange);
@@ -21,4 +21,9 @@ export function useSession(): Role | null {
 /** The signed-in administrator's tier, or null for alumni/guests. */
 export function useAdminRole(): AdminRole | null {
   return useSyncExternalStore<AdminRole | null>(subscribe, getAdminRole, () => null);
+}
+
+/** The signed-in administrator's exact full name, or null pre-hydration. */
+export function useAdminName(): string | null {
+  return useSyncExternalStore<string | null>(subscribe, getAdminName, () => null);
 }

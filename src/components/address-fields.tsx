@@ -9,6 +9,7 @@ import {
   type GeoCountry,
   type GeoCountryData,
 } from "@/lib/geo-data";
+import { getBarangayNames, isPhilippinesCountry } from "@/lib/ph-barangays";
 import type { AddressInput } from "@/lib/registration.types";
 
 /**
@@ -22,6 +23,12 @@ import type { AddressInput } from "@/lib/registration.types";
  *
  * Country, province and city are cascading: changing a parent clears the
  * children. Each dropdown also accepts typed text when the place is not listed.
+ * Country / province / city lists are shown in full A–Z order (no item cap).
+ *
+ * When the country is the Philippines, Subdivision / Barangay is a cascading
+ * dropdown fed by the PSGC dataset filtered by the chosen city (and province
+ * for duplicate city names). For any other country it stays a free-text field
+ * for the subdivision / neighbourhood.
  */
 export function AddressFields({
   value,
@@ -71,28 +78,51 @@ export function AddressFields({
   const selectedState = countryData ? findStateByName(countryData, value.province) : undefined;
 
   const countryOptions = useMemo<ComboOption[]>(
-    () => countries.map((country) => ({ label: country.name })),
+    () =>
+      [...countries]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((country) => ({ label: country.name })),
     [countries],
   );
 
   const stateOptions = useMemo<ComboOption[]>(
     () =>
-      countryData?.states.map((state) => ({ label: state.name, lat: state.lat, lng: state.lng })) ??
-      [],
+      [...(countryData?.states ?? [])]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((state) => ({ label: state.name, lat: state.lat, lng: state.lng })),
     [countryData],
   );
 
   const cityOptions = useMemo<ComboOption[]>(() => {
     const source = selectedState?.cities.length ? selectedState.cities : (countryData?.cities ?? []);
-    return source.map((city) => ({ label: city.name, lat: city.lat, lng: city.lng }));
+    return [...source]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((city) => ({ label: city.name, lat: city.lat, lng: city.lng }));
   }, [countryData, selectedState]);
+
+  const isPhilippines = isPhilippinesCountry(value.country);
+
+  const barangayOptions = useMemo<ComboOption[]>(() => {
+    if (!isPhilippines) return [];
+    return getBarangayNames(value.city, value.province)
+      .sort((a, b) => a.localeCompare(b))
+      .map((name) => ({ label: name }));
+  }, [isPhilippines, value.city, value.province]);
 
   const setCountry = (name: string) => {
     if (name.trim() === value.country.trim()) {
       onChange({ ...value, country: name });
       return;
     }
-    onChange({ ...value, country: name, province: "", city: "", latitude: null, longitude: null });
+    onChange({
+      ...value,
+      country: name,
+      province: "",
+      city: "",
+      subdivision: "",
+      latitude: null,
+      longitude: null,
+    });
   };
 
   const setProvince = (name: string, option?: ComboOption) => {
@@ -100,6 +130,7 @@ export function AddressFields({
       ...value,
       province: name,
       city: "",
+      subdivision: "",
       latitude: option?.lat ?? null,
       longitude: option?.lng ?? null,
     });
@@ -110,9 +141,14 @@ export function AddressFields({
     onChange({
       ...value,
       city: name,
+      subdivision: "",
       latitude: option?.lat ?? fallback?.lat ?? null,
       longitude: option?.lng ?? fallback?.lng ?? null,
     });
+  };
+
+  const setBarangay = (name: string) => {
+    onChange({ ...value, subdivision: name });
   };
 
   const setText = (key: "subdivision" | "street" | "block" | "houseNo" | "zipCode") => (text: string) =>
@@ -144,11 +180,27 @@ export function AddressFields({
         placeholder={selectedState || countryData ? "Search or type a city" : "Type a city"}
         required
       />
-      <TextField
-        label="Subdivision / Barangay"
-        value={value.subdivision}
-        onChange={setText("subdivision")}
-      />
+      {isPhilippines ? (
+        <LocationCombobox
+          label="Subdivision / Barangay"
+          value={value.subdivision}
+          onChange={setBarangay}
+          options={barangayOptions}
+          placeholder={
+            !value.city.trim()
+              ? "Choose a city first, or type"
+              : barangayOptions.length === 0
+                ? "No PSGC match — type a barangay"
+                : "Search or type a barangay"
+          }
+        />
+      ) : (
+        <TextField
+          label="Subdivision / Barangay"
+          value={value.subdivision}
+          onChange={setText("subdivision")}
+        />
+      )}
       <TextField label="Street (optional)" value={value.street} onChange={setText("street")} />
       <TextField label="Block (optional)" value={value.block} onChange={setText("block")} />
       <TextField label="House No. (optional)" value={value.houseNo} onChange={setText("houseNo")} />

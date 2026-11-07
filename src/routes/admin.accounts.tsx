@@ -102,6 +102,7 @@ function AdminAccounts() {
   const [deleting, setDeleting] = useState<AdminAccount | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
+  const [search, setSearch] = useState("");
 
   const startEditing = (account: AdminAccount) => {
     setMessage(null);
@@ -254,6 +255,14 @@ function AdminAccounts() {
 
   const { accounts } = data;
   const activeCount = accounts.filter((account) => account.active).length;
+  const query = search.trim().toLowerCase();
+  const visibleAccounts = query
+    ? accounts.filter(
+        (account) =>
+          account.fullName.toLowerCase().includes(query) ||
+          account.email.toLowerCase().includes(query),
+      )
+    : accounts;
 
   return (
     <AdminShell
@@ -295,8 +304,29 @@ function AdminAccounts() {
         </p>
       )}
 
-      <ul className="mt-4 grid gap-3 md:grid-cols-2">
-        {accounts.map((account) => (
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search admin by name"
+          aria-label="Search admin by name"
+          className="w-full max-w-sm rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+        />
+        {query && (
+          <p className="text-xs text-muted-foreground">
+            Showing {visibleAccounts.length} of {accounts.length} admin
+            {accounts.length === 1 ? "" : "s"}
+          </p>
+        )}
+      </div>
+
+      {visibleAccounts.length === 0 ? (
+        <p className="mt-4 rounded-lg bg-muted px-3 py-4 text-xs text-muted-foreground">
+          No admin accounts match "{search.trim()}". Try a different name or email.
+        </p>
+      ) : (
+        <ul className="mt-4 grid gap-3 md:grid-cols-2">
+          {visibleAccounts.map((account) => (
           <li key={account.id} className="rounded-lg border border-border bg-card p-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -366,8 +396,9 @@ function AdminAccounts() {
               </button>
             </div>
           </li>
-        ))}
-      </ul>
+          ))}
+        </ul>
+      )}
 
       <div className="mt-6 rounded-lg border-l-4 border-highlight bg-muted/50 px-4 py-3">
         <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">

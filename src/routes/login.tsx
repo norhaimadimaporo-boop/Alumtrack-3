@@ -44,7 +44,7 @@ function LoginPage() {
         return;
       }
 
-      setSession(result.role, result.user.adminRole);
+      setSession(result.role, result.user.adminRole, result.user.fullName);
       await navigate({ to: result.role === "admin" ? "/admin" : "/dashboard" });
     } catch (err) {
       console.error(err);

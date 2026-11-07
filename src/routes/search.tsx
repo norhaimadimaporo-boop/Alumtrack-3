@@ -41,11 +41,10 @@ export const Route = createFileRoute("/search")({
 type Filters = {
   course: string;
   college: string;
-  region: string;
   batch: string;
 };
 
-const empty: Filters = { course: "", college: "", region: "", batch: "" };
+const empty: Filters = { course: "", college: "", batch: "" };
 
 /** Case-insensitive equality so "lanao del sur" matches "Lanao del Sur". */
 function sameValue(value: string, filter: string) {
@@ -80,7 +79,6 @@ function SearchPage() {
     () => ({
       courses: pickLabels(alumni.map((a) => a.course)),
       colleges: pickLabels(alumni.map((a) => a.college)),
-      regions: pickLabels(alumni.map((a) => a.region ?? "")),
       batches: [...new Set(alumni.map((a) => a.batch).filter((b) => b !== "—"))].sort((a, b) =>
         b.localeCompare(a),
       ),
@@ -91,19 +89,33 @@ function SearchPage() {
   const set = (key: keyof Filters, value: string) => setFilters((f) => ({ ...f, [key]: value }));
 
   const results = useMemo(() => {
+    // Text search matches the alumni NAME only: every typed word must appear
+    // in first/middle/last name (case-insensitive), so "Naimah" shows only
+    // Naimah Tomawis Abdulcader and "abdul" shows only the Abdul/Abdulcader
+    // names — never alumni whose name does not match the query.
     const q = query.trim().toLowerCase();
+    const tokens = q ? q.split(/\s+/).filter(Boolean) : [];
     return alumni.filter((a) => {
-      if (
-        q &&
-        ![a.name, a.job ?? "", a.company ?? "", a.course, a.college, a.region ?? "", a.batch].some(
-          (field) => field.toLowerCase().includes(q),
-        )
-      ) {
-        return false;
+      if (tokens.length > 0) {
+        const nameParts = [
+          a.firstName ?? "",
+          a.middleName ?? "",
+          a.lastName ?? "",
+        ].map((part) => part.toLowerCase());
+        const nameWords = a.name
+          .toLowerCase()
+          .split(/\s+/)
+          .filter(Boolean);
+        const nameText = `${nameParts.join(" ")} ${nameWords.join(" ")}`.trim();
+        const matches = tokens.every((token) => {
+          if (nameParts.some((part) => part.includes(token))) return true;
+          if (nameText.includes(token)) return true;
+          return nameWords.some((word) => word.includes(token));
+        });
+        if (!matches) return false;
       }
       if (!sameValue(a.course, filters.course)) return false;
       if (!sameValue(a.college, filters.college)) return false;
-      if (!sameValue(a.region ?? "", filters.region)) return false;
       if (filters.batch && a.batch !== filters.batch) return false;
       return true;
     });
@@ -147,7 +159,7 @@ function SearchPage() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by name, course, batch, region, or company…"
+          placeholder="Search by name..."
           className="w-full bg-transparent py-1.5 text-sm outline-none placeholder:text-muted-foreground"
         />
         {query && (
@@ -183,12 +195,6 @@ function SearchPage() {
             options={options.colleges}
             value={filters.college}
             onChange={(v) => set("college", v)}
-          />
-          <FilterSelect
-            label="Region"
-            options={options.regions}
-            value={filters.region}
-            onChange={(v) => set("region", v)}
           />
           <FilterSelect
             label="Batch Year"
@@ -237,7 +243,7 @@ function SearchPage() {
               }
             >
               {results.map((a) => (
-                <AlumniCard key={a.id} alumnus={a} view={view} signedIn={signedIn} />
+                <AlumniCard key={a.id} alumnus={a} signedIn={signedIn} />
               ))}
             </div>
           )}
@@ -306,13 +312,18 @@ function FilterSelect({
   );
 }
 
+/**
+ * Unified card: same header → details → footer structure in grid and list
+ * views (like the fully-shared Naimah Tomawis card), with rows hidden
+ * dynamically by the server-side privacy gates. Employment and location rows
+ * always render (with a private placeholder when hidden) so cards line up;
+ * contact rows render only when the owner allows them.
+ */
 function AlumniCard({
   alumnus,
-  view,
   signedIn,
 }: {
   alumnus: PublicAlumnus;
-  view: "grid" | "list";
   signedIn: boolean;
 }) {
   const statusColor =
@@ -323,12 +334,8 @@ function AlumniCard({
         : "bg-muted text-muted-foreground";
 
   return (
-    <article
-      className={`group rounded-sm border border-border bg-card p-4 transition-colors hover:border-brand ${
-        view === "list" ? "flex items-start gap-4" : ""
-      }`}
-    >
-      <div className={view === "grid" ? "flex items-center gap-3" : "contents"}>
+    <article className="group rounded-sm border border-border bg-card p-4 transition-colors hover:border-brand">
+      <div className="flex items-center gap-3">
         <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-brand text-lg font-bold text-brand-foreground">
           {initials(alumnus.name)}
         </span>
@@ -338,41 +345,31 @@ function AlumniCard({
           </h2>
           <p className="text-xs text-muted-foreground">{alumnus.course}</p>
           <p className="mt-0.5 text-xs font-medium text-brand">Batch {alumnus.batch}</p>
-          {view === "list" && <Details alumnus={alumnus} inline />}
         </div>
-        {view === "list" && (
-          <span
-            className={`shrink-0 rounded-sm px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${statusColor}`}
-          >
-            {alumnus.status}
-          </span>
-        )}
+        <span
+          className={`shrink-0 rounded-sm px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${statusColor}`}
+        >
+          {alumnus.status}
+        </span>
       </div>
 
-      {view === "grid" && (
-        <>
-          <div className="mt-4 border-t border-border pt-3">
-            <Details alumnus={alumnus} />
-          </div>
-          <span
-            className={`mt-3 inline-block rounded-sm px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${statusColor}`}
-          >
-            {alumnus.status}
-          </span>
-          {!signedIn && (
-            <p className="mt-3 flex items-center gap-1.5 border-t border-border pt-3 text-[10px] text-muted-foreground">
-              <Lock className="size-3" /> Shared contact details — sign in as alumni to view more
-            </p>
-          )}
-        </>
+      <div className="mt-4 border-t border-border pt-3">
+        <Details alumnus={alumnus} />
+      </div>
+
+      {!signedIn && (
+        <p className="mt-3 flex items-center gap-1.5 border-t border-border pt-3 text-[10px] text-muted-foreground">
+          <Lock className="size-3" /> Shared contact details — sign in as alumni to view more
+        </p>
       )}
     </article>
   );
 }
 
-function Details({ alumnus, inline }: { alumnus: PublicAlumnus; inline?: boolean }) {
+function Details({ alumnus }: { alumnus: PublicAlumnus }) {
+  const locationText = alumnus.location ?? alumnus.region;
   return (
-    <dl className={`space-y-1.5 text-xs ${inline ? "mt-2" : ""}`}>
+    <dl className="space-y-1.5 text-xs">
       <div className="flex gap-2">
         <Briefcase className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
         <dd className="text-foreground">
@@ -381,13 +378,13 @@ function Details({ alumnus, inline }: { alumnus: PublicAlumnus; inline?: boolean
               {alumnus.job} · <span className="text-muted-foreground">{alumnus.company}</span>
             </>
           ) : (
-            <span className="text-muted-foreground">Job details are private</span>
+            <span className="text-muted-foreground">Employment details private</span>
           )}
         </dd>
       </div>
       <div className="flex gap-2">
         <MapPin className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-        <dd className="text-muted-foreground">{alumnus.region ?? "Region is private"}</dd>
+        <dd className="text-muted-foreground">{locationText ?? "Region is private"}</dd>
       </div>
       {alumnus.mobile && (
         <div className="flex gap-2">

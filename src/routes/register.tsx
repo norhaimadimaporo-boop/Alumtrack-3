@@ -17,13 +17,13 @@ import {
 export const Route = createFileRoute("/register")({
   head: () => ({
     meta: [
-      { title: "Alumni Registration â€” AlumTrack MSU Main Campus" },
+      { title: "Alumni Registration - AlumTrack MSU Main Campus" },
       {
         name: "description",
         content:
           "Register your MSU Main Campus alumni profile in five phases: personal details, address and contacts, education, employment, and organization affiliation.",
       },
-      { property: "og:title", content: "Alumni Registration â€” AlumTrack" },
+      { property: "og:title", content: "Alumni Registration - AlumTrack" },
       {
         property: "og:description",
         content: "Create your MSU Main Campus alumni profile in five guided phases.",
@@ -431,10 +431,13 @@ function RegisterPage() {
         <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-success text-success-foreground">
           <Check className="size-7" />
         </span>
-        <h1 className="mt-6 text-2xl font-bold text-foreground">Registration submitted</h1>
+        <h1 className="mt-6 text-2xl font-bold text-foreground">Registration submitted!</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Your alumni profile has been saved and sent to the OARCC for verification. You can now
-          sign in using <span className="font-semibold text-foreground">{form.accountEmail}</span>.
+          Your account is currently under review by the OARCC Admin team. Please wait for
+          verification before logging in.
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Registered email: <span className="font-semibold text-foreground">{form.accountEmail}</span>
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
@@ -461,7 +464,7 @@ function RegisterPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Alumni Registration</h1>
           <p className="text-sm text-muted-foreground">
-            Complete all five phasesâ€”from personal details and contacts to education, employment, and organization affiliationâ€”to create your verified AlumTrack profile.
+            Complete all five phases - from personal details and contacts to education, employment, and organization affiliation - to create your verified AlumTrack profile.
           </p>
         </div>
       </div>
@@ -507,7 +510,7 @@ function RegisterPage() {
         )}
 
         {step === 0 && (
-          <Section title="Phase 1 â€” Personal Details">
+          <Section title="Phase 1 - Personal Details">
             <div className="mb-7 rounded-lg border border-border bg-muted/40 p-4">
               <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-brand">
                 Account access
@@ -598,7 +601,7 @@ function RegisterPage() {
                 label="Place of Birth"
                 value={form.birthPlace}
                 onChange={(value) => update("birthPlace", value)}
-                placeholder="City / Municipality, Province"
+                placeholder="Barangay, City/Municipality, Province"
                 required
               />
               <Field
@@ -613,7 +616,7 @@ function RegisterPage() {
 
         {step === 1 && (
           <div className="space-y-8">
-            <Section title="Phase 2 â€” Current Address">
+            <Section title="Phase 2 - Current Address">
               <AddressFields
                 value={form.currentAddress}
                 onChange={(next) => updateAddress("currentAddress", next)}
@@ -671,7 +674,7 @@ function RegisterPage() {
         )}
 
         {step === 2 && (
-          <Section title="Phase 3 â€” Educational Background">
+          <Section title="Phase 3 - Educational Background">
             <p className="mb-3 text-sm text-muted-foreground">
               Select every degree you have earned. Details are requested per degree.
             </p>
@@ -761,7 +764,7 @@ function RegisterPage() {
         )}
 
         {step === 3 && (
-          <Section title="Phase 4 â€” Employment (Optional)">
+          <Section title="Phase 4 - Employment (Optional)">
             <div className="grid gap-2 sm:grid-cols-2">
               <Radio
                 name="employment"
@@ -836,7 +839,7 @@ function RegisterPage() {
         )}
 
         {step === 4 && (
-          <Section title="Phase 5 â€” Organization / Group Affiliation (Optional)">
+          <Section title="Phase 5 - Organization / Group Affiliation (Optional)">
             <div className="grid gap-2 sm:grid-cols-2">
               <Radio
                 name="affiliation"
@@ -912,7 +915,7 @@ function RegisterPage() {
             className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-70"
           >
             {pending && <Loader2 className="size-4 animate-spin" />}
-            {pending ? "Submittingâ€¦" : last ? "Submit Registration" : "Next"}
+            {pending ? "Submitting..." : last ? "Submit Registration" : "Next"}
             {!last && !pending && <ChevronRight className="size-4" />}
           </button>
         </div>
@@ -1016,7 +1019,7 @@ function Select({
         className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
       >
         <option value="" disabled>
-          Selectâ€¦
+          Select...
         </option>
         {options.map((option) => (
           <option key={option} value={option}>

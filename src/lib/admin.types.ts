@@ -51,6 +51,13 @@ export type AdminActivityItem = {
   text: string;
   time: string;
   kind: "registration" | "verification" | "deletion" | "login" | "admin";
+  /** Actor display name for the full-history view (Date/Time/Admin/Action). */
+  actorName: string;
+  /** Full timestamp pieces for history + date filtering (local date parts). */
+  date: string;
+  clock: string;
+  /** ISO timestamp for Day/Month/Year filtering. */
+  stamp: string;
 };
 
 export type AdminRecentAlumnus = {
@@ -137,6 +144,9 @@ export type AdminAlumnus = {
   createdAt: string;
   currentAddress: string;
   homeAddress: string;
+  /** Structured address parts for the View breakdown and Add/Edit form. */
+  currentAddressParts: import("./registration.types").AddressInput;
+  homeAddressParts: import("./registration.types").AddressInput;
   education: AdminEducationRecord[];
   employment: AdminEmploymentRecord[];
   organizations: AdminOrganizationRecord[];
@@ -145,6 +155,56 @@ export type AdminAlumnus = {
 export type AdminAlumniList = { ok: true; alumni: AdminAlumnus[] } | { ok: false; message: string };
 
 export type AdminActionResult = { ok: true; message: string } | { ok: false; message: string };
+
+/** Full payload from the Admin Add/Edit modal (Phases 1-5). */
+export type AdminAlumniSaveInput = {
+  fullName: string;
+  gender: string;
+  birthDate: string;
+  ethnicity: string;
+  birthPlace: string;
+  religion: string;
+  currentAddress: import("./registration.types").AddressInput;
+  homeAddress: import("./registration.types").AddressInput;
+  mobileNumber: string;
+  contactEmail: string;
+  akanEmail: string;
+  facebook: string;
+  education: Array<{
+    level: string;
+    schoolIdNo: string;
+    degree: string;
+    major: string;
+    college: string;
+    school: string;
+    schoolAddress: string;
+    graduatedOn: string;
+  }>;
+  course: string;
+  college: string;
+  batch: string;
+  region: string;
+  employmentStatus: "employed" | "unemployed" | "unknown";
+  employment: {
+    position: string;
+    company: string;
+    companyAddress: string;
+    lengthOfEmployment: string;
+    yearsInOffice: string;
+    workLocation: string;
+    sector: string;
+  } | null;
+  organization: {
+    name: string;
+    address: string;
+    position: string;
+    contactNo: string;
+    email: string;
+    memberSince: string;
+  } | null;
+};
+
+export type AdminAlumniUpdateInput = AdminAlumniSaveInput & { id: number };
 
 export type AdminImportResult =
   | {

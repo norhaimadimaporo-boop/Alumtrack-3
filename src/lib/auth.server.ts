@@ -38,6 +38,7 @@ type UserRow = RowDataPacket & {
   admin_role: AdminRole | null;
   full_name: string | null;
   is_active: number;
+  verification_status: "pending" | "verified" | "rejected" | null;
 };
 
 export async function hashPassword(password: string): Promise<string> {
@@ -138,7 +139,11 @@ export async function loginUser(input: { email: string; password: string; role: 
     const pool = getPool();
 
     const [rows] = await pool.execute<RowDataPacket[]>(
-      "SELECT id, email, password_hash, role, admin_role, full_name, is_active FROM users WHERE email = ? LIMIT 1",
+      `SELECT u.id, u.email, u.password_hash, u.role, u.admin_role, u.full_name, u.is_active,
+              p.verification_status
+         FROM users u
+         LEFT JOIN alumni_profiles p ON p.user_id = u.id
+        WHERE u.email = ? LIMIT 1`,
       [email],
     );
     const user = rows[0] as UserRow | undefined;
@@ -166,8 +171,29 @@ export async function loginUser(input: { email: string; password: string; role: 
       };
     }
 
+    if (user.role === "alumni" && user.verification_status === "pending") {
+      return {
+        ok: false as const,
+        message: "Your account is pending verification by the admin. Please try again later.",
+      };
+    }
+
+    if (user.role === "alumni" && user.verification_status === "rejected") {
+      return {
+        ok: false as const,
+        message: "Your account registration was rejected by the admin. Contact the OARCC for assistance.",
+      };
+    }
+
     const sessionToken = await createSession(user.id);
     await pool.execute("UPDATE users SET last_login_at = UTC_TIMESTAMP() WHERE id = ?", [user.id]);
+    await pool
+      .execute(
+        `INSERT INTO activity_log (actor_user_id, actor_name, action, entity_type)
+         VALUES (?, ?, 'Login', 'login')`,
+        [user.id, user.full_name ?? user.email],
+      )
+      .catch(() => undefined);
     setResponseHeader("Set-Cookie", sessionCookie(sessionToken, SESSION_TTL_SECONDS));
 
     const authUser = toAuthUser(user);
@@ -210,7 +236,27 @@ export async function logoutUser(): Promise<{ ok: true }> {
   const token = readCookie(getRequestHeader("cookie"), SESSION_COOKIE);
   if (token) {
     try {
-      await getPool().execute("DELETE FROM sessions WHERE token_hash = ?", [hashToken(token)]);
+      const pool = getPool();
+      const [sessions] = await pool.execute<RowDataPacket[]>(
+        "SELECT user_id FROM sessions WHERE token_hash = ? LIMIT 1",
+        [hashToken(token)],
+      );
+      const sessionUserId = (sessions[0] as { user_id?: number } | undefined)?.user_id;
+      await pool.execute("DELETE FROM sessions WHERE token_hash = ?", [hashToken(token)]);
+      if (sessionUserId) {
+        const [users] = await pool.execute<RowDataPacket[]>(
+          "SELECT full_name, email FROM users WHERE id = ? LIMIT 1",
+          [sessionUserId],
+        );
+        const name = (users[0] as { full_name?: string | null; email?: string } | undefined);
+        await pool
+          .execute(
+            `INSERT INTO activity_log (actor_user_id, actor_name, action, entity_type)
+             VALUES (?, ?, 'Logout', 'login')`,
+            [sessionUserId, name?.full_name ?? name?.email ?? "—"],
+          )
+          .catch(() => undefined);
+      }
     } catch (error) {
       console.error("[auth] Session delete failed:", error);
     }

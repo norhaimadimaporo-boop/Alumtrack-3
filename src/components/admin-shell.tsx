@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { LayoutDashboard, Users, Megaphone, BarChart3, ShieldCheck, Activity } from "lucide-react";
 import { NotificationBell } from "@/components/notification-bell";
-import { useAdminRole } from "@/hooks/use-session";
+import { useAdminName, useAdminRole } from "@/hooks/use-session";
 import type { AdminRole } from "@/lib/session";
 
 const NOTIFICATIONS = [
@@ -52,6 +52,7 @@ export function AdminShell({
   children: ReactNode;
 }) {
   const adminRole = useAdminRole();
+  const adminName = useAdminName();
   // Fail safe before hydration: only show links every tier may open.
   const visibleLinks = links.filter(
     (link) => ADMIN_RANK[adminRole ?? "viewer"] >= ADMIN_RANK[link.min],
@@ -64,7 +65,9 @@ export function AdminShell({
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand">
             Administrator
           </p>
-          <p className="mt-1 text-sm font-semibold text-foreground">OARCC Main Office</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">
+            {adminName ?? "OARCC Main Office"}
+          </p>
           <p className="text-[11px] text-muted-foreground">
             {adminRole ? ROLE_LABEL[adminRole] : "System Administrator"}
           </p>

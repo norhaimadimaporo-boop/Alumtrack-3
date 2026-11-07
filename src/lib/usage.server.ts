@@ -1,0 +1,108 @@
+import type { RowDataPacket } from "mysql2/promise";
+
+import { getPool } from "./db.server";
+import { manilaClock, manilaDate } from "./manila-time";
+import { fullName } from "./profile-format";
+import type { SystemUsageData, SystemUsageResult } from "./usage.types";
+
+type CountRow = RowDataPacket & Record<string, number>;
+
+type LogRow = RowDataPacket & {
+  token_hash: string;
+  user_id: number;
+  role: string;
+  email: string;
+  full_name: string | null;
+  first_name: string | null;
+  middle_name: string | null;
+  last_name: string | null;
+  current_city: string | null;
+  current_region: string | null;
+  address_city: string | null;
+  address_province: string | null;
+  expires_at: Date | string;
+  created_at: Date | string;
+};
+
+/**
+ * Live system counters from `sessions` + `users`/`alumni_profiles`:
+ * active sessions (unexpired, distinct users), logins today (last_login_at),
+ * distinct regions with an active session, and overseas active sessions.
+ */
+export async function getSystemUsage(): Promise<SystemUsageResult> {
+  try {
+    const pool = getPool();
+    const [[counts], [logRows]] = await Promise.all([
+      pool.query<CountRow[]>(
+        `SELECT
+           (SELECT COUNT(DISTINCT user_id) FROM sessions WHERE expires_at > UTC_TIMESTAMP()) AS active_sessions,
+           (SELECT COUNT(*) FROM users WHERE last_login_at >= CURDATE()) AS logins_today,
+           (SELECT COUNT(DISTINCT p.current_region)
+              FROM sessions s
+              JOIN alumni_profiles p ON p.user_id = s.user_id
+             WHERE s.expires_at > UTC_TIMESTAMP()
+               AND p.current_region IS NOT NULL AND TRIM(p.current_region) <> '') AS regions,
+           (SELECT COUNT(DISTINCT s.user_id)
+              FROM sessions s
+              JOIN alumni_profiles p ON p.user_id = s.user_id
+             WHERE s.expires_at > UTC_TIMESTAMP()
+               AND p.current_country IS NOT NULL AND TRIM(p.current_country) <> ''
+               AND LOWER(TRIM(p.current_country)) NOT LIKE '%philippines%') AS overseas`,
+      ),
+      pool.query<LogRow[]>(
+        `SELECT s.token_hash, s.user_id, u.role, u.email, u.full_name,
+                p.first_name, p.middle_name, p.last_name,
+                p.current_city, p.current_region,
+                cur.city AS address_city, cur.province AS address_province,
+                s.expires_at, s.created_at
+           FROM sessions s
+           JOIN users u ON u.id = s.user_id
+      LEFT JOIN alumni_profiles p ON p.user_id = s.user_id
+      LEFT JOIN alumni_addresses cur ON cur.user_id = s.user_id AND cur.kind = 'current'
+          ORDER BY s.created_at DESC, s.user_id ASC
+          LIMIT 200`,
+      ),
+    ]);
+
+    const countRow = counts[0];
+    const usage: SystemUsageData = {
+      activeSessions: Number(countRow?.active_sessions ?? 0),
+      loginsToday: Number(countRow?.logins_today ?? 0),
+      regionsWithActivity: Number(countRow?.regions ?? 0),
+      overseasSessions: Number(countRow?.overseas ?? 0),
+      accessLogs: logRows.map((row) => {
+        const created =
+          row.created_at instanceof Date ? row.created_at : new Date(row.created_at);
+        const expires =
+          row.expires_at instanceof Date ? row.expires_at : new Date(row.expires_at);
+        const displayName =
+          row.role === "alumni" && row.first_name
+            ? fullName(row.first_name, row.middle_name ?? "", row.last_name ?? "")
+            : row.full_name?.trim() || row.email;
+        const where =
+          [row.current_city?.trim() || row.address_city?.trim(), row.current_region?.trim() || row.address_province?.trim()]
+            .filter(Boolean)
+            .join(", ") || "—";
+        return {
+          id: row.token_hash.slice(0, 16),
+          user: displayName,
+          role: row.role === "admin" ? ("Admin" as const) : ("Alumni" as const),
+          action: "Login" as const,
+          date: manilaDate(created),
+          clock: manilaClock(created),
+          stamp: Number.isNaN(created.getTime()) ? "" : created.toISOString(),
+          where,
+          active: expires.getTime() > Date.now(),
+        };
+      }),
+    };
+
+    return { ok: true, usage };
+  } catch (error) {
+    console.error("[usage] System usage query failed:", error);
+    return {
+      ok: false,
+      message: "System usage could not be loaded right now. Please try again later.",
+    };
+  }
+}

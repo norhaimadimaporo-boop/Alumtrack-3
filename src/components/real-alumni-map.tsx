@@ -1,6 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import type { Map as LeafletMap } from "leaflet";
-import { Loader2 } from "lucide-react";
+import { Loader2, Maximize2 } from "lucide-react";
 import { MAP_LEGEND, MAP_VIEWS, type AlumniMapPin, type MapViewKey } from "@/data/gis";
 
 /**
@@ -57,8 +57,14 @@ export function RealAlumniMap({
   const [viewKey, setViewKey] = useState<MapViewKey>(initialView);
   const mapRef = useRef<LeafletMap | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => mapRef.current?.invalidateSize(), 60);
+    return () => window.clearTimeout(timer);
+  }, [fullscreen, viewKey]);
 
   // The zoom buttons live outside the map canvas, so they need the live map
   // instance handed over by the Leaflet child component.
@@ -86,20 +92,30 @@ export function RealAlumniMap({
   };
 
   return (
-    <div className={className}>
+    <div
+      className={
+        fullscreen
+          ? `${className} fixed inset-0 z-50 bg-background p-4`
+          : className
+      }
+    >
       <div className="relative overflow-hidden rounded-xl border border-border bg-secondary/40">
         {mounted ? (
-          <Suspense fallback={<MapSkeleton heightClassName={heightClassName} />}>
+          <Suspense
+            fallback={
+              <MapSkeleton heightClassName={fullscreen ? "h-[calc(100vh-180px)] min-h-[700px]" : heightClassName} />
+            }
+          >
             <LeafletAlumniMap
               pins={pins}
               viewKey={viewKey}
               initialView={initialView}
-              heightClassName={heightClassName}
+              heightClassName={fullscreen ? "h-[calc(100vh-180px)] min-h-[700px]" : heightClassName}
               onMapReady={handleMapReady}
             />
           </Suspense>
         ) : (
-          <MapSkeleton heightClassName={heightClassName} />
+          <MapSkeleton heightClassName={fullscreen ? "h-[calc(100vh-180px)] min-h-[700px]" : heightClassName} />
         )}
 
         {/* Floating view presets — top-left of the map canvas */}
@@ -194,6 +210,15 @@ export function RealAlumniMap({
             className="inline-flex size-7 items-center justify-center rounded-md border border-border bg-background text-sm font-bold leading-none text-foreground shadow-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
           >
             −
+          </button>
+          <button
+            type="button"
+            onClick={() => setFullscreen((open) => !open)}
+            aria-label={fullscreen ? "Exit fullscreen map" : "Open fullscreen map"}
+            title={fullscreen ? "Exit fullscreen map" : "Full display (fullscreen)"}
+            className="inline-flex size-7 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-sm transition-colors hover:bg-muted"
+          >
+            <Maximize2 className="size-4" />
           </button>
         </div>
       </div>

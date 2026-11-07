@@ -5,8 +5,6 @@ import { normalizeForSearch } from "@/lib/geo-data";
 
 export type ComboOption = { label: string; lat?: number; lng?: number };
 
-const MAX_VISIBLE = 60;
-
 /**
  * Text box with a filtered suggestion list. Picking a suggestion sets the value
  * and its coordinates; typing any other text is accepted as a manual entry.
@@ -19,6 +17,7 @@ export function LocationCombobox({
   placeholder,
   required = false,
   hint,
+  sortOptions = true,
 }: {
   label: string;
   value: string;
@@ -27,6 +26,8 @@ export function LocationCombobox({
   placeholder?: string;
   required?: boolean;
   hint?: string;
+  /** Set false to keep caller order (e.g. Month Jan-Dec, Year descending). */
+  sortOptions?: boolean;
 }) {
   const id = useId();
   const [open, setOpen] = useState(false);
@@ -38,8 +39,11 @@ export function LocationCombobox({
     const matches = query
       ? options.filter((option) => normalizeForSearch(option.label).includes(query))
       : options;
-    return matches.slice(0, MAX_VISIBLE);
-  }, [options, search]);
+    // Full A-Z list — no item cap. The dropdown scrolls (max-h-56) so every
+    // country / province / city / barangay stays reachable. Callers that need
+    // chronological or descending order pass sortOptions={false}.
+    return sortOptions ? [...matches].sort((a, b) => a.label.localeCompare(b.label)) : matches;
+  }, [options, search, sortOptions]);
 
   const typing = search !== null && search.trim() !== "";
 

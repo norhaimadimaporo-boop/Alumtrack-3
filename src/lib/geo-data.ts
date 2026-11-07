@@ -35,6 +35,7 @@ export function loadGeoCountries(): Promise<GeoCountry[]> {
       if (!response.ok) throw new Error("Countries could not be loaded.");
       return response.json() as Promise<GeoCountry[]>;
     })
+    .then((list) => [...list].sort((a, b) => a.name.localeCompare(b.name)))
     .catch((error) => {
       countriesCache = null;
       throw error;
@@ -54,14 +55,16 @@ export function loadGeoCountry(code: string): Promise<GeoCountryData> {
       .then((raw) => ({
         code: raw.code,
         name: raw.name,
-        cities: raw.cities.map(toCity),
-        states: raw.states.map((state) => ({
-          code: state.code,
-          name: state.name,
-          lat: state.lat,
-          lng: state.lng,
-          cities: state.cities.map(toCity),
-        })),
+        cities: raw.cities.map(toCity).sort((a, b) => a.name.localeCompare(b.name)),
+        states: raw.states
+          .map((state) => ({
+            code: state.code,
+            name: state.name,
+            lat: state.lat,
+            lng: state.lng,
+            cities: state.cities.map(toCity).sort((a, b) => a.name.localeCompare(b.name)),
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name)),
       }))
       .catch((error) => {
         countryCache.delete(key);

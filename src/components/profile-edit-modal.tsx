@@ -177,6 +177,7 @@ export function ProfileEditModal({
               label="Ethnicity / Tribe"
               value={form.ethnicity}
               onChange={(value) => set("ethnicity", value)}
+              placeholder="e.g. Maranao"
               required
             />
             <TextField

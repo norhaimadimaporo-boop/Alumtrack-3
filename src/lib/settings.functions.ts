@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { loginUser } from "./auth.server";
 import { changeMyPassword, getMyPrivacySettings, saveMyPrivacySetting } from "./settings.server";
 
 const privacySettingSchema = z.object({
@@ -17,12 +16,6 @@ const passwordSchema = z.object({
     .max(200, "The new password is too long."),
 });
 
-const loginSchema = z.object({
-  email: z.string().email("Enter a valid email address.").max(255),
-  password: z.string().min(1).max(200),
-  role: z.enum(["alumni", "admin"]),
-});
-
 export const getMyPrivacy = createServerFn({ method: "GET" }).handler(async () =>
   getMyPrivacySettings(),
 );
@@ -35,6 +28,3 @@ export const changeMyPasswordRecord = createServerFn({ method: "POST" })
   .validator(passwordSchema)
   .handler(async ({ data }) => changeMyPassword(data));
 
-export const loginRecord = createServerFn({ method: "POST" })
-  .validator(loginSchema)
-  .handler(async ({ data }) => loginUser(data));
