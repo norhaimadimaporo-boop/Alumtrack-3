@@ -59,7 +59,7 @@ export function AdminShell({
   );
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 md:grid-cols-[230px_1fr]">
+    <div className="mx-auto grid max-w-6xl gap-8 overflow-x-hidden px-4 py-8 md:grid-cols-[230px_1fr]">
       <aside className="md:sticky md:top-24 md:self-start">
         <div className="rounded-lg border-t-4 border-brand bg-card p-4">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand">

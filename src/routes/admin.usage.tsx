@@ -146,7 +146,7 @@ function AdminUsage() {
         ))}
       </div>
 
-      <div className="mt-4 rounded-lg border-t-4 border-brand bg-card p-5">
+      <div className="mt-4 overflow-hidden rounded-lg border-t-4 border-brand bg-card p-5 pb-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <MapPinned className="size-4 text-brand" /> Alumni location GIS map
@@ -164,7 +164,7 @@ function AdminUsage() {
           Domestic and overseas alumni plotted by current location. Tap a pin for the
           graduate&apos;s status, location, and company.
         </p>
-        <div className="mt-4">
+        <div className="mt-3">
           <RealAlumniMap pins={pins} heightClassName="h-[460px] lg:h-[560px]" />
         </div>
       </div>

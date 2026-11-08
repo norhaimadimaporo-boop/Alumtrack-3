@@ -91,22 +91,35 @@ export function RealAlumniMap({
     highlight: pins.filter((pin) => pin.status === "Unemployed").length,
   };
 
-  // Full display (fullscreen) fills the whole viewport overlay edge-to-edge;
-  // embedded mode uses the height utility from the page.
-  const canvasHeight = fullscreen ? "h-full" : heightClassName;
+  // Full display (fullscreen) fills the whole viewport overlay edge-to-edge.
+  // Embedded mode: the bordered wrapper owns the height (heightClassName)
+  // and the Leaflet canvas stretches to w-full h-[100%] inside it, so the
+  // map colour reaches the bottom border with no white gap.
+  const canvasHeight = "h-full w-full";
+
+  // Lock page scroll while the map is in full display so the redundant
+  // browser scrollbar on the right disappears behind the overlay.
+  useEffect(() => {
+    if (!fullscreen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [fullscreen]);
 
   return (
     <div
       className={
         fullscreen
-          ? `${className} fixed inset-0 z-50 flex flex-col bg-background p-3 sm:p-4`
-          : className
+          ? `${className} fixed inset-0 z-50 flex flex-col overflow-hidden bg-background p-3 sm:p-4`
+          : `${className} w-full overflow-hidden`
       }
     >
       <div
         className={
-          "relative overflow-hidden rounded-xl border border-border bg-secondary/40" +
-          (fullscreen ? " min-h-0 w-full flex-1" : "")
+          "relative w-full overflow-hidden rounded-xl border border-border bg-secondary/40" +
+          (fullscreen ? " min-h-0 flex-1" : ` ${heightClassName}`)
         }
       >
         {mounted ? (
@@ -192,7 +205,7 @@ export function RealAlumniMap({
           zoom + fullscreen controls on the right. Nothing overlaps the map. */}
       <div className="mt-2 flex items-center justify-between gap-3">
         <p className="min-w-0 text-[11px] text-muted-foreground">
-          {pins.length} alumni plotted
+          {pins.length} alumni plotted · Tap pin for details
         </p>
 
         <div role="group" aria-label="Map zoom" className="flex shrink-0 items-center gap-1">
