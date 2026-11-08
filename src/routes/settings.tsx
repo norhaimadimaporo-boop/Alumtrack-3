@@ -13,7 +13,7 @@ import { AlumniShell } from "@/components/alumni-shell";
 import { Modal, LabeledInput, PrimaryButton } from "@/components/modal";
 import { Toggle } from "@/components/toggle";
 import { getMyWorkspaceData } from "@/lib/profile.functions";
-import { changeMyPasswordRecord, getMyPrivacy, saveMyPrivacy } from "@/lib/settings.functions";
+import { changeMyPasswordRecord, getMyPrivacy, saveMyPrivacySettingsRecord } from "@/lib/settings.functions";
 import type { PrivacySettings } from "@/lib/settings.types";
 
 export const Route = createFileRoute("/settings")({
@@ -120,7 +120,13 @@ function SettingsPage() {
   const [settings, setSettings] = useState<PrivacySettings | null>(
     data.privacy.ok ? data.privacy.settings : null,
   );
+  // Last-saved snapshot: toggles edit `settings` only; the database (and
+  // Search/GIS visibility) changes when Save Changes sends the draft.
+  const [savedSettings, setSavedSettings] = useState<PrivacySettings | null>(
+    data.privacy.ok ? data.privacy.settings : null,
+  );
   const [saveError, setSaveError] = useState("");
+  const [savingSettings, setSavingSettings] = useState(false);
   const [changing, setChanging] = useState(false);
   const [passwordForm, setPasswordForm] = useState<PasswordForm>(blankPasswordForm);
   const [passwordError, setPasswordError] = useState("");
@@ -133,14 +139,36 @@ function SettingsPage() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  async function updateSetting(key: keyof PrivacySettings, value: boolean) {
+  const hasUnsavedChanges =
+    settings !== null &&
+    savedSettings !== null &&
+    (Object.keys(savedSettings) as Array<keyof PrivacySettings>).some(
+      (key) => settings[key] !== savedSettings[key],
+    );
+
+  function updateSetting(key: keyof PrivacySettings, value: boolean) {
+    // Draft only — nothing is written to the database until Save Changes.
     setSettings((current) => (current ? { ...current, [key]: value } : current));
     setSaveError("");
+  }
 
-    const result = await saveMyPrivacy({ data: { key, value } });
-    if (!result.ok) {
-      setSettings((current) => (current ? { ...current, [key]: !value } : current));
-      setSaveError(result.message);
+  async function handleSaveSettings() {
+    if (!settings || !hasUnsavedChanges || savingSettings) return;
+    setSavingSettings(true);
+    setSaveError("");
+    try {
+      const result = await saveMyPrivacySettingsRecord({ data: settings });
+      if (!result.ok) {
+        setSaveError(result.message);
+        return;
+      }
+      setSavedSettings(settings);
+      setToast(result.message);
+    } catch (error) {
+      console.error(error);
+      setSaveError("Your settings could not be saved. Please try again.");
+    } finally {
+      setSavingSettings(false);
     }
   }
 
@@ -266,6 +294,22 @@ function SettingsPage() {
             Change password
           </button>
         </section>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-5">
+          <p className="text-xs text-muted-foreground">
+            {hasUnsavedChanges
+              ? "You have unsaved changes. Save to apply them to the database, Search Alumni, and GIS Map."
+              : "All changes saved. Toggle switches apply only when you press Save Changes."}
+          </p>
+          <button
+            type="button"
+            onClick={() => void handleSaveSettings()}
+            disabled={!settings || !hasUnsavedChanges || savingSettings}
+            className="inline-flex items-center gap-1.5 rounded-md bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {savingSettings ? "Saving…" : "Save Changes"}
+          </button>
+        </div>
       </div>
 
       {changing && (

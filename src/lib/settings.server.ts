@@ -59,6 +59,37 @@ export async function getMyPrivacySettings(): Promise<PrivacySettingsResult> {
 const COLUMN_BY_KEY = new Map<string, string>(COLUMNS);
 
 /**
+ * Saves every toggle at once (explicit Save Changes button). All columns
+ * are written in a single upsert so the toggles the user sees are exactly
+ * what lands in the database — and, downstream, in Search Alumni and GIS
+ * Map visibility — only after they press Save.
+ */
+export async function saveMyPrivacySettings(
+  settings: PrivacySettings,
+): Promise<SettingsActionResult> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, message: "Sign in to manage your privacy settings." };
+
+  try {
+    const placeholders = COLUMN_NAMES.map(() => "?").join(", ");
+    const updates = COLUMN_NAMES.map((column) => `${column} = new.${column}`).join(", ");
+    await getPool().execute(
+      `INSERT INTO alumni_privacy_settings (user_id, ${COLUMN_NAMES.join(", ")})
+       VALUES (${["?", placeholders].join(", ")}) AS new
+       ON DUPLICATE KEY UPDATE ${updates}`,
+      [
+        user.id,
+        ...COLUMNS.map(([key]) => (settings[key] ? 1 : 0)),
+      ],
+    );
+    return { ok: true, message: "Privacy settings saved." };
+  } catch (error) {
+    console.error("[settings] Privacy settings save failed:", error);
+    return { ok: false, message: "Your settings could not be saved. Please try again." };
+  }
+}
+
+/**
  * Saves one switch. Each switch is written on its own so quick successive
  * clicks cannot overwrite each other with stale values. A new row gets the
  * table defaults for every other column.
