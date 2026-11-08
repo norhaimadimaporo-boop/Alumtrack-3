@@ -282,6 +282,19 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
 
     const statRow = counts[0];
 
+    // Head Admins see the complete feed (including Login/Logout). Standard
+    // and Viewer admins only see real administrative actions (registrations,
+    // record/post/admin changes, etc.) — login/logout events are filtered
+    // out on the server so they never reach the browser.
+    const isHead = access.admin.adminRole === "head";
+    const visibleActivity = activityRows.filter(
+      (row) =>
+        isHead ||
+        (row.action !== "Login" &&
+          row.action !== "Logout" &&
+          row.entity_type !== "login"),
+    );
+
     return {
       ok: true,
       stats: {
@@ -292,7 +305,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
         activePosts: Number(statRow?.active_posts ?? 0),
         adminAccounts: Number(statRow?.admins ?? 0),
       },
-      activity: activityRows.map((row) => {
+      activity: visibleActivity.map((row) => {
         const stampDate =
           row.created_at instanceof Date ? row.created_at : new Date(row.created_at);
         const valid = !Number.isNaN(stampDate.getTime());
