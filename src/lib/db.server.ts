@@ -39,7 +39,7 @@ function connectionLimit(): number {
 
 export function getPool(): Pool {
   if (!globalForDb.alumtrackPool) {
-    globalForDb.alumtrackPool = mysql.createPool({
+    const pool = mysql.createPool({
       host: process.env["DB_HOST"] ?? "127.0.0.1",
       port: Number(process.env["DB_PORT"] ?? 3306),
       user: required("DB_USER"),
@@ -54,6 +54,31 @@ export function getPool(): Pool {
       queueLimit: 0,
       ...sslConfig(),
     });
+
+    // Pin every pooled connection to UTC so timestamps are interpreted the
+    // same way on every host. Local MySQL runs with SYSTEM=Asia/Manila while
+    // Aiven runs with SYSTEM=UTC: without this, a TIMESTAMP string sent in
+    // the session zone (Manila wall time locally) is parsed by mysql2
+    // (`timezone: "Z"`) as UTC, then `manilaClock()` adds another +8h — the
+    // Activity History times showed ~08:52 for a login that really happened
+    // at 00:52 Manila time. Forcing `time_zone = '+00:00'` makes
+    // TIMESTAMP values arrive as UTC wall time on both hosts, so mysql2
+    // yields the true instant and Manila formatting matches the laptop clock.
+    // Existing instants are unaffected: TIMESTAMP is stored as a UTC instant
+    // and DATETIME columns in this schema are written with UTC_TIMESTAMP().
+    // The pool emits `connection` before the caller's query runs, and a
+    // connection serialises its commands, so this SET lands first.
+    pool.on("connection", (connection) => {
+      (
+        connection as unknown as {
+          query: (sql: string, callback: (error: Error | null) => void) => void;
+        }
+      ).query("SET time_zone = '+00:00'", (error) => {
+        if (error) console.error("[db] Could not set session time_zone:", error);
+      });
+    });
+
+    globalForDb.alumtrackPool = pool;
   }
 
   return globalForDb.alumtrackPool;

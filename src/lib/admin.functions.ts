@@ -62,7 +62,7 @@ const saveAlumniSchema = z.object({
   education: z
     .array(
       z.object({
-        level: z.enum(["Post Graduate Degree", "Graduate Degree", "Baccalaureate Degree"]),
+        level: z.enum(["Baccalaureate Degree", "Graduate Degree", "Post Graduate Degree"]),
         schoolIdNo: z.string().max(50).default(""),
         degree: z.string().max(200).default(""),
         major: z.string().max(200).default(""),

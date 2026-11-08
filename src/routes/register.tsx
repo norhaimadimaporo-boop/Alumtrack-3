@@ -8,6 +8,8 @@ import { calculateAge } from "@/lib/profile-format";
 import { registerAlumni } from "@/lib/registration.functions";
 import {
   EDUCATION_LEVELS,
+  primaryEducationRecord,
+  priorityBatchYear,
   type AddressInput,
   type EducationInput,
   type EducationLevel,
@@ -271,10 +273,12 @@ function buildPayload(form: FormState): RegistrationInput {
     contactEmail: trim(form.contactEmail) || trim(form.accountEmail),
     akanEmail: trim(form.akanEmail),
     facebook: trim(form.facebook),
-    education: form.degrees.map((level) => ({
-      level,
-      ...(form.degreeDetails[level] ?? emptyDegree()),
-    })),
+    education: [...form.degrees]
+      .sort((a, b) => DEGREES.indexOf(a) - DEGREES.indexOf(b))
+      .map((level) => ({
+        level,
+        ...(form.degreeDetails[level] ?? emptyDegree()),
+      })),
     employmentStatus,
     employment:
       employmentStatus === "employed"
@@ -366,6 +370,22 @@ function RegisterPage() {
 
   const last = step === PHASES.length - 1;
   const computedAge = form.birthDate ? calculateAge(form.birthDate) : "";
+
+  // Phase 3 dedup + Batch Year auto-sync (live preview of what the server
+  // stores in `alumni_profiles.course / college / batch_year`): Course and
+  // College come from the primary degree (Baccalaureate first, then
+  // Graduate, then Post Graduate) and Batch Year is the Year component of
+  // that primary Date Graduated, falling back in the same priority when the
+  // Baccalaureate date is missing. No separate Course/College/Batch inputs
+  // are needed, so the user cannot enter conflicting values.
+  const selectedEducation = form.degrees.map((level) => ({
+    level,
+    ...(form.degreeDetails[level] ?? emptyDegree()),
+  }));
+  const primaryEducation = primaryEducationRecord(selectedEducation);
+  const syncedBatchYear = priorityBatchYear(selectedEducation);
+  const syncedCourse = primaryEducation?.degree.trim() || "—";
+  const syncedCollege = primaryEducation?.college.trim() || "—";
 
   const goToStep = (target: number) => {
     if (target <= step) {
@@ -677,6 +697,10 @@ function RegisterPage() {
           <Section title="Phase 3 - Educational Background">
             <p className="mb-3 text-sm text-muted-foreground">
               Select every degree you have earned. Details are requested per degree.
+              Baccalaureate Degree is the primary (default) degree; Graduate and Post
+              Graduate are only used when Baccalaureate is not selected. School ID No.
+              lives here in Phase 3 only — there is no separate ID Number field in
+              Phase 1.
             </p>
             <div className="grid gap-2 sm:grid-cols-3">
               {DEGREES.map((degree) => (
@@ -760,6 +784,40 @@ function RegisterPage() {
                 </div>
               );
             })}
+
+            <div className="mt-6 rounded-lg border-l-4 border-brand bg-muted/40 p-4">
+              <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-brand">
+                Auto-synced directory details
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Course, College, and Batch Year are copied automatically from your
+                primary degree — Baccalaureate first, then Graduate, then Post
+                Graduate. Batch Year is the year of that Date Graduated (e.g. 2015).
+                You do not need to enter them again.
+              </p>
+              <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
+                <div>
+                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Course (from Degree)
+                  </dt>
+                  <dd className="mt-0.5 font-semibold text-foreground">{syncedCourse}</dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    College
+                  </dt>
+                  <dd className="mt-0.5 font-semibold text-foreground">{syncedCollege}</dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Batch Year (auto-synced)
+                  </dt>
+                  <dd className="mt-0.5 font-semibold text-foreground">
+                    {syncedBatchYear || "—"}
+                  </dd>
+                </div>
+              </dl>
+            </div>
           </Section>
         )}
 

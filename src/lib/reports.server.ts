@@ -15,8 +15,10 @@ type ReportRow = RowDataPacket & {
   course: string | null;
   college: string | null;
   batch_year: number | null;
+  /** Batch priority: Baccalaureate year, then Graduate, then Post Graduate. */
   bac_grad_year: number | string | null;
-  max_grad_year: number | string | null;
+  grad_grad_year: number | string | null;
+  postgrad_grad_year: number | string | null;
   gender: string | null;
   ethnicity: string | null;
   religion: string | null;
@@ -93,8 +95,9 @@ function affiliationFromOrgs(orgNames: string | null): ReportRecord["affiliation
 
 /**
  * Verified, active alumni rows for Reports & Graduate Statistics. Batch
- * year falls back to the Baccalaureate (else latest) graduation year in
- * `alumni_education` so no card shows "Batch —" when a year exists.
+ * year follows the priority Baccalaureate → Graduate → Post Graduate
+ * graduation year in `alumni_education` (stored `batch_year` only as a
+ * last resort), so no card shows "Batch —" when an education year exists.
  * Pins mirror the GIS map logic (privacy flags + gazetteer fallback).
  */
 export async function listReportRecords(): Promise<ReportRecordsResult> {
@@ -106,8 +109,14 @@ export async function listReportRecords(): Promise<ReportRecordsResult> {
                 WHERE user_id = p.user_id AND level = 'Baccalaureate Degree'
                   AND graduated_on IS NOT NULL
                 ORDER BY graduated_on DESC LIMIT 1) AS bac_grad_year,
-              (SELECT MAX(YEAR(graduated_on)) FROM alumni_education
-                WHERE user_id = p.user_id AND graduated_on IS NOT NULL) AS max_grad_year,
+              (SELECT YEAR(graduated_on) FROM alumni_education
+                WHERE user_id = p.user_id AND level = 'Graduate Degree'
+                  AND graduated_on IS NOT NULL
+                ORDER BY graduated_on DESC LIMIT 1) AS grad_grad_year,
+              (SELECT YEAR(graduated_on) FROM alumni_education
+                WHERE user_id = p.user_id AND level = 'Post Graduate Degree'
+                  AND graduated_on IS NOT NULL
+                ORDER BY graduated_on DESC LIMIT 1) AS postgrad_grad_year,
               p.gender, p.ethnicity, p.religion, p.employment_status,
               p.current_position, p.current_company, p.current_region,
               p.current_city, p.current_country, p.latitude, p.longitude,
@@ -128,7 +137,10 @@ export async function listReportRecords(): Promise<ReportRecordsResult> {
 
     for (const row of rows) {
       const batchYear =
-        toYear(row.batch_year) ?? toYear(row.bac_grad_year) ?? toYear(row.max_grad_year);
+        toYear(row.bac_grad_year) ??
+        toYear(row.grad_grad_year) ??
+        toYear(row.postgrad_grad_year) ??
+        toYear(row.batch_year);
       const batch = batchYear ? String(batchYear) : "—";
       const country =
         row.current_country?.trim() ||

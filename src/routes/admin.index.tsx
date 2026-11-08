@@ -242,7 +242,8 @@ function AdminDashboard() {
           </div>
 
           <p className="mt-4 text-xs text-muted-foreground">
-            Showing {filteredHistory.length} of {activity.length} activities
+            Showing {filteredHistory.length} of {activity.length} activities · Times in
+            Philippine Time (Asia/Manila)
           </p>
 
           <div className="mt-2 max-h-96 overflow-y-auto rounded-lg border border-border">

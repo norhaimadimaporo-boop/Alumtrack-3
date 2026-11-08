@@ -33,6 +33,7 @@ import type {
   WorkspaceEmployment,
   WorkspaceOrganization,
 } from "./profile.types";
+import { priorityBatchYear } from "./registration.types";
 
 type ProfileRow = RowDataPacket & {
   id: number;
@@ -162,13 +163,27 @@ function addressFromRow(row: ProfileRow, prefix: "current" | "home"): string {
   ]);
 }
 
-function buildSessionUser(row: ProfileRow): AlumniSessionUser {
+/** Batch Year priority from education rows: Baccalaureate → Graduate → Post Graduate. */
+function batchFromEducation(
+  row: ProfileRow,
+  education: EducationRow[],
+): string {
+  const synced = priorityBatchYear(
+    education.map((record) => ({
+      level: record.level,
+      graduatedOn: toIsoDate(formatDate(record.graduated_on)),
+    })),
+  );
+  return synced || (row.batch_year ? String(row.batch_year) : "—");
+}
+
+function buildSessionUser(row: ProfileRow, education: EducationRow[] = []): AlumniSessionUser {
   const name = fullName(row.first_name, row.middle_name ?? "", row.last_name);
   return {
     userId: row.user_id,
     fullName: name,
     firstName: row.first_name,
-    batch: row.batch_year ? String(row.batch_year) : "—",
+    batch: batchFromEducation(row, education),
     initials: initials(name),
     verificationStatus: row.verification_status,
   };
@@ -325,7 +340,7 @@ function buildMyProfile(bundle: ProfileBundle): MyProfile {
     facebook: row.facebook ?? "",
     course: row.course ?? "Course not provided",
     college: row.college ?? "College not provided",
-    batch: row.batch_year ? String(row.batch_year) : "—",
+    batch: batchFromEducation(row, bundle.education),
     status: employmentLabel(row.employment_status),
     employmentStatus: row.employment_status,
     job: row.current_position ?? currentEmployment?.position ?? "Not provided",
@@ -462,7 +477,7 @@ export async function getMyWorkspace(): Promise<MyWorkspace> {
 
     return {
       ok: true,
-      user: buildSessionUser(bundle.row),
+      user: buildSessionUser(bundle.row, bundle.education),
       canEdit: bundle.row.verification_status === "verified",
       profile,
       editable,
@@ -499,7 +514,7 @@ export async function getAlumniSession(): Promise<AlumniSessionResult> {
 
   try {
     const bundle = await loadProfileBundle(user.id);
-    if (bundle) return { ok: true, user: buildSessionUser(bundle.row) };
+    if (bundle) return { ok: true, user: buildSessionUser(bundle.row, bundle.education) };
 
     const name = user.fullName ?? "Alumni";
     return {

@@ -23,6 +23,10 @@ import type {
   ProfileEmploymentStatus,
   VerificationStatus,
 } from "./admin.types";
+import {
+  primaryEducationRecord,
+  priorityBatchYear,
+} from "./registration.types";
 
 const UNAUTHORIZED = "Sign in with an administrator account to open the admin dashboard.";
 
@@ -61,6 +65,9 @@ type RecentAlumniRow = RowDataPacket & {
   last_name: string;
   course: string | null;
   batch_year: number | null;
+  bac_grad_year: number | string | null;
+  grad_grad_year: number | string | null;
+  postgrad_grad_year: number | string | null;
   employment_status: ProfileEmploymentStatus;
   verification_status: VerificationStatus;
   created_at: Date | string;
@@ -86,8 +93,10 @@ type AlumniRow = RowDataPacket & {
   course: string | null;
   college: string | null;
   batch_year: number | null;
+  /** Batch priority: Baccalaureate year, then Graduate, then Post Graduate. */
   bac_grad_year: number | string | null;
-  max_grad_year: number | string | null;
+  grad_grad_year: number | string | null;
+  postgrad_grad_year: number | string | null;
   employment_status: ProfileEmploymentStatus;
   current_position: string | null;
   current_company: string | null;
@@ -252,6 +261,18 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
       ),
       pool.query<RecentAlumniRow[]>(
         `SELECT id, first_name, middle_name, last_name, course, batch_year,
+                (SELECT YEAR(graduated_on) FROM alumni_education
+                  WHERE user_id = alumni_profiles.user_id AND level = 'Baccalaureate Degree'
+                    AND graduated_on IS NOT NULL
+                  ORDER BY graduated_on DESC LIMIT 1) AS bac_grad_year,
+                (SELECT YEAR(graduated_on) FROM alumni_education
+                  WHERE user_id = alumni_profiles.user_id AND level = 'Graduate Degree'
+                    AND graduated_on IS NOT NULL
+                  ORDER BY graduated_on DESC LIMIT 1) AS grad_grad_year,
+                (SELECT YEAR(graduated_on) FROM alumni_education
+                  WHERE user_id = alumni_profiles.user_id AND level = 'Post Graduate Degree'
+                    AND graduated_on IS NOT NULL
+                  ORDER BY graduated_on DESC LIMIT 1) AS postgrad_grad_year,
                 employment_status, verification_status, created_at
            FROM alumni_profiles
           ORDER BY created_at DESC, id DESC
@@ -288,15 +309,27 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
           stamp: valid ? stampDate.toISOString() : "",
         };
       }),
-      recentRegistrations: recentRows.map((row) => ({
-        id: row.id,
-        name: fullName(row.first_name, row.middle_name ?? "", row.last_name),
-        course: row.course ?? "Course not provided",
-        batch: row.batch_year ? String(row.batch_year) : "—",
-        status: employmentLabel(row.employment_status),
-        verificationStatus: row.verification_status,
-        createdAt: formatDate(row.created_at),
-      })),
+      recentRegistrations: recentRows.map((row) => {
+        const toYear = (value: number | string | null): number | null => {
+          if (value === null || value === undefined) return null;
+          const year = Number(value);
+          return Number.isFinite(year) && year > 0 ? Math.floor(year) : null;
+        };
+        const batchYear =
+          toYear(row.bac_grad_year) ??
+          toYear(row.grad_grad_year) ??
+          toYear(row.postgrad_grad_year) ??
+          toYear(row.batch_year);
+        return {
+          id: row.id,
+          name: fullName(row.first_name, row.middle_name ?? "", row.last_name),
+          course: row.course ?? "Course not provided",
+          batch: batchYear ? String(batchYear) : "—",
+          status: employmentLabel(row.employment_status),
+          verificationStatus: row.verification_status,
+          createdAt: formatDate(row.created_at),
+        };
+      }),
     };
   } catch (error) {
     console.error("[admin] Dashboard query failed:", error);
@@ -323,8 +356,14 @@ export async function listAdminAlumni(): Promise<AdminAlumniList> {
                 WHERE user_id = p.user_id AND level = 'Baccalaureate Degree'
                   AND graduated_on IS NOT NULL
                 ORDER BY graduated_on DESC LIMIT 1) AS bac_grad_year,
-              (SELECT MAX(YEAR(graduated_on)) FROM alumni_education
-                WHERE user_id = p.user_id AND graduated_on IS NOT NULL) AS max_grad_year,
+              (SELECT YEAR(graduated_on) FROM alumni_education
+                WHERE user_id = p.user_id AND level = 'Graduate Degree'
+                  AND graduated_on IS NOT NULL
+                ORDER BY graduated_on DESC LIMIT 1) AS grad_grad_year,
+              (SELECT YEAR(graduated_on) FROM alumni_education
+                WHERE user_id = p.user_id AND level = 'Post Graduate Degree'
+                  AND graduated_on IS NOT NULL
+                ORDER BY graduated_on DESC LIMIT 1) AS postgrad_grad_year,
               p.employment_status, p.current_position,
               p.current_company, p.current_region, p.verification_status, p.created_at,
               cur.building AS current_building, cur.house_no AS current_house_no,
@@ -432,7 +471,10 @@ export async function listAdminAlumni(): Promise<AdminAlumniList> {
       const organizations = organizationByUser.get(row.user_id) ?? [];
       const currentEmployment = employment.find((record) => record.isCurrent) ?? employment[0];
       const batchYear =
-        toYear(row.batch_year) ?? toYear(row.bac_grad_year) ?? toYear(row.max_grad_year);
+        toYear(row.bac_grad_year) ??
+        toYear(row.grad_grad_year) ??
+        toYear(row.postgrad_grad_year) ??
+        toYear(row.batch_year);
 
       return {
         id: row.id,
@@ -721,12 +763,29 @@ function profileFields(input: AdminAlumniSaveInput) {
   const { first, middle, last } = splitFullName(input.fullName);
   const location = savedLocation(input.currentAddress);
   const employment = input.employmentStatus === "employed" ? input.employment : null;
+  // Server-side dedup + Batch auto-sync: Course/College/Batch always derive
+  // from the primary education record (Baccalaureate → Graduate → Post
+  // Graduate) when one is present, falling back to the modal dropdowns.
+  // This guarantees the stored profile matches Phase 3 even if a stale
+  // client payload sends a divergent course/college/batch.
+  const educationForSync = (input.education ?? []).map((entry) => ({
+    level: entry.level,
+    degree: entry.degree ?? "",
+    college: entry.college ?? "",
+    graduatedOn: entry.graduatedOn ?? "",
+  }));
+  const primary = primaryEducationRecord(
+    educationForSync.filter((entry) => entry.degree.trim() || entry.college.trim()),
+  );
+  const syncedBatch = priorityBatchYear(educationForSync);
   return {
     first,
     middle,
     last,
     displayName: fullName(first, middle, last) || input.fullName.trim(),
-    batchYear: toBatchYear(input.batch),
+    batchYear: (syncedBatch ? Number(syncedBatch) : null) ?? toBatchYear(input.batch),
+    course: primary?.degree.trim() || input.course.trim(),
+    college: primary?.college.trim() || input.college.trim(),
     employment,
     region: input.region.trim() || input.currentAddress.province.trim() || input.currentAddress.city.trim() || null,
     location,
@@ -791,8 +850,8 @@ export async function updateAlumniRecord(
         (input.contactEmail.trim() || `${fields.displayName.toLowerCase().replace(/\s+/g, ".")}@alumtrack.local`),
         input.akanEmail.trim().toLowerCase() || null,
         input.facebook.trim() || null,
-        input.course.trim() || null,
-        input.college.trim() || null,
+        fields.course || null,
+        fields.college || null,
         fields.batchYear,
         input.employmentStatus,
         fields.employment?.position.trim() || null,
@@ -890,8 +949,8 @@ export async function createAlumniRecord(
         email,
         input.akanEmail.trim().toLowerCase() || null,
         input.facebook.trim() || null,
-        input.course.trim() || null,
-        input.college.trim() || null,
+        fields.course || null,
+        fields.college || null,
         fields.batchYear,
         input.employmentStatus,
         fields.employment?.position.trim() || null,

@@ -26,7 +26,8 @@ type LogRow = RowDataPacket & {
 
 /**
  * Live system counters from `sessions` + `users`/`alumni_profiles`:
- * active sessions (unexpired, distinct users), logins today (last_login_at),
+ * active sessions (unexpired, distinct users), logins today (last_login_at,
+ * counted by Asia/Manila calendar day — `last_login_at` is stored as UTC),
  * distinct regions with an active session, and overseas active sessions.
  */
 export async function getSystemUsage(): Promise<SystemUsageResult> {
@@ -36,7 +37,7 @@ export async function getSystemUsage(): Promise<SystemUsageResult> {
       pool.query<CountRow[]>(
         `SELECT
            (SELECT COUNT(DISTINCT user_id) FROM sessions WHERE expires_at > UTC_TIMESTAMP()) AS active_sessions,
-           (SELECT COUNT(*) FROM users WHERE last_login_at >= CURDATE()) AS logins_today,
+           (SELECT COUNT(*) FROM users WHERE DATE(CONVERT_TZ(last_login_at, '+00:00', '+08:00')) = DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '+08:00'))) AS logins_today,
            (SELECT COUNT(DISTINCT p.current_region)
               FROM sessions s
               JOIN alumni_profiles p ON p.user_id = s.user_id

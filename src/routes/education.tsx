@@ -21,12 +21,12 @@ export const Route = createFileRoute("/education")({
       {
         name: "description",
         content:
-          "Review the degrees you entered at registration and add or edit post graduate, graduate, and baccalaureate records.",
+          "Review the degrees you entered at registration and add or edit baccalaureate, graduate, and post graduate records.",
       },
       { property: "og:title", content: "Education Details — AlumTrack" },
       {
         property: "og:description",
-        content: "Add or edit your post graduate, graduate, and baccalaureate degrees.",
+        content: "Add or edit your baccalaureate, graduate, and post graduate degrees.",
       },
     ],
   }),

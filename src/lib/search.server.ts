@@ -14,9 +14,10 @@ type PublicAlumniRow = RowDataPacket & {
   course: string | null;
   college: string | null;
   batch_year: number | null;
-  /** Fallback batch year from educational details: Baccalaureate, else latest. */
+  /** Batch priority: Baccalaureate year, then Graduate, then Post Graduate. */
   bac_grad_year: number | string | null;
-  max_grad_year: number | string | null;
+  grad_grad_year: number | string | null;
+  postgrad_grad_year: number | string | null;
   employment_status: ProfileEmploymentStatus;
   current_position: string | null;
   current_company: string | null;
@@ -69,8 +70,14 @@ export async function listPublicAlumni(): Promise<PublicAlumniResult> {
                 WHERE user_id = p.user_id AND level = 'Baccalaureate Degree'
                   AND graduated_on IS NOT NULL
                 ORDER BY graduated_on DESC LIMIT 1) AS bac_grad_year,
-              (SELECT MAX(YEAR(graduated_on)) FROM alumni_education
-                WHERE user_id = p.user_id AND graduated_on IS NOT NULL) AS max_grad_year,
+              (SELECT YEAR(graduated_on) FROM alumni_education
+                WHERE user_id = p.user_id AND level = 'Graduate Degree'
+                  AND graduated_on IS NOT NULL
+                ORDER BY graduated_on DESC LIMIT 1) AS grad_grad_year,
+              (SELECT YEAR(graduated_on) FROM alumni_education
+                WHERE user_id = p.user_id AND level = 'Post Graduate Degree'
+                  AND graduated_on IS NOT NULL
+                ORDER BY graduated_on DESC LIMIT 1) AS postgrad_grad_year,
               p.employment_status, p.current_position, p.current_company,
               p.current_region, cur.city AS current_city, cur.province AS current_province,
               cur.country AS current_country,
@@ -122,7 +129,13 @@ export async function listPublicAlumni(): Promise<PublicAlumniResult> {
         const year = Number(value);
         return Number.isFinite(year) && year > 0 ? Math.floor(year) : null;
       };
-      const batchYear = toYear(row.batch_year) ?? toYear(row.bac_grad_year) ?? toYear(row.max_grad_year);
+      // Batch Year priority: Baccalaureate → Graduate → Post Graduate →
+      // stored `batch_year` (only when no education year exists).
+      const batchYear =
+        toYear(row.bac_grad_year) ??
+        toYear(row.grad_grad_year) ??
+        toYear(row.postgrad_grad_year) ??
+        toYear(row.batch_year);
 
       return {
         id: row.id,

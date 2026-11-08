@@ -34,7 +34,11 @@ import {
 } from "@/lib/admin.functions";
 import type { AdminAlumnus as Alumnus, AdminImportResult } from "@/lib/admin.types";
 import { calculateAge, toIsoDate } from "@/lib/profile-format";
-import type { AddressInput } from "@/lib/registration.types";
+import {
+  primaryEducationRecord,
+  priorityBatchYear,
+  type AddressInput,
+} from "@/lib/registration.types";
 
 export const Route = createFileRoute("/admin/alumni")({
   head: () => ({
@@ -147,7 +151,8 @@ const PHASE_STEPS = [
   "Organization",
 ] as const;
 
-const DEGREE_TYPES = ["Post Graduate Degree", "Graduate Degree", "Baccalaureate Degree"] as const;
+/** Display order: Baccalaureate (primary/default) → Graduate → Post Graduate. */
+const DEGREE_TYPES = ["Baccalaureate Degree", "Graduate Degree", "Post Graduate Degree"] as const;
 
 type DegreeDetail = {
   schoolIdNo: string;
@@ -269,9 +274,22 @@ function AdminAlumni() {
       };
     }
     setWizardDegreeDetails(details);
-    setWizardCourse(record?.course ?? COURSES[0]);
-    setWizardCollege(record?.college ?? COLLEGES[0]);
-    setWizardBatch(record?.batch ?? BATCHES[0]);
+    // Dedup + Batch auto-sync on load: Course/College/Batch come from the
+    // primary education record (Baccalaureate → Graduate → Post Graduate)
+    // when one exists, so the upper Phase 3 fields and the lower dropdowns
+    // can never show conflicting values. Fall back to the stored profile
+    // values only when no education year/degree is on record.
+    const educationForSync = Object.entries(details).map(([level, detail]) => ({
+      level,
+      degree: detail?.degree ?? "",
+      college: detail?.college ?? "",
+      graduatedOn: detail?.graduatedOn ?? "",
+    }));
+    const primaryEducation = primaryEducationRecord(educationForSync);
+    const syncedBatch = priorityBatchYear(educationForSync);
+    setWizardCourse(primaryEducation?.degree.trim() || record?.course || COURSES[0]);
+    setWizardCollege(primaryEducation?.college.trim() || record?.college || COLLEGES[0]);
+    setWizardBatch(syncedBatch || record?.batch || BATCHES[0]);
     setWizardRegion(record?.region ?? REGIONS[0]);
     const currentEmployment =
       record?.employment.find((entry) => entry.isCurrent) ?? record?.employment[0];
@@ -306,6 +324,86 @@ function AdminAlumni() {
   useEffect(() => {
     setWizardAge(calculateAge(wizardDob) || "");
   }, [wizardDob]);
+
+  /**
+   * Phase 3 dedup + Batch Year auto-sync.
+   * - Editing a primary degree's Degree/College copies it into the lower
+   *   Course/College dropdowns (and vice versa below), so the two sections
+   *   always hold the same value.
+   * - Editing any Date Graduated re-derives Batch Year with priority
+   *   Baccalaureate → Graduate → Post Graduate. An empty result (all dates
+   *   cleared) keeps the current batch instead of blanking it.
+   */
+  const primaryLevel = (_details: Partial<Record<string, DegreeDetail>>, selected: string[]) =>
+    DEGREE_TYPES.find((level) => selected.includes(level)) ?? null;
+
+  const syncFromEducation = (
+    details: Partial<Record<string, DegreeDetail>>,
+    selected: string[],
+  ) => {
+    const entries = selected.map((level) => ({
+      level,
+      degree: details[level]?.degree ?? "",
+      college: details[level]?.college ?? "",
+      graduatedOn: details[level]?.graduatedOn ?? "",
+    }));
+    const primary = primaryEducationRecord(
+      // Only levels the admin actually checked count as the primary source.
+      entries.filter((entry) => selected.includes(entry.level)),
+    );
+    if (primary?.degree.trim()) setWizardCourse(primary.degree.trim());
+    if (primary?.college.trim()) setWizardCollege(primary.college.trim());
+    const batch = priorityBatchYear(entries);
+    if (batch) setWizardBatch(batch);
+  };
+
+  const updateWizardDegree = (level: string, field: keyof DegreeDetail, value: string) => {
+    const nextDetails = {
+      ...wizardDegreeDetails,
+      [level]: { ...(wizardDegreeDetails[level] ?? emptyDegreeDetail()), [field]: value },
+    };
+    setWizardDegreeDetails(nextDetails);
+    syncFromEducation(nextDetails, degreeTypes);
+  };
+
+  const toggleDegreeType = (level: string) => {
+    const nextSelected = degreeTypes.includes(level)
+      ? degreeTypes.filter((item) => item !== level)
+      : [...degreeTypes, level];
+    setDegreeTypes(nextSelected);
+    // Checking a degree makes it a candidate primary; sync any values it
+    // already holds (e.g. when editing an existing record). Unchecking the
+    // primary falls back to the next selected level.
+    syncFromEducation(wizardDegreeDetails, nextSelected);
+  };
+
+  const handleCourseChange = (value: string) => {
+    setWizardCourse(value);
+    const level = primaryLevel(wizardDegreeDetails, degreeTypes);
+    if (level) {
+      setWizardDegreeDetails((prev) => ({
+        ...prev,
+        [level]: { ...(prev[level] ?? emptyDegreeDetail()), degree: value },
+      }));
+    }
+  };
+
+  const handleCollegeChange = (value: string) => {
+    setWizardCollege(value);
+    const level = primaryLevel(wizardDegreeDetails, degreeTypes);
+    if (level) {
+      setWizardDegreeDetails((prev) => ({
+        ...prev,
+        [level]: { ...(prev[level] ?? emptyDegreeDetail()), college: value },
+      }));
+    }
+  };
+
+  const wizardCourseOptions = Array.from(new Set([wizardCourse, ...COURSES])).filter(Boolean);
+  const wizardCollegeOptions = Array.from(new Set([wizardCollege, ...COLLEGES])).filter(Boolean);
+  const wizardBatchOptions = Array.from(new Set([wizardBatch, ...BATCHES]))
+    .filter((value) => /^\d{4}$/.test(value))
+    .sort((a, b) => Number(b) - Number(a));
 
   const handleVerify = async (record: Alumnus) => {
     setBusyId(record.id);
@@ -364,10 +462,14 @@ function AdminAlumni() {
         contactEmail: wizardContactEmail,
         akanEmail: wizardAkanEmail,
         facebook: wizardFacebook,
-        education: degreeTypes.map((level) => ({
-          level,
-          ...(wizardDegreeDetails[level] ?? emptyDegreeDetail()),
-        })),
+        education: [...degreeTypes]
+          .sort(
+            (a, b) => DEGREE_TYPES.indexOf(a as (typeof DEGREE_TYPES)[number]) - DEGREE_TYPES.indexOf(b as (typeof DEGREE_TYPES)[number]),
+          )
+          .map((level) => ({
+            level,
+            ...(wizardDegreeDetails[level] ?? emptyDegreeDetail()),
+          })),
         course: wizardCourse,
         college: wizardCollege,
         batch: wizardBatch,
@@ -981,7 +1083,6 @@ function AdminAlumni() {
                   Phase 1 — Personal details
                 </p>
                 <LabeledInput label="Full name" value={wizardFullName} onChange={setWizardFullName} />
-                <LabeledInput label="ID Number" defaultValue={editing ? idNumber(editing) : ""} />
                 <div className="grid grid-cols-2 gap-3">
                   <label className="block">
                     <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -1092,6 +1193,10 @@ function AdminAlumni() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Select every degree earned. Details are requested per degree.
+                  Baccalaureate Degree is the primary (default) degree; Graduate and
+                  Post Graduate are used only when Baccalaureate is not selected.
+                  School ID No. stays here in Phase 3 only — there is no separate
+                  ID Number field in Phase 1.
                 </p>
                 <div className="grid gap-2 sm:grid-cols-3">
                   {DEGREE_TYPES.map((d) => (
@@ -1106,11 +1211,7 @@ function AdminAlumni() {
                       <input
                         type="checkbox"
                         checked={degreeTypes.includes(d)}
-                        onChange={() =>
-                          setDegreeTypes((prev) =>
-                            prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d],
-                          )
-                        }
+                        onChange={() => toggleDegreeType(d)}
                         className="size-4 accent-brand"
                       />
                       {d}
@@ -1131,78 +1232,50 @@ function AdminAlumni() {
                       <LabeledInput
                         label="School ID No."
                         value={wizardDegreeDetails[d]?.schoolIdNo ?? ""}
-                        onChange={(value) =>
-                          setWizardDegreeDetails((prev) => ({
-                            ...prev,
-                            [d]: { ...(prev[d] ?? emptyDegreeDetail()), schoolIdNo: value },
-                          }))
-                        }
+                        onChange={(value) => updateWizardDegree(d, "schoolIdNo", value)}
                         placeholder="e.g. 2020-30124"
                       />
                       <LabeledInput
                         label="Degree"
                         value={wizardDegreeDetails[d]?.degree ?? ""}
-                        onChange={(value) =>
-                          setWizardDegreeDetails((prev) => ({
-                            ...prev,
-                            [d]: { ...(prev[d] ?? emptyDegreeDetail()), degree: value },
-                          }))
-                        }
+                        onChange={(value) => updateWizardDegree(d, "degree", value)}
                       />
                       <LabeledInput
                         label="Major"
                         value={wizardDegreeDetails[d]?.major ?? ""}
-                        onChange={(value) =>
-                          setWizardDegreeDetails((prev) => ({
-                            ...prev,
-                            [d]: { ...(prev[d] ?? emptyDegreeDetail()), major: value },
-                          }))
-                        }
+                        onChange={(value) => updateWizardDegree(d, "major", value)}
                       />
                       <LabeledInput
                         label="Name of college"
                         value={wizardDegreeDetails[d]?.college ?? ""}
-                        onChange={(value) =>
-                          setWizardDegreeDetails((prev) => ({
-                            ...prev,
-                            [d]: { ...(prev[d] ?? emptyDegreeDetail()), college: value },
-                          }))
-                        }
+                        onChange={(value) => updateWizardDegree(d, "college", value)}
                       />
                       <LabeledInput
                         label="University / school attended"
                         value={wizardDegreeDetails[d]?.school ?? ""}
-                        onChange={(value) =>
-                          setWizardDegreeDetails((prev) => ({
-                            ...prev,
-                            [d]: { ...(prev[d] ?? emptyDegreeDetail()), school: value },
-                          }))
-                        }
+                        onChange={(value) => updateWizardDegree(d, "school", value)}
                       />
                       <LabeledInput
                         label="University / school address"
                         value={wizardDegreeDetails[d]?.schoolAddress ?? ""}
-                        onChange={(value) =>
-                          setWizardDegreeDetails((prev) => ({
-                            ...prev,
-                            [d]: { ...(prev[d] ?? emptyDegreeDetail()), schoolAddress: value },
-                          }))
-                        }
+                        onChange={(value) => updateWizardDegree(d, "schoolAddress", value)}
                       />
                       <LabeledInput
                         label="Date graduated"
                         type="date"
                         value={wizardDegreeDetails[d]?.graduatedOn ?? ""}
-                        onChange={(value) =>
-                          setWizardDegreeDetails((prev) => ({
-                            ...prev,
-                            [d]: { ...(prev[d] ?? emptyDegreeDetail()), graduatedOn: value },
-                          }))
-                        }
+                        onChange={(value) => updateWizardDegree(d, "graduatedOn", value)}
                       />
                     </div>
                   </div>
                 ))}
+
+                <div className="rounded-md border-l-4 border-brand bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
+                  Course, College, and Batch Year below are auto-synced from the
+                  primary degree above — Baccalaureate first, then Graduate, then
+                  Post Graduate. Editing either side updates the other; Batch Year is
+                  the year of that Date Graduated (e.g. 2015).
+                </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
@@ -1211,10 +1284,10 @@ function AdminAlumni() {
                     </label>
                     <select
                       value={wizardCourse}
-                      onChange={(e) => setWizardCourse(e.target.value)}
+                      onChange={(e) => handleCourseChange(e.target.value)}
                       className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
                     >
-                      {COURSES.map((c) => (
+                      {wizardCourseOptions.map((c) => (
                         <option key={c}>{c}</option>
                       ))}
                     </select>
@@ -1225,10 +1298,10 @@ function AdminAlumni() {
                     </label>
                     <select
                       value={wizardCollege}
-                      onChange={(e) => setWizardCollege(e.target.value)}
+                      onChange={(e) => handleCollegeChange(e.target.value)}
                       className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
                     >
-                      {COLLEGES.map((c) => (
+                      {wizardCollegeOptions.map((c) => (
                         <option key={c}>{c}</option>
                       ))}
                     </select>
@@ -1242,7 +1315,7 @@ function AdminAlumni() {
                       onChange={(e) => setWizardBatch(e.target.value)}
                       className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
                     >
-                      {BATCHES.map((b) => (
+                      {wizardBatchOptions.map((b) => (
                         <option key={b}>{b}</option>
                       ))}
                     </select>

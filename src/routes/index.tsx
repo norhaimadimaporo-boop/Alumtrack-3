@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Search, MapPinned, Newspaper, UserRoundPen, ArrowRight, CalendarDays } from "lucide-react";
+import { Search, MapPinned, Newspaper, UserRoundPen, ArrowRight, CalendarDays, Database } from "lucide-react";
 import heroImage from "@/assets/msu-graduation.jpg";
 import { POSTS, findPostPhoto } from "@/data/news";
-import { PUBLIC_STATS, TOP_INDUSTRIES } from "@/data/gis";
 import { BarList } from "@/components/cluster-map";
 import { RealAlumniMap } from "@/components/real-alumni-map";
 import { getAlumniMapPinsData } from "@/lib/gis.functions";
 import { getPublishedPosts } from "@/lib/posts.functions";
+import { getPublicStatsData } from "@/lib/public-stats.functions";
 import { postExcerpt } from "@/lib/posts.types";
 
 export const Route = createFileRoute("/")({
@@ -27,18 +27,24 @@ export const Route = createFileRoute("/")({
     ],
   }),
   loader: async () => {
-    const [map, published] = await Promise.all([getAlumniMapPinsData(), getPublishedPosts()]);
-    return { map, posts: published.ok ? published.posts : [] };
+    const [stats, map, published] = await Promise.all([
+      getPublicStatsData(),
+      getAlumniMapPinsData(),
+      getPublishedPosts(),
+    ]);
+    return { stats, map, posts: published.ok ? published.posts : [] };
   },
   component: Index,
 });
 
-const STATS = [
-  { value: "12,480", label: "Alumni Traced" },
-  { value: "14", label: "Colleges" },
-  { value: "52", label: "Batch Years" },
-  { value: "36", label: "Events This Year" },
-];
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat("en-PH").format(value);
+}
+
+function formatRate(value: number): string {
+  // One decimal, dropping the trailing ".0" (e.g. 70.8%, 100%).
+  return `${Number(value.toFixed(1)).toString()}%`;
+}
 
 const FEATURES = [
   {
@@ -72,7 +78,9 @@ const FEATURES = [
 ];
 
 function Index() {
-  const { map: mapData, posts: storedPosts } = Route.useLoaderData();
+  const { stats: statsResult, map: mapData, posts: storedPosts } = Route.useLoaderData();
+  const stats = statsResult.ok ? statsResult.stats : null;
+
   const latest =
     storedPosts.length > 0
       ? storedPosts.slice(0, 3).map((post) => ({
@@ -84,6 +92,68 @@ function Index() {
         }))
       : POSTS.slice(0, 3);
   const pins = mapData.ok ? mapData.pins : [];
+
+  // --- Live counters: every value comes from `getPublicStats()` (MySQL),
+  // whether this build is pointed at the local database or the hosted
+  // Aiven database. No hardcoded snapshot is ever rendered.
+  const topStats = stats
+    ? [
+        { value: formatNumber(stats.totalTraced), label: "Alumni Traced" },
+        { value: formatNumber(stats.colleges), label: "Colleges" },
+        { value: formatNumber(stats.batchYears), label: "Batch Years" },
+        {
+          value: formatNumber(stats.eventsThisYear),
+          label: `Events This Year (${stats.currentYear})`,
+        },
+      ]
+    : [
+        { value: "—", label: "Alumni Traced" },
+        { value: "—", label: "Colleges" },
+        { value: "—", label: "Batch Years" },
+        { value: "—", label: "Events This Year" },
+      ];
+
+  const knownEmployment = stats ? stats.employed + stats.unemployed : 0;
+  const publicStats = stats
+    ? [
+        {
+          value: formatNumber(stats.totalTraced),
+          label: "Total traced alumni",
+          note: `Across ${stats.batchYears} batch years`,
+        },
+        {
+          value: formatRate(stats.employmentRate),
+          label: "Employment rate",
+          note:
+            knownEmployment > 0
+              ? `${formatNumber(stats.employed)} employed of ${formatNumber(knownEmployment)} with employment status`
+              : "No employment status recorded yet",
+        },
+        {
+          value: formatNumber(stats.workingOverseas),
+          label: "Working overseas",
+          note:
+            stats.hostCountries > 0
+              ? `${stats.hostCountries} host ${stats.hostCountries === 1 ? "country" : "countries"}`
+              : "No overseas placements recorded yet",
+        },
+        // "Degree-aligned jobs" was a hardcoded placeholder: the database has
+        // no course-alignment column, so the card now shows the real
+        // employed-locally split derived from the same employment records.
+        {
+          value: formatNumber(stats.employedLocally),
+          label: "Employed locally",
+          note: "Based in the Philippines",
+        },
+      ]
+    : [
+        { value: "—", label: "Total traced alumni", note: "Across — batch years" },
+        { value: "—", label: "Employment rate", note: "Employment status unavailable" },
+        { value: "—", label: "Working overseas", note: "Host countries unavailable" },
+        { value: "—", label: "Employed locally", note: "Based in the Philippines" },
+      ];
+
+  const industries = stats ? stats.industries : [];
 
   return (
     <div>
@@ -129,7 +199,7 @@ function Index() {
 
       <section className="border-b border-border bg-card">
         <dl className="mx-auto grid max-w-6xl grid-cols-2 divide-x divide-border px-4 md:grid-cols-4">
-          {STATS.map((s) => (
+          {topStats.map((s) => (
             <div key={s.label} className="px-4 py-8 text-center">
               <dt className="text-3xl font-bold text-brand">{s.value}</dt>
               <dd className="mt-1 text-xs uppercase tracking-[0.14em] text-muted-foreground">
@@ -138,6 +208,14 @@ function Index() {
             </div>
           ))}
         </dl>
+        <p className="mx-auto flex max-w-6xl items-center gap-1.5 px-4 pb-4 text-[11px] font-semibold text-muted-foreground">
+          <Database className="size-3.5 text-brand" />
+          {stats
+            ? `Live data from the alumni database · ${formatNumber(stats.totalTraced)} verified alumni`
+            : statsResult.ok
+              ? "Live data from the alumni database"
+              : statsResult.message}
+        </p>
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-20">
@@ -146,12 +224,12 @@ function Index() {
             Alumni statistics at a glance
           </h2>
           <p className="text-xs text-muted-foreground">
-            Graduate Tracer Study summary · aggregate data only
+            Graduate Tracer Study summary · aggregate data only · live from database
           </p>
         </div>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {PUBLIC_STATS.map((s) => (
+          {publicStats.map((s) => (
             <div key={s.label} className="rounded-lg border-t-4 border-brand bg-card p-5">
               <p className="text-3xl font-bold text-foreground">{s.value}</p>
               <p className="mt-1 text-sm font-semibold text-foreground">{s.label}</p>
@@ -168,7 +246,7 @@ function Index() {
               workplaces are plotted — tap a pin for details.
             </p>
             <div className="mt-4">
-              <RealAlumniMap pins={pins} heightClassName="h-[320px] sm:h-[420px]" />
+              <RealAlumniMap pins={pins} heightClassName="h-[320px] sm:h-[420px] lg:h-[520px]" />
             </div>
           </div>
 
@@ -176,10 +254,19 @@ function Index() {
             <div className="rounded-lg border border-border bg-card p-5">
               <h3 className="text-sm font-semibold text-foreground">Top industries</h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                Share of employed graduates per sector.
+                {stats && stats.employedWithSector > 0
+                  ? `Share of employed graduates per sector · ${formatNumber(stats.employedWithSector)} of ${formatNumber(stats.employedWithCurrentJob)} employed alumni with a current job record have a sector recorded.`
+                  : "Share of employed graduates per sector (current employment records)."}
               </p>
               <div className="mt-4">
-                <BarList items={TOP_INDUSTRIES} />
+                {industries.length > 0 ? (
+                  <BarList items={industries} />
+                ) : (
+                  <p className="rounded-lg bg-muted px-3 py-4 text-xs text-muted-foreground">
+                    No employment sector records yet. Sector data appears here once employed
+                    alumni save their current job.
+                  </p>
+                )}
               </div>
             </div>
             <div className="rounded-lg border-l-4 border-highlight bg-card p-5">

@@ -1,3 +1,10 @@
+/**
+ * @deprecated Hardcoded snapshot kept only for reference/documentation.
+ * Do NOT render these on any live dashboard. All public numbers on the home
+ * page and the Alumni Dashboard are now loaded from the database via
+ * `getPublicStats()` (`@/lib/public-stats.functions`), so the same figures
+ * (local `.env` and hosted Aiven) are shown to guests, alumni, and admins.
+ */
 export const PUBLIC_STATS = [
   { label: "Total traced alumni", value: "12,480", note: "Across 52 batch years" },
   { label: "Employment rate", value: "78.5%", note: "Employed within 12 months" },
@@ -5,6 +12,11 @@ export const PUBLIC_STATS = [
   { label: "Degree-aligned jobs", value: "71%", note: "Job matches course taken" },
 ];
 
+/**
+ * @deprecated Demo placeholders. Use the live `industries` array from
+ * `getPublicStats()` instead (Government / Private Institution /
+ * Freelance from `alumni_employment.sector`).
+ */
 export const TOP_INDUSTRIES = [
   { label: "Government & Public Service", value: 28 },
   { label: "Information Technology & BPO", value: 22 },
@@ -29,6 +41,10 @@ export const TIME_TO_FIRST_JOB = [
   { label: "More than 1 year", value: 17 },
 ];
 
+/**
+ * @deprecated Demo placeholder. Use the live `industries` array from
+ * `getPublicStats()` instead.
+ */
 export const SECTOR_SPLIT = [
   { label: "Government", value: 34 },
   { label: "Private", value: 41 },

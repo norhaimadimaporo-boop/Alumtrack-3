@@ -13,6 +13,10 @@ type MapRow = RowDataPacket & {
   last_name: string;
   course: string | null;
   batch_year: number | null;
+  /** Batch priority: Baccalaureate year, then Graduate, then Post Graduate. */
+  bac_grad_year: number | string | null;
+  grad_grad_year: number | string | null;
+  postgrad_grad_year: number | string | null;
   employment_status: ProfileEmploymentStatus;
   current_position: string | null;
   current_company: string | null;
@@ -50,6 +54,12 @@ function toNumber(value: number | string | null): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function toBatchYear(value: number | string | null): string {
+  if (value === null || value === undefined) return "—";
+  const year = Number(value);
+  return Number.isFinite(year) && year > 0 ? String(Math.floor(year)) : "—";
+}
+
 /**
  * Verified, active alumni plotted on the GIS map. The query reads the synced
  * profile columns (course, batch, current job, region, city, country, and
@@ -61,7 +71,20 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
   try {
     const [rows] = await getPool().query<MapRow[]>(
       `SELECT p.id, p.user_id, p.first_name, p.middle_name, p.last_name,
-              p.course, p.batch_year, p.employment_status, p.current_position,
+              p.course, p.batch_year,
+              (SELECT YEAR(graduated_on) FROM alumni_education
+                WHERE user_id = p.user_id AND level = 'Baccalaureate Degree'
+                  AND graduated_on IS NOT NULL
+                ORDER BY graduated_on DESC LIMIT 1) AS bac_grad_year,
+              (SELECT YEAR(graduated_on) FROM alumni_education
+                WHERE user_id = p.user_id AND level = 'Graduate Degree'
+                  AND graduated_on IS NOT NULL
+                ORDER BY graduated_on DESC LIMIT 1) AS grad_grad_year,
+              (SELECT YEAR(graduated_on) FROM alumni_education
+                WHERE user_id = p.user_id AND level = 'Post Graduate Degree'
+                  AND graduated_on IS NOT NULL
+                ORDER BY graduated_on DESC LIMIT 1) AS postgrad_grad_year,
+              p.employment_status, p.current_position,
               p.current_company, p.current_region, p.current_city, p.current_country,
               p.latitude, p.longitude,
               cur.city AS address_city, cur.province AS address_province,
@@ -113,6 +136,16 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
 
       const employed = row.employment_status === "employed";
       const position = row.current_position?.trim();
+      // Batch priority: Baccalaureate → Graduate → Post Graduate → stored
+      // `batch_year` (only when no education year exists).
+      const batch =
+        toBatchYear(row.bac_grad_year) !== "—"
+          ? toBatchYear(row.bac_grad_year)
+          : toBatchYear(row.grad_grad_year) !== "—"
+            ? toBatchYear(row.grad_grad_year)
+            : toBatchYear(row.postgrad_grad_year) !== "—"
+              ? toBatchYear(row.postgrad_grad_year)
+              : toBatchYear(row.batch_year);
 
       pins.push({
         id: `pin-${row.user_id}`,
@@ -138,7 +171,7 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
         lat: cityOnly ? coarsen(lat) : lat,
         lng: cityOnly ? coarsen(lng) : lng,
         course: row.course?.trim() || "Course not provided",
-        batch: row.batch_year ? String(row.batch_year) : "—",
+        batch,
       });
     }
 

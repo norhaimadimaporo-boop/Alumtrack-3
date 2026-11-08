@@ -1,10 +1,57 @@
+/**
+ * Degree types in display order: Baccalaureate first (primary / default),
+ * then Graduate, then Post Graduate. This order drives the Phase 3
+ * checkboxes in Registration and the Add/Edit Alumni modals, and the
+ * Batch Year / Course / College priority (see helpers below).
+ */
 export const EDUCATION_LEVELS = [
-  "Post Graduate Degree",
-  "Graduate Degree",
   "Baccalaureate Degree",
+  "Graduate Degree",
+  "Post Graduate Degree",
 ] as const;
 
 export type EducationLevel = (typeof EDUCATION_LEVELS)[number];
+
+/** Year component (`YYYY`) of a graduation date, or "" when missing/invalid.
+ * Accepts both `YYYY-MM-DD` (form inputs) and `DD-MM-YYYY` (`formatDate` output). */
+export function yearFromGraduatedOn(graduatedOn: string | null | undefined): string {
+  const trimmed = (graduatedOn ?? "").trim();
+  const iso = /^(\d{4})-/.exec(trimmed);
+  if (iso?.[1]) return iso[1];
+  const display = /^\d{2}-\d{2}-(\d{4})$/.exec(trimmed);
+  return display?.[1] ?? "";
+}
+
+/**
+ * Batch Year priority: Baccalaureate graduation year first, then Graduate,
+ * then Post Graduate. Used for auto-sync in the forms (client) and for the
+ * stored `batch_year` (server) so Directory / Search / Reports all agree.
+ */
+export function priorityBatchYear(
+  education: ReadonlyArray<{ level: string; graduatedOn?: string | null }>,
+): string {
+  for (const level of EDUCATION_LEVELS) {
+    const record = education.find((entry) => entry.level === level);
+    const year = yearFromGraduatedOn(record?.graduatedOn);
+    if (year) return year;
+  }
+  return "";
+}
+
+/**
+ * Primary degree record for Course/College sync: Baccalaureate first, then
+ * Graduate, then Post Graduate. Falls back to the first record when none of
+ * the known levels match (legacy data).
+ */
+export function primaryEducationRecord<T extends { level: string }>(
+  education: ReadonlyArray<T>,
+): T | undefined {
+  for (const level of EDUCATION_LEVELS) {
+    const record = education.find((entry) => entry.level === level);
+    if (record) return record;
+  }
+  return education[0];
+}
 
 export type AddressInput = {
   building: string;

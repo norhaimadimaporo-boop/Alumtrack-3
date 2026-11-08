@@ -10,11 +10,11 @@ import {
 import { AlumniShell } from "@/components/alumni-shell";
 import { BarList } from "@/components/cluster-map";
 import { RealAlumniMap } from "@/components/real-alumni-map";
-import { SECTOR_SPLIT } from "@/data/gis";
 import { POSTS, findPostPhoto } from "@/data/news";
 import { getAlumniMapPinsData } from "@/lib/gis.functions";
 import { getPublishedPosts } from "@/lib/posts.functions";
 import { getMyWorkspaceData } from "@/lib/profile.functions";
+import { getPublicStatsData } from "@/lib/public-stats.functions";
 import { initials } from "@/lib/profile-format";
 
 export const Route = createFileRoute("/dashboard")({
@@ -34,23 +34,31 @@ export const Route = createFileRoute("/dashboard")({
     ],
   }),
   loader: async () => {
-    const [workspace, map, published] = await Promise.all([
+    const [workspace, map, published, publicStats] = await Promise.all([
       getMyWorkspaceData(),
       getAlumniMapPinsData(),
       getPublishedPosts(),
+      getPublicStatsData(),
     ]);
     return {
       workspace,
       pins: map.ok ? map.pins : [],
       posts: published.ok ? published.posts : [],
+      publicStats,
     };
   },
   component: DashboardPage,
 });
 
 function DashboardPage() {
-  const { workspace: data, pins, posts: storedPosts } = Route.useLoaderData();
+  const {
+    workspace: data,
+    pins,
+    posts: storedPosts,
+    publicStats: publicStatsResult,
+  } = Route.useLoaderData();
   const profile = data.ok ? data.profile : null;
+  const publicStats = publicStatsResult.ok ? publicStatsResult.stats : null;
 
   const firstName = profile?.firstName || "Alumni";
   const fullName = profile?.fullName || "Alumni User";
@@ -105,6 +113,15 @@ function DashboardPage() {
           date: post.date,
           photo: post.photo,
         }));
+
+  // Tracer snapshot now mirrors the home page: same DB-backed sector mix
+  // from `getPublicStats()` instead of the old hardcoded split.
+  const sectorItems = publicStats
+    ? publicStats.industries.map((industry) => ({
+        label: industry.label,
+        value: industry.value,
+      }))
+    : [];
 
   return (
     <AlumniShell
@@ -167,7 +184,7 @@ function DashboardPage() {
           <div className="mt-4">
             <RealAlumniMap
               pins={pins}
-              heightClassName="h-[260px] sm:h-[320px]"
+              heightClassName="h-[260px] sm:h-[320px] lg:h-[420px]"
               compact
             />
           </div>
@@ -178,7 +195,14 @@ function DashboardPage() {
             Where batchmates are employed, by sector.
           </p>
           <div className="mt-4">
-            <BarList items={SECTOR_SPLIT} tone="success" />
+            {sectorItems.length > 0 ? (
+              <BarList items={sectorItems} tone="success" />
+            ) : (
+              <p className="rounded-lg bg-muted px-3 py-4 text-xs text-muted-foreground">
+                No employment sector records yet. Sector data appears here once employed alumni
+                save their current job.
+              </p>
+            )}
           </div>
           <Link
             to="/employment"

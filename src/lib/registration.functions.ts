@@ -32,7 +32,7 @@ const addressSchema = z.object({
 });
 
 const educationSchema = z.object({
-  level: z.enum(["Post Graduate Degree", "Graduate Degree", "Baccalaureate Degree"]),
+  level: z.enum(["Baccalaureate Degree", "Graduate Degree", "Post Graduate Degree"]),
   schoolIdNo: optionalText(50),
   degree: requiredText(200, "Enter the degree earned."),
   major: requiredText(200, "Enter your major."),

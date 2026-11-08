@@ -77,7 +77,7 @@ const profileSchema = z.object({
 
 const educationSchema = z.object({
   id: z.number().int().positive().optional(),
-  level: z.enum(["Post Graduate Degree", "Graduate Degree", "Baccalaureate Degree"]),
+  level: z.enum(["Baccalaureate Degree", "Graduate Degree", "Post Graduate Degree"]),
   schoolIdNo: optionalText(50),
   degree: requiredText(200, "Enter the degree earned."),
   major: optionalText(200),

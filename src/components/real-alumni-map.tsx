@@ -48,7 +48,7 @@ export function RealAlumniMap({
   pins,
   initialView = "region",
   focusView,
-  heightClassName = "h-[320px] sm:h-[440px]",
+  heightClassName = "h-[320px] sm:h-[420px] lg:h-[520px]",
   compact = false,
   showLegend = true,
   className = "",
@@ -66,8 +66,8 @@ export function RealAlumniMap({
     return () => window.clearTimeout(timer);
   }, [fullscreen, viewKey]);
 
-  // The zoom buttons live outside the map canvas, so they need the live map
-  // instance handed over by the Leaflet child component.
+  // The zoom buttons live inside the map canvas (bottom bar), so they need
+  // the live map instance handed over by the Leaflet child component.
   const handleMapReady = useCallback((map: LeafletMap | null) => {
     mapRef.current = map;
     setMapReady(Boolean(map));
@@ -91,31 +91,38 @@ export function RealAlumniMap({
     highlight: pins.filter((pin) => pin.status === "Unemployed").length,
   };
 
+  // Full display (fullscreen) fills the whole viewport overlay edge-to-edge;
+  // embedded mode uses the height utility from the page.
+  const canvasHeight = fullscreen ? "h-full" : heightClassName;
+
   return (
     <div
       className={
         fullscreen
-          ? `${className} fixed inset-0 z-50 bg-background p-4`
+          ? `${className} fixed inset-0 z-50 bg-background p-3 sm:p-4`
           : className
       }
     >
-      <div className="relative overflow-hidden rounded-xl border border-border bg-secondary/40">
+      <div
+        className={
+          "relative overflow-hidden rounded-xl border border-border bg-secondary/40" +
+          (fullscreen ? " h-full w-full" : "")
+        }
+      >
         {mounted ? (
           <Suspense
-            fallback={
-              <MapSkeleton heightClassName={fullscreen ? "h-[calc(100vh-120px)]" : heightClassName} />
-            }
+            fallback={<MapSkeleton heightClassName={canvasHeight} />}
           >
             <LeafletAlumniMap
               pins={pins}
               viewKey={viewKey}
               initialView={initialView}
-              heightClassName={fullscreen ? "h-[calc(100vh-120px)]" : heightClassName}
+              heightClassName={canvasHeight}
               onMapReady={handleMapReady}
             />
           </Suspense>
         ) : (
-          <MapSkeleton heightClassName={fullscreen ? "h-[calc(100vh-120px)]" : heightClassName} />
+          <MapSkeleton heightClassName={canvasHeight} />
         )}
 
         {/* Floating view presets — top-left of the map canvas */}
@@ -179,47 +186,58 @@ export function RealAlumniMap({
             </p>
           </div>
         )}
-      </div>
 
-      <div className="mt-2 flex items-center justify-between gap-3">
-        <p className="min-w-0 text-[11px] text-muted-foreground">
-          {pins.length} {pins.length === 1 ? "alumnus" : "alumni"} plotted · tap a pin for details
-          {compact
-            ? "."
-            : " · Philippines at city / municipality level, overseas at state / province level."}
-        </p>
+        {/*
+          Bottom bar *inside* the map: the plotted count sits at the bottom
+          left and the zoom / fullscreen buttons at the bottom right, so the
+          map itself fills the whole frame — no white strip below the canvas.
+          Lifted a little (bottom-6) so Leaflet's attribution strip stays
+          visible underneath.
+        */}
+        <div className="map-bottom-bar pointer-events-none absolute inset-x-3 bottom-6 z-20 flex items-end justify-between gap-3">
+          <p className="pointer-events-auto min-w-0 max-w-[70%] rounded-lg border border-border bg-card/95 px-3 py-2 text-[11px] leading-snug text-muted-foreground shadow-md backdrop-blur">
+            {pins.length} {pins.length === 1 ? "alumnus" : "alumni"} plotted · tap a pin for
+            details
+            {compact
+              ? "."
+              : " · Philippines at city / municipality level, overseas at state / province level."}
+          </p>
 
-        {/* Zoom buttons live below the canvas so popups/layers can never cover them. */}
-        <div role="group" aria-label="Map zoom" className="flex shrink-0 items-center gap-1">
-          <button
-            type="button"
-            onClick={() => mapRef.current?.zoomIn()}
-            disabled={!mapReady}
-            aria-label="Zoom in"
-            title="Zoom in"
-            className="inline-flex size-7 items-center justify-center rounded-md border border-border bg-background text-sm font-bold leading-none text-foreground shadow-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+          <div
+            role="group"
+            aria-label="Map zoom"
+            className="pointer-events-auto flex shrink-0 items-center gap-1 rounded-lg border border-border bg-card/95 p-1 shadow-md backdrop-blur"
           >
-            +
-          </button>
-          <button
-            type="button"
-            onClick={() => mapRef.current?.zoomOut()}
-            disabled={!mapReady}
-            aria-label="Zoom out"
-            title="Zoom out"
-            className="inline-flex size-7 items-center justify-center rounded-md border border-border bg-background text-sm font-bold leading-none text-foreground shadow-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            −
-          </button>
-          <button
-            type="button"
-            onClick={() => setFullscreen((open) => !open)}
-            aria-label={fullscreen ? "Close fullscreen map" : "Open fullscreen map"}
-            title={fullscreen ? "Close fullscreen map" : "Full display (fullscreen)"}
-            className="inline-flex size-7 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-sm transition-colors hover:bg-muted"
-          >
-            {fullscreen ? <X className="size-4" /> : <Maximize2 className="size-4" />}
-          </button>
+            <button
+              type="button"
+              onClick={() => mapRef.current?.zoomIn()}
+              disabled={!mapReady}
+              aria-label="Zoom in"
+              title="Zoom in"
+              className="inline-flex size-7 items-center justify-center rounded-md text-sm font-bold leading-none text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              +
+            </button>
+            <button
+              type="button"
+              onClick={() => mapRef.current?.zoomOut()}
+              disabled={!mapReady}
+              aria-label="Zoom out"
+              title="Zoom out"
+              className="inline-flex size-7 items-center justify-center rounded-md text-sm font-bold leading-none text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              −
+            </button>
+            <button
+              type="button"
+              onClick={() => setFullscreen((open) => !open)}
+              aria-label={fullscreen ? "Close fullscreen map" : "Open fullscreen map"}
+              title={fullscreen ? "Close fullscreen map" : "Full display (fullscreen)"}
+              className="inline-flex size-7 items-center justify-center rounded-md text-foreground transition-colors hover:bg-muted"
+            >
+              {fullscreen ? <X className="size-4" /> : <Maximize2 className="size-4" />}
+            </button>
+          </div>
         </div>
       </div>
     </div>

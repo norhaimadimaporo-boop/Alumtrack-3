@@ -714,7 +714,7 @@ async function importRow(
         college, batch_year, employment_status, current_position, current_company,
         current_region, current_city, current_country, latitude, longitude,
         verification_status, verified_at, verified_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
              'verified', UTC_TIMESTAMP(), ?)
      ON DUPLICATE KEY UPDATE
        last_name = VALUES(last_name),
@@ -759,6 +759,8 @@ async function importRow(
       optional(facebook, 255),
       optional(degree, 200),
       optional(college, 200),
+      // Batch Year auto-sync: year of Date Graduated (priority degree in CSV).
+      graduatedOn ? Number(graduatedOn.slice(0, 4)) : null,
       employmentStatus,
       optional(position, 200),
       optional(employer, 200),

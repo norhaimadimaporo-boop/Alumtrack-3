@@ -272,7 +272,7 @@ function AdminReports() {
           </div>
         </div>
         <div className="mt-4">
-          <RealAlumniMap pins={pins} heightClassName="h-[360px] sm:h-[420px]" />
+          <RealAlumniMap pins={pins} heightClassName="h-[360px] sm:h-[420px] lg:h-[520px]" />
         </div>
       </div>
 

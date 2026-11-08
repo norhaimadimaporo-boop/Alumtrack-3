@@ -12,6 +12,10 @@ import type {
   RegistrationInput,
   RegistrationResult,
 } from "./registration.types";
+import {
+  priorityBatchYear,
+  primaryEducationRecord,
+} from "./registration.types";
 
 function optional(value: string | null | undefined): string | null {
   const trimmed = (value ?? "").trim();
@@ -166,18 +170,15 @@ export async function registerAlumniAccount(input: RegistrationInput): Promise<R
     );
     const userId = userResult.insertId;
 
-    const baccalaureate = input.education.find((record) => record.level === "Baccalaureate Degree");
-    const highest =
-      input.education.find((record) => record.level === "Post Graduate Degree") ??
-      input.education.find((record) => record.level === "Graduate Degree") ??
-      baccalaureate ??
-      input.education[0];
-
-    const course = baccalaureate?.degree.trim() || highest?.degree.trim() || null;
-    const college = baccalaureate?.college.trim() || highest?.college.trim() || null;
-    const batchYear = baccalaureate?.graduatedOn
-      ? Number(baccalaureate.graduatedOn.slice(0, 4))
-      : null;
+    // Batch Year / Course / College priority: Baccalaureate first, then
+    // Graduate, then Post Graduate (see `priorityBatchYear` /
+    // `primaryEducationRecord`). The stored `batch_year` therefore always
+    // matches the Year component of the primary Date Graduated.
+    const primary = primaryEducationRecord(input.education);
+    const course = primary?.degree.trim() || null;
+    const college = primary?.college.trim() || null;
+    const batchYearText = priorityBatchYear(input.education);
+    const batchYear = batchYearText ? Number(batchYearText) : null;
 
     const currentAddress = input.currentAddress;
     const homeAddress = input.sameAddress ? currentAddress : input.homeAddress;

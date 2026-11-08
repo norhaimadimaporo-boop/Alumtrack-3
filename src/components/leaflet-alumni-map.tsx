@@ -151,9 +151,9 @@ function MapCamera({ viewKey, pins }: { viewKey: MapViewKey; pins: AlumniMapPin[
 }
 
 /**
- * Hands the live Leaflet map instance to the wrapper so the zoom buttons that
- * live *outside* the map canvas (bottom-right of the footnote bar) can call
- * `map.zoomIn()` / `map.zoomOut()`.
+ * Hands the live Leaflet map instance to the wrapper so the zoom buttons in
+ * the bottom bar inside the map canvas can call `map.zoomIn()` /
+ * `map.zoomOut()`.
  */
 function MapBridge({
   onMapReady,
