@@ -59,9 +59,9 @@ export function AdminShell({
   );
 
   return (
-    <div className="mx-auto mt-0 grid max-w-6xl items-start gap-8 overflow-x-hidden px-4 pb-4 pt-0 md:grid-cols-[230px_1fr]">
-      <aside className="mt-0 pt-0 md:sticky md:top-[73px] md:self-start">
-        <div className="mt-0 rounded-lg border-t-4 border-brand bg-card p-4">
+    <div className="mx-auto grid max-w-6xl items-start gap-8 overflow-x-clip px-4 pb-4 pt-6 md:grid-cols-[230px_1fr]">
+      <aside className="md:sticky md:top-[73px] md:self-start">
+        <div className="rounded-lg border-t-4 border-brand bg-card p-4">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand">
             Administrator
           </p>
@@ -90,8 +90,8 @@ export function AdminShell({
         </nav>
       </aside>
 
-      <section className="mt-0 pt-0">
-        <div className="mt-0 flex flex-wrap items-end justify-between gap-3 border-l-4 border-brand pt-0 pl-4">
+      <section>
+        <div className="flex flex-wrap items-end justify-between gap-3 border-l-4 border-brand pl-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
             {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
