@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Activity, MapPinned, LogIn } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
@@ -64,6 +64,8 @@ function AdminUsage() {
   const pins = data.pins.ok ? data.pins.pins : [];
   const usage = data.usage.ok ? data.usage.usage : null;
   const records = data.records.ok ? data.records.records : [];
+  // Server is the source of truth: only Head Admins receive access log rows.
+  const canViewAccessLogs = usage?.canViewAccessLogs ?? false;
 
   const [showLogs, setShowLogs] = useState(false);
   const [filterDay, setFilterDay] = useState("");
@@ -170,6 +172,7 @@ function AdminUsage() {
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.3fr_1fr]">
+        {canViewAccessLogs ? (
         <div className="rounded-lg border border-border bg-card p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -208,6 +211,24 @@ function AdminUsage() {
             )}
           </ul>
         </div>
+        ) : (
+        <div className="rounded-lg border border-border bg-card p-5">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <LogIn className="size-4 text-brand" /> Head Admin only
+          </h2>
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Detailed login and logout history is restricted to Head Admins. Use
+            Recent Admin Activity on the Admin Dashboard for the standard
+            history logs available to your role.
+          </p>
+          <Link
+            to="/admin"
+            className="mt-3 inline-flex text-xs font-semibold text-brand hover:underline"
+          >
+            Open Admin Dashboard
+          </Link>
+        </div>
+        )}
 
         <div className="space-y-4">
           <div className="rounded-lg border-t-4 border-brand bg-card p-5">
@@ -256,7 +277,7 @@ function AdminUsage() {
         </div>
       </div>
 
-      {showLogs && (
+      {showLogs && canViewAccessLogs && (
         <Modal title="Access logs" onClose={() => setShowLogs(false)} wide>
           <div className="grid gap-3 sm:grid-cols-4">
             <LocationCombobox

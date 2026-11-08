@@ -1,5 +1,6 @@
 import type { RowDataPacket } from "mysql2/promise";
 
+import { requireAdmin } from "./admin.server";
 import { getPool } from "./db.server";
 import { manilaClock, manilaDate } from "./manila-time";
 import { fullName } from "./profile-format";
@@ -29,8 +30,20 @@ type LogRow = RowDataPacket & {
  * active sessions (unexpired, distinct users), logins today (last_login_at,
  * counted by Asia/Manila calendar day — `last_login_at` is stored as UTC),
  * distinct regions with an active session, and overseas active sessions.
+ *
+ * Access control: detailed per-user login/logout rows are Head Admin only.
+ * Standard/Viewer admins still get the aggregate counters, but
+ * `canViewAccessLogs` is false and `accessLogs` is never queried or
+ * returned for them — the rows are filtered on the server, not just hidden
+ * in the UI. Standard history remains available via Recent Admin Activity
+ * (`getAdminDashboard`, viewer+).
  */
 export async function getSystemUsage(): Promise<SystemUsageResult> {
+  const access = await requireAdmin("viewer");
+  if (!access.ok) return { ok: false, message: access.message };
+
+  const canViewAccessLogs = access.admin.adminRole === "head";
+
   try {
     const pool = getPool();
     const [[counts], [logRows]] = await Promise.all([
@@ -50,19 +63,23 @@ export async function getSystemUsage(): Promise<SystemUsageResult> {
                AND p.current_country IS NOT NULL AND TRIM(p.current_country) <> ''
                AND LOWER(TRIM(p.current_country)) NOT LIKE '%philippines%') AS overseas`,
       ),
-      pool.query<LogRow[]>(
-        `SELECT s.token_hash, s.user_id, u.role, u.email, u.full_name,
-                p.first_name, p.middle_name, p.last_name,
-                p.current_city, p.current_region,
-                cur.city AS address_city, cur.province AS address_province,
-                s.expires_at, s.created_at
-           FROM sessions s
-           JOIN users u ON u.id = s.user_id
-      LEFT JOIN alumni_profiles p ON p.user_id = s.user_id
-      LEFT JOIN alumni_addresses cur ON cur.user_id = s.user_id AND cur.kind = 'current'
-          ORDER BY s.created_at DESC, s.user_id ASC
-          LIMIT 200`,
-      ),
+      // Head-only: skip the per-user log query entirely for other tiers so
+      // their rows never leave the server.
+      canViewAccessLogs
+        ? pool.query<LogRow[]>(
+            `SELECT s.token_hash, s.user_id, u.role, u.email, u.full_name,
+                    p.first_name, p.middle_name, p.last_name,
+                    p.current_city, p.current_region,
+                    cur.city AS address_city, cur.province AS address_province,
+                    s.expires_at, s.created_at
+               FROM sessions s
+               JOIN users u ON u.id = s.user_id
+          LEFT JOIN alumni_profiles p ON p.user_id = s.user_id
+          LEFT JOIN alumni_addresses cur ON cur.user_id = s.user_id AND cur.kind = 'current'
+              ORDER BY s.created_at DESC, s.user_id ASC
+              LIMIT 200`,
+          )
+        : Promise.resolve([[]] as [LogRow[]]),
     ]);
 
     const countRow = counts[0];
@@ -71,6 +88,7 @@ export async function getSystemUsage(): Promise<SystemUsageResult> {
       loginsToday: Number(countRow?.logins_today ?? 0),
       regionsWithActivity: Number(countRow?.regions ?? 0),
       overseasSessions: Number(countRow?.overseas ?? 0),
+      canViewAccessLogs,
       accessLogs: logRows.map((row) => {
         const created =
           row.created_at instanceof Date ? row.created_at : new Date(row.created_at);
