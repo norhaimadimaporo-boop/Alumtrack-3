@@ -239,7 +239,9 @@ function SearchPage() {
           ) : (
             <div
               className={
-                view === "grid" ? "mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3" : "mt-6 space-y-3"
+                view === "grid"
+                  ? "mt-6 grid max-h-[650px] gap-4 overflow-y-auto pr-2 scroll-smooth sm:grid-cols-2 xl:grid-cols-3"
+                  : "mt-6 max-h-[650px] space-y-3 overflow-y-auto pr-2 scroll-smooth"
               }
             >
               {results.map((a) => (
