@@ -175,21 +175,17 @@
 }
 
 /*
- * The sticky site header owns z-index 50. The top-left view presets, the
- * top-right legend, and the bottom bar (plotted count + zoom/fullscreen
- * buttons) sit at z-index 20, while Leaflet's own controls (the
+ * The sticky site header owns z-index 50. The top-left view presets and the
+ * top-right legend sit at z-index 20, while Leaflet's own controls (the
  * attribution strip) sit at z-index 25 so they stay in front of the tiles.
- * The bottom bar lives inside the canvas so the map fills the whole frame.
+ * The plotted count and zoom/fullscreen buttons live below the canvas,
+ * outside the map, so nothing inside the map covers them.
  */
 .map-view-controls {
   z-index: 20 !important;
 }
 
 .map-legend {
-  z-index: 20 !important;
-}
-
-.map-bottom-bar {
   z-index: 20 !important;
 }
 
