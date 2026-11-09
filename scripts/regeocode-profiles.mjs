@@ -8,13 +8,19 @@
  * that country's own centroid. Writes latitude/longitude + city/country
  * only; `current_region` (educational region) is left untouched.
  *
+ * Fallback chain for records with NO present address at all (unpinned):
+ *   1. Present Address (strict, above)
+ *   2. Workplace Address (alumni_employment.company_address)
+ *   3. Birth Place (alumni_profiles.birth_place) — last resort so every
+ *      verified record can be plotted.
+ *
  * Usage: npm run db:regeocode
  */
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import mysql from "mysql2/promise";
 
-import { normalizeLegacyPresent, resolvePresentAddress } from "../src/lib/geo.ts";
+import { normalizeLegacyPresent, resolveLocation, resolvePresentAddress } from "../src/lib/geo.ts";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -69,19 +75,44 @@ function isPhilippineCoords(lat, lng) {
 function isPhFallbackCoords(lat, lng) {
   return Math.abs(lat - PH_CENTROID.lat) < 0.5 && Math.abs(lng - PH_CENTROID.lng) < 0.5;
 }
+function isUsableFreeText(value) {
+  const text = clean(value);
+  return Boolean(text) && !/^not provided$/i.test(text);
+}
+/** Present Address → Workplace Address → Birth Place (last resort). */
+function resolveWithFallback(present, workplaceAddress, birthPlace) {
+  const fromPresent = resolvePresentAddress(present);
+  if (fromPresent) return fromPresent;
+  const workplaceText = clean(workplaceAddress);
+  if (isUsableFreeText(workplaceText)) {
+    const fromWorkplace = resolveLocation(workplaceText, null);
+    // resolveLocation falls back to PH centroid for unknown PH text; a
+    // non-null (even unmatched) result is still better than no pin for the
+    // admin tally, as long as it is not an overseas-looking address.
+    if (fromWorkplace) return fromWorkplace;
+  }
+  const birthText = clean(birthPlace);
+  if (isUsableFreeText(birthText)) {
+    const fromBirth = resolveLocation(birthText, null);
+    if (fromBirth) return fromBirth;
+  }
+  return null;
+}
 
 const [profiles] = await connection.query(
   `SELECT p.id, p.user_id, p.first_name, p.middle_name, p.last_name,
           p.current_city, p.current_region, p.current_country,
-          p.latitude, p.longitude,
+          p.birth_place, p.latitude, p.longitude,
           cur.street AS address_street,
           cur.subdivision AS address_subdivision,
           cur.city AS address_city,
           cur.province AS address_province,
           cur.country AS address_country,
-          cur.zip_code AS address_zip
+          cur.zip_code AS address_zip,
+          emp.company_address AS workplace_address
      FROM alumni_profiles p
 LEFT JOIN alumni_addresses cur ON cur.user_id = p.user_id AND cur.kind = 'current'
+LEFT JOIN alumni_employment emp ON emp.user_id = p.user_id AND emp.is_current = 1
  ORDER BY p.id`,
 );
 
@@ -96,7 +127,7 @@ for (const profile of profiles) {
   const storedCity = clean(profile.current_city);
   const present = normalizePresent(profile);
 
-  const location = resolvePresentAddress(present);
+  const location = resolveWithFallback(present, profile.workplace_address, profile.birth_place);
 
   if (!location) {
     unmatched += 1;

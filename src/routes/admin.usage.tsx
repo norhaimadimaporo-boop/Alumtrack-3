@@ -5,7 +5,7 @@ import { AdminShell } from "@/components/admin-shell";
 import { LocationCombobox } from "@/components/location-combobox";
 import { Modal } from "@/components/modal";
 import { RealAlumniMap } from "@/components/real-alumni-map";
-import { getAlumniMapPinsData } from "@/lib/gis.functions";
+import { getAdminMapPinsData } from "@/lib/gis.functions";
 import { getSystemUsageData } from "@/lib/usage.functions";
 import { getRecycleBinData, restoreRecycle } from "@/lib/recycle.functions";
 
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/admin/usage")({
   }),
   loader: async () => {
     const [pins, usage, recycle] = await Promise.all([
-      getAlumniMapPinsData(),
+      getAdminMapPinsData(),
       getSystemUsageData(),
       getRecycleBinData(),
     ]);

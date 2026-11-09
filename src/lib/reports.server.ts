@@ -2,7 +2,7 @@ import type { RowDataPacket } from "mysql2/promise";
 
 import { getPool } from "./db.server";
 import { ensureSoftDeleteColumns } from "./soft-delete.server";
-import { resolvePresentAddress } from "./geo";
+import { resolveLocation, resolvePresentAddress } from "./geo";
 import { fullName } from "./profile-format";
 import type { ReportRecord, ReportRecordsResult } from "./reports.types";
 import type { ProfileEmploymentStatus } from "./admin.types";
@@ -29,11 +29,15 @@ type ReportRow = RowDataPacket & {
   current_region: string | null;
   current_city: string | null;
   current_country: string | null;
+  birth_place: string | null;
+  workplace_address: string | null;
   latitude: number | string | null;
   longitude: number | string | null;
   address_city: string | null;
   address_province: string | null;
   address_country: string | null;
+  address_subdivision: string | null;
+  address_street: string | null;
   org_names: string | null;
   gis_show_workplace: number | null;
   gis_city_only: number | null;
@@ -121,15 +125,18 @@ export async function listReportRecords(): Promise<ReportRecordsResult> {
                 ORDER BY graduated_on DESC LIMIT 1) AS postgrad_grad_year,
               p.gender, p.ethnicity, p.religion, p.employment_status,
               p.current_position, p.current_company, p.current_region,
-              p.current_city, p.current_country, p.latitude, p.longitude,
+              p.current_city, p.current_country, p.birth_place, emp.company_address AS workplace_address,
+              p.latitude, p.longitude,
               cur.city AS address_city, cur.province AS address_province,
-              cur.country AS address_country,
+              cur.country AS address_country, cur.subdivision AS address_subdivision,
+              cur.street AS address_street,
               (SELECT GROUP_CONCAT(name SEPARATOR '|') FROM alumni_organizations
                 WHERE user_id = p.user_id) AS org_names,
               ps.gis_show_workplace, ps.gis_city_only
          FROM alumni_profiles p
          JOIN users u ON u.id = p.user_id AND u.is_active = 1 AND COALESCE(u.is_deleted, 0) = 0
     LEFT JOIN alumni_addresses cur ON cur.user_id = p.user_id AND cur.kind = 'current'
+    LEFT JOIN alumni_employment emp ON emp.user_id = p.user_id AND emp.is_current = 1
     LEFT JOIN alumni_privacy_settings ps ON ps.user_id = p.user_id
         WHERE p.verification_status = 'verified' AND COALESCE(p.is_deleted, 0) = 0
      ORDER BY p.last_name ASC, p.first_name ASC`,
@@ -155,9 +162,11 @@ export async function listReportRecords(): Promise<ReportRecordsResult> {
       const employed = row.employment_status === "employed";
       const abroad = employed && !/^philippines?$/i.test(country);
 
-      // Map pin with the same strict present-address GIS rules as the public map.
+      // Map pin with the same strict present-address GIS rules as the public
+      // map. Admin Reports shows every verified record (opt-out included) so
+      // plotted count == total graduates.
       let pin: ReportRecord["pin"] = null;
-      if (row.gis_show_workplace !== 0) {
+      {
         const cityOnly = row.gis_city_only === 1;
         const storedLat = toNumber(row.latitude);
         const storedLng = toNumber(row.longitude);
@@ -166,7 +175,8 @@ export async function listReportRecords(): Promise<ReportRecordsResult> {
           country: declaredCountry,
           city: row.address_city?.trim() || row.current_city?.trim() || "",
           province: row.address_province?.trim() || "",
-          subdivision: "",
+          subdivision: row.address_subdivision?.trim() || "",
+          street: row.address_street?.trim() || "",
         };
         const storedIsPhFallback =
           storedLat !== null &&
@@ -174,20 +184,37 @@ export async function listReportRecords(): Promise<ReportRecordsResult> {
           ((Math.abs(storedLat - 12.8797) < 0.5 && Math.abs(storedLng - 121.774) < 0.5) ||
             (storedLat >= 4 && storedLat <= 22 && storedLng >= 116 && storedLng <= 127.5)) &&
           declaredCountry.trim().toLowerCase() !== "philippines";
-        const location =
+        let location =
           storedLat === null || storedLng === null || storedIsPhFallback
             ? resolvePresentAddress(present)
             : null;
-        if (location === null || location.matched === true || storedLat !== null) {
-          let lat = storedLat;
-          let lng = storedLng;
-          if (lat === null || lng === null) {
-            if (location) {
-              lat = location.lat;
-              lng = location.lng;
-            }
+        let lat = storedLat;
+        let lng = storedLng;
+        if (lat === null || lng === null) {
+          if (location) {
+            lat = location.lat;
+            lng = location.lng;
           }
-          if (lat !== null && lng !== null) {
+        }
+        if (lat === null || lng === null) {
+          const workplaceText = row.workplace_address?.trim() ?? "";
+          const birthText = row.birth_place?.trim() ?? "";
+          const fallback =
+            workplaceText && !/^not provided$/i.test(workplaceText)
+              ? resolveLocation(workplaceText, null)
+              : null;
+          const birthFallback =
+            !fallback && birthText && !/^not provided$/i.test(birthText)
+              ? resolveLocation(birthText, null)
+              : null;
+          const resolved = fallback ?? birthFallback;
+          if (resolved) {
+            lat = resolved.lat;
+            lng = resolved.lng;
+            location = resolved;
+          }
+        }
+        if (lat !== null && lng !== null) {
             const position = row.current_position?.trim();
             pin = {
               id: `pin-${row.user_id}`,
@@ -204,7 +231,6 @@ export async function listReportRecords(): Promise<ReportRecordsResult> {
               course: row.course?.trim() || "Course not provided",
               batch,
             };
-          }
         }
       }
 

@@ -1,9 +1,10 @@
 import type { RowDataPacket } from "mysql2/promise";
 
 import type { AlumniMapPin } from "../data/gis";
+import { getSessionUser } from "./auth.server";
 import { getPool } from "./db.server";
 import { ensureSoftDeleteColumns } from "./soft-delete.server";
-import { formatLocationLabel, resolvePresentAddress } from "./geo";
+import { formatLocationLabel, resolveLocation, resolvePresentAddress } from "./geo";
 import type { ProfileEmploymentStatus } from "./admin.types";
 
 type MapRow = RowDataPacket & {
@@ -24,6 +25,8 @@ type MapRow = RowDataPacket & {
   current_region: string | null;
   current_city: string | null;
   current_country: string | null;
+  birth_place: string | null;
+  workplace_address: string | null;
   latitude: number | string | null;
   longitude: number | string | null;
   address_city: string | null;
@@ -71,7 +74,10 @@ function toBatchYear(value: number | string | null): string {
  * immediately. Existing records without stored coordinates fall back to the
  * offline gazetteer using their current address.
  */
-export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
+export async function listAlumniMapPins(options: {
+  includeOptOut?: boolean;
+} = {}): Promise<AlumniMapPinsResult> {
+  const includeOptOut = options.includeOptOut === true;
   try {
     await ensureSoftDeleteColumns();
     const [rows] = await getPool().query<MapRow[]>(
@@ -90,7 +96,8 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
                   AND graduated_on IS NOT NULL
                 ORDER BY graduated_on DESC LIMIT 1) AS postgrad_grad_year,
               p.employment_status, p.current_position,
-              p.current_company, p.current_region, p.current_city, p.current_country,
+              p.current_company, p.current_region, p.current_city, p.current_country, p.birth_place,
+              emp.company_address AS workplace_address,
               p.latitude, p.longitude,
               cur.city AS address_city, cur.province AS address_province,
               cur.country AS address_country, cur.subdivision AS address_subdivision,
@@ -99,6 +106,7 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
          FROM alumni_profiles p
          JOIN users u ON u.id = p.user_id AND u.is_active = 1 AND COALESCE(u.is_deleted, 0) = 0
     LEFT JOIN alumni_addresses cur ON cur.user_id = p.user_id AND cur.kind = 'current'
+    LEFT JOIN alumni_employment emp ON emp.user_id = p.user_id AND emp.is_current = 1
     LEFT JOIN alumni_privacy_settings ps ON ps.user_id = p.user_id
         WHERE p.verification_status = 'verified' AND COALESCE(p.is_deleted, 0) = 0
      ORDER BY p.last_name ASC, p.first_name ASC`,
@@ -107,8 +115,10 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
     const pins: AlumniMapPin[] = [];
 
     for (const row of rows) {
-      // Owners who switch off the GIS workplace pin are left off the map entirely.
-      if (row.gis_show_workplace === 0) continue;
+      // Owners who switch off the GIS workplace pin are left off the public
+      // map entirely. Admin surfaces (reports/usage) pass includeOptOut so
+      // every verified record tallies against the admin total.
+      if (!includeOptOut && row.gis_show_workplace === 0) continue;
       const cityOnly = row.gis_city_only === 1;
 
       const storedLat = toNumber(row.latitude);
@@ -165,6 +175,28 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
         pinCity = present.city || presentLocation.city;
         pinProvince = present.province || presentLocation.region;
       }
+      // Runtime safety net for rows the batch has not reached: Workplace
+      // Address first, then Birth Place, so every verified record stays
+      // plotted and the admin tally matches the total.
+      if (lat === null || lng === null) {
+        const workplaceText = row.workplace_address?.trim() ?? "";
+        const birthText = row.birth_place?.trim() ?? "";
+        const fallback =
+          workplaceText && !/^not provided$/i.test(workplaceText)
+            ? resolveLocation(workplaceText, null)
+            : null;
+        const birthFallback =
+          !fallback && birthText && !/^not provided$/i.test(birthText)
+            ? resolveLocation(birthText, null)
+            : null;
+        const resolved = fallback ?? birthFallback;
+        if (resolved) {
+          lat = resolved.lat;
+          lng = resolved.lng;
+          pinCity = pinCity || resolved.city;
+          pinProvince = pinProvince || resolved.region;
+        }
+      }
       if (lat === null || lng === null) continue;
 
       const pinCountry = present.country || presentLocation?.country || "Philippines";
@@ -207,4 +239,17 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
       message: "The alumni map could not be loaded right now. Please try again later.",
     };
   }
+}
+
+/**
+ * Admin-only pin list for System Usage: includes opted-out workplace rows so
+ * green + yellow tallies match the full verified total. Public callers must
+ * keep using `listAlumniMapPins()` which respects opt-outs.
+ */
+export async function listAdminMapPins(): Promise<AlumniMapPinsResult> {
+  const user = await getSessionUser();
+  if (!user || user.role !== "admin") {
+    return { ok: false, message: "The alumni map could not be loaded right now. Please try again later." };
+  }
+  return listAlumniMapPins({ includeOptOut: true });
 }
