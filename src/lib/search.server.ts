@@ -10,6 +10,7 @@ import type { PublicAlumniResult, PublicAlumnus } from "./search.types";
 
 type PublicAlumniRow = RowDataPacket & {
   id: number;
+  user_id: number;
   first_name: string;
   middle_name: string | null;
   last_name: string;
@@ -36,6 +37,9 @@ type PublicAlumniRow = RowDataPacket & {
   public_show_contact: number | null;
   public_show_email: number | null;
   public_show_employment: number | null;
+  public_include_region_stats: number | null;
+  gis_show_workplace: number | null;
+  gis_city_only: number | null;
   directory_show_workplace: number | null;
   directory_show_region: number | null;
   directory_show_mobile: number | null;
@@ -65,9 +69,14 @@ function enabled(value: number | null, fallback: boolean): boolean {
 export async function listPublicAlumni(): Promise<PublicAlumniResult> {
   try {
     await ensureSoftDeleteColumns();
-    const signedIn = (await getSessionUser()) !== null;
+    const viewer = await getSessionUser();
+    const signedIn = viewer !== null;
+    // Admins bypass ALL privacy gates and see full details everywhere.
+    // Alumni/guests are filtered below (record- + field-level).
+    const isAdmin = viewer?.role === "admin";
+    const viewerId = viewer?.id ?? null;
     const [rows] = await getPool().query<PublicAlumniRow[]>(
-      `SELECT p.id, p.first_name, p.middle_name, p.last_name, p.course, p.college,
+      `SELECT p.id, p.user_id, p.first_name, p.middle_name, p.last_name, p.course, p.college,
               p.batch_year,
               (SELECT YEAR(graduated_on) FROM alumni_education
                 WHERE user_id = p.user_id AND level = 'Baccalaureate Degree'
@@ -87,6 +96,7 @@ export async function listPublicAlumni(): Promise<PublicAlumniResult> {
               emp.position AS employment_position, emp.company AS employment_company,
               p.mobile_number, p.contact_email, p.akan_email, p.facebook,
               ps.public_show_contact, ps.public_show_email, ps.public_show_employment,
+              ps.public_include_region_stats, ps.gis_show_workplace, ps.gis_city_only,
               ps.directory_show_workplace, ps.directory_show_region,
               ps.directory_show_mobile, ps.directory_show_facebook
          FROM alumni_profiles p
@@ -101,24 +111,45 @@ export async function listPublicAlumni(): Promise<PublicAlumniResult> {
      ORDER BY p.last_name ASC, p.first_name ASC`,
     );
 
-    const alumni: PublicAlumnus[] = rows.map((row) => {
+    // Role-based privacy visibility (/search = public surface):
+    // - Non-admin, non-owner viewers only see records where the owner
+    //   allows it: is_map_visible (gis_show_workplace = 1) AND
+    //   is_public_visible (public_show_employment = 1). Records failing
+    //   either are FILTERED OUT entirely (no card, no pin, no contacts).
+    // - Owners always see their own card; admins (all tiers) always see
+    //   every record with FULL details (no privacy filter).
+    const visibleRows = isAdmin
+      ? rows
+      : rows.filter((row) => {
+          if (viewerId !== null && row.user_id === viewerId) return true;
+          const isMapVisible = enabled(row.gis_show_workplace, true);
+          const isPublicVisible = enabled(row.public_show_employment, true);
+          return isMapVisible && isPublicVisible;
+        });
+
+    const alumni: PublicAlumnus[] = visibleRows.map((row) => {
+      const isSelf = viewerId !== null && row.user_id === viewerId;
+      const bypass = isAdmin || isSelf;
       // Job Title / Company gated by "Current workplace" (plus the public
-      // switch for everyone — public switches still apply).
-      const showJob =
-        enabled(row.public_show_employment, true) &&
-        (!signedIn || enabled(row.directory_show_workplace, true));
+      // switch for everyone — public switches still apply). Admins and
+      // owners bypass every gate for full details.
+      const showJob = bypass
+        ? true
+        : enabled(row.public_show_employment, true) &&
+          (!signedIn || enabled(row.directory_show_workplace, true));
       // Location detail gated by "Region of employment" (directory). Signed-in
       // viewers with the switch OFF see neither general nor detailed location
       // (strict hide). Guests always get the general region only.
-      const showDetailed = signedIn && enabled(row.directory_show_region, true);
-      const showGeneralRegion = !signedIn || showDetailed;
+      const showDetailed = bypass ? true : signedIn && enabled(row.directory_show_region, true);
+      const showGeneralRegion = bypass ? true : !signedIn || showDetailed;
       // Contact & links: show only the fields whose switches are ON.
       // Email has no directory switch — `publicShowEmail` gates it for everyone.
-      const showMobile =
-        enabled(row.public_show_contact, false) &&
-        (!signedIn || enabled(row.directory_show_mobile, false));
-      const showEmail = enabled(row.public_show_email, false);
-      const showFacebook = signedIn && enabled(row.directory_show_facebook, false);
+      const showMobile = bypass
+        ? true
+        : enabled(row.public_show_contact, false) &&
+          (!signedIn || enabled(row.directory_show_mobile, false));
+      const showEmail = bypass ? true : enabled(row.public_show_email, false);
+      const showFacebook = bypass ? true : signedIn && enabled(row.directory_show_facebook, false);
 
       // Location label from the PRESENT address only — never the educational
       // Region (BARMM): overseas = "City, Country"; PH = "City, Province,

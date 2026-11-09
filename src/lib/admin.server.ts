@@ -357,6 +357,9 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
 }
 
 export async function listAdminAlumni(): Promise<AdminAlumniList> {
+  // Role-based visibility: admin surface returns FULL details for every
+  // record — no privacy filter (gis_show_workplace / public_show_* are
+  // ignored) for Head, Standard, and Viewer admins alike.
   const access = await requireAdmin("viewer");
   if (!access.ok) return { ok: false, message: access.message };
 

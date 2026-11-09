@@ -103,7 +103,9 @@ function affiliationFromOrgs(orgNames: string | null): ReportRecord["affiliation
  * year follows the priority Baccalaureate → Graduate → Post Graduate
  * graduation year in `alumni_education` (stored `batch_year` only as a
  * last resort), so no card shows "Batch —" when an education year exists.
- * Pins mirror the GIS map logic (privacy flags + gazetteer fallback).
+ * Pins mirror the GIS map logic (strict present-address geocoding) but
+ * Reports is an admin surface: every verified record stays plotted with
+ * full details even when the owner opted out of public map visibility.
  */
 export async function listReportRecords(): Promise<ReportRecordsResult> {
   try {
@@ -163,11 +165,12 @@ export async function listReportRecords(): Promise<ReportRecordsResult> {
       const abroad = employed && !/^philippines?$/i.test(country);
 
       // Map pin with the same strict present-address GIS rules as the public
-      // map. Admin Reports shows every verified record (opt-out included) so
-      // plotted count == total graduates.
+      // map. Admin Reports is an admin-only surface: every verified record
+      // stays plotted with FULL details (exact coordinates + company) even
+      // when the owner turned off map visibility — role-based visibility.
       let pin: ReportRecord["pin"] = null;
       {
-        const cityOnly = row.gis_city_only === 1;
+        const cityOnly = false;
         const storedLat = toNumber(row.latitude);
         const storedLng = toNumber(row.longitude);
         const declaredCountry = country;

@@ -78,6 +78,13 @@ export async function listAlumniMapPins(options: {
   includeOptOut?: boolean;
 } = {}): Promise<AlumniMapPinsResult> {
   const includeOptOut = options.includeOptOut === true;
+  const viewer = await getSessionUser();
+  const isAdmin = viewer?.role === "admin";
+  // Role-based privacy visibility: an admin viewer (or explicit admin
+  // request) sees every pin; everyone else (guest / other alumni) only
+  // sees pins whose owner allows workplace mapping. Viewers always see
+  // their own pin (is_map_visible = gis_show_workplace).
+  const isAdminSurface = includeOptOut || isAdmin;
   try {
     await ensureSoftDeleteColumns();
     const [rows] = await getPool().query<MapRow[]>(
@@ -115,11 +122,14 @@ export async function listAlumniMapPins(options: {
     const pins: AlumniMapPin[] = [];
 
     for (const row of rows) {
-      // Owners who switch off the GIS workplace pin are left off the public
-      // map entirely. Admin surfaces (reports/usage) pass includeOptOut so
-      // every verified record tallies against the admin total.
-      if (!includeOptOut && row.gis_show_workplace === 0) continue;
-      const cityOnly = row.gis_city_only === 1;
+      // Public / guest / other-alumni view: hide the pin when the owner
+      // turned off "Map my workplace" (gis_show_workplace = 0). Admins and
+      // the owner themself always see the pin (role-based visibility).
+      const isSelf = viewer !== null && row.user_id === viewer.id;
+      if (!isAdminSurface && !isSelf && row.gis_show_workplace === 0) continue;
+      // Admins get full details: never hide the company or coarsen
+      // coordinates (gis_city_only only constrains non-admin viewers).
+      const cityOnly = !isAdminSurface && row.gis_city_only === 1;
 
       const storedLat = toNumber(row.latitude);
       const storedLng = toNumber(row.longitude);
