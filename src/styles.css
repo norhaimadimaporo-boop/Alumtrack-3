@@ -179,6 +179,22 @@
   display: none;
 }
 
+/* Thin visible scrollbar for the mobile admin navigation bar. */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 9999px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 /* ---------- Interactive Leaflet alumni map ---------- */
 
 .leaflet-container {

@@ -54,7 +54,7 @@ export function AdminShell({
           </p>
         </div>
 
-        <nav className="scrollbar-none mt-3 flex gap-1 overflow-x-auto whitespace-nowrap rounded-lg border border-border bg-card px-1 py-2 md:flex-col md:whitespace-normal md:overflow-visible">
+        <nav className="scrollbar-thin mt-3 flex w-full max-w-full gap-2 overflow-x-auto whitespace-nowrap rounded-lg border border-border bg-card px-2 py-1 md:flex-col md:whitespace-normal md:overflow-visible">
           {visibleLinks.map((l) => (
             <Link
               key={l.to}
@@ -71,8 +71,8 @@ export function AdminShell({
         </nav>
       </aside>
 
-      <section>
-        <div className="flex flex-wrap items-end justify-between gap-3 border-l-4 border-brand pl-4">
+      <section className="w-full min-w-0">
+        <div className="flex w-full flex-col gap-3 border-l-4 border-brand pl-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
             {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}

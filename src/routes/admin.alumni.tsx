@@ -840,8 +840,15 @@ function AdminAlumni() {
         {rows.length} record{rows.length === 1 ? "" : "s"} found
       </p>
 
-      <div className="mt-3 max-h-[580px] overflow-y-auto overflow-x-auto rounded-lg border border-border bg-card">
-        <table className="w-full min-w-[720px] text-left text-sm">
+      <div className="mt-3 block max-h-[580px] w-full max-w-full overflow-y-auto overflow-x-auto rounded-lg border border-border bg-card">
+        <table className="w-full min-w-[720px] table-fixed text-left text-sm">
+          <colgroup>
+            <col className="w-[200px]" />
+            <col className="w-[160px]" />
+            <col className="w-[180px]" />
+            <col className="w-[120px]" />
+            <col className="w-[220px]" />
+          </colgroup>
           <thead className="border-b border-border bg-muted/60">
             <tr className="text-[11px] uppercase tracking-wide text-muted-foreground">
               <th className="px-4 py-3 font-semibold">Alumni</th>
