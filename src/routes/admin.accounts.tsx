@@ -325,7 +325,7 @@ function AdminAccounts() {
           No admin accounts match "{search.trim()}". Try a different name or email.
         </p>
       ) : (
-        <ul className="mt-4 grid gap-3 md:grid-cols-2">
+        <ul className="mt-4 grid max-h-[580px] overflow-y-auto gap-3 pr-2 md:grid-cols-2">
           {visibleAccounts.map((account) => (
           <li key={account.id} className="rounded-lg border border-border bg-card p-5">
             <div className="flex items-start justify-between gap-3">

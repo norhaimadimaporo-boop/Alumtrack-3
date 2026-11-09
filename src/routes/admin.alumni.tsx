@@ -199,6 +199,7 @@ function AdminAlumni() {
   const [importBusy, setImportBusy] = useState(false);
   const [importResult, setImportResult] = useState<AdminImportResult | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [confirmingExport, setConfirmingExport] = useState(false);
   const [exportBatch, setExportBatch] = useState("");
   const [exportCourse, setExportCourse] = useState("");
   const [exportGender, setExportGender] = useState("");
@@ -698,6 +699,7 @@ function AdminAlumni() {
     anchor.click();
     anchor.remove();
     URL.revokeObjectURL(url);
+    setConfirmingExport(false);
     setExporting(false);
     setExportBatch("");
     setExportCourse("");
@@ -898,7 +900,13 @@ function AdminAlumni() {
       </div>
 
       {exporting && (
-        <Modal title="Export alumni records" onClose={() => setExporting(false)}>
+        <Modal
+          title="Export alumni records"
+          onClose={() => {
+            setExporting(false);
+            setConfirmingExport(false);
+          }}
+        >
           <div className="space-y-4">
             <p className="rounded-md border-l-4 border-highlight bg-muted/50 px-3 py-2 text-[11px] text-muted-foreground">
               Filter the alumni records to include in the CSV export. The count updates as you
@@ -964,21 +972,70 @@ function AdminAlumni() {
               {alumni.length} alumni
             </p>
 
+            <div className="max-h-[220px] overflow-y-auto rounded-lg border border-border">
+              {exportRows.length === 0 ? (
+                <p className="px-4 py-6 text-center text-xs text-muted-foreground">
+                  No alumni match the selected filters.
+                </p>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {exportRows.map((a) => (
+                    <li key={a.id} className="flex items-center gap-3 px-3 py-2">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-brand-foreground">
+                        {initials(a.name)}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-semibold text-foreground">{a.name}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {a.course} · Batch {a.batch} · {a.gender}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={() => setExporting(false)}
+                onClick={() => {
+                  setExporting(false);
+                  setConfirmingExport(false);
+                }}
                 className="rounded-md border border-border py-2.5 text-sm font-semibold text-foreground hover:border-brand"
               >
                 Cancel
               </button>
               <button
                 disabled={exportRows.length === 0}
-                onClick={handleExport}
+                onClick={() => setConfirmingExport(true)}
                 className="inline-flex items-center justify-center gap-1.5 rounded-md bg-brand py-2.5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark disabled:opacity-40"
               >
                 <FileSpreadsheet className="size-4" /> Export {exportRows.length} data from alumni
               </button>
             </div>
+
+            {confirmingExport && (
+              <div className="rounded-lg border border-brand/40 bg-brand/5 px-4 py-3">
+                <p className="text-sm font-semibold text-foreground">
+                  Are you sure you want to export?
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setConfirmingExport(false)}
+                    className="rounded-md border border-border py-2.5 text-sm font-semibold text-foreground hover:border-brand"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleExport}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-md bg-brand py-2.5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+                  >
+                    <FileSpreadsheet className="size-4" /> Yes, Export
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </Modal>
       )}
@@ -1755,9 +1812,9 @@ function AdminAlumni() {
       {canManage && deleting && (
         <Modal title="Delete alumni record" onClose={() => setDeleting(null)}>
           <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete the record of{" "}
-            <span className="font-semibold text-foreground">{deleting.name}</span>? This permanently
-            deletes the alumni account, profile, and all related records from the database.
+            Are you sure you want to delete {deleting.lastName || deleting.name}&apos;s record? This
+            permanently deletes the alumni account, profile, and all related records from the
+            database.
           </p>
           <div className="mt-5 grid grid-cols-2 gap-3">
             <button

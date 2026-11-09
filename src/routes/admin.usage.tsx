@@ -1,12 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Activity, MapPinned, LogIn } from "lucide-react";
+import { MapPinned, LogIn } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
 import { LocationCombobox } from "@/components/location-combobox";
 import { Modal } from "@/components/modal";
 import { RealAlumniMap } from "@/components/real-alumni-map";
 import { getAlumniMapPinsData } from "@/lib/gis.functions";
-import { getReportRecords } from "@/lib/reports.functions";
 import { getSystemUsageData } from "@/lib/usage.functions";
 
 export const Route = createFileRoute("/admin/usage")({
@@ -26,12 +25,11 @@ export const Route = createFileRoute("/admin/usage")({
     ],
   }),
   loader: async () => {
-    const [pins, usage, records] = await Promise.all([
+    const [pins, usage] = await Promise.all([
       getAlumniMapPinsData(),
       getSystemUsageData(),
-      getReportRecords(),
     ]);
-    return { pins, usage, records };
+    return { pins, usage };
   },
   component: AdminUsage,
 });
@@ -63,7 +61,6 @@ function AdminUsage() {
   const data = Route.useLoaderData();
   const pins = data.pins.ok ? data.pins.pins : [];
   const usage = data.usage.ok ? data.usage.usage : null;
-  const records = data.records.ok ? data.records.records : [];
   // Server is the source of truth: only Head Admins receive access log rows.
   const canViewAccessLogs = usage?.canViewAccessLogs ?? false;
 
@@ -110,34 +107,10 @@ function AdminUsage() {
     { label: "Overseas sessions", value: formatCount(usage?.overseasSessions ?? 0) },
   ];
 
-  const exportOptions = useMemo(
-    () => ({
-      batches: [...new Set(records.map((r) => r.batch).filter((b) => /^\d{4}$/.test(b)))].sort(
-        (a, b) => Number(b) - Number(a),
-      ),
-      courses: [...new Set(records.map((r) => r.course))].sort((a, b) => a.localeCompare(b)),
-      genders: [...new Set(records.map((r) => r.gender))].sort((a, b) => a.localeCompare(b)),
-    }),
-    [records],
-  );
-  const [fBatch, setFBatch] = useState("");
-  const [fCourse, setFCourse] = useState("");
-  const [fGender, setFGender] = useState("");
-  const exportMatches = useMemo(
-    () =>
-      records.filter((r) => {
-        if (fBatch && r.batch !== fBatch) return false;
-        if (fCourse && r.course !== fCourse) return false;
-        if (fGender && r.gender !== fGender) return false;
-        return true;
-      }),
-    [records, fBatch, fCourse, fGender],
-  );
-
   return (
     <AdminShell
       title="System Monitoring"
-      subtitle="Interactive alumni location GIS map, session monitoring, and tracer report exports."
+      subtitle="Interactive alumni location GIS map and session monitoring."
     >
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {summary.map((s) => (
@@ -171,7 +144,7 @@ function AdminUsage() {
         </div>
       </div>
 
-      <div className={canViewAccessLogs ? "mt-4 grid gap-4 lg:grid-cols-[1.3fr_1fr]" : "mt-4"}>
+      <div className="mt-4">
         {canViewAccessLogs && (
         <div className="rounded-lg border border-border bg-card p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -212,52 +185,6 @@ function AdminUsage() {
           </ul>
         </div>
         )}
-
-        <div className="space-y-4">
-          <div className="rounded-lg border-t-4 border-brand bg-card p-5">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <Activity className="size-4 text-brand" /> Export tracer report
-            </h2>
-            <div className="mt-3 space-y-2">
-              <ExportSelect label="Batch year" options={exportOptions.batches} value={fBatch} onChange={setFBatch} />
-              <ExportSelect label="Course" options={exportOptions.courses} value={fCourse} onChange={setFCourse} />
-              <ExportSelect label="Gender" options={exportOptions.genders} value={fGender} onChange={setFGender} />
-            </div>
-            <div className="mt-4">
-              <p className="text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">{exportMatches.length}</span> matching
-                alumni
-              </p>
-              <div className="mt-2 max-h-60 overflow-y-auto rounded-lg border border-border">
-                {exportMatches.length === 0 ? (
-                  <p className="px-4 py-6 text-center text-xs text-muted-foreground">
-                    No alumni match the selected filters.
-                  </p>
-                ) : (
-                  <ul className="divide-y divide-border">
-                    {exportMatches.map((r) => (
-                      <li key={r.id} className="flex items-start justify-between gap-3 px-3 py-2">
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold text-foreground">{r.name}</p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {r.course} · Batch {r.batch} · {r.gender}
-                          </p>
-                        </div>
-                        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                          {r.employmentStatus === "employed"
-                            ? "Employed"
-                            : r.employmentStatus === "unemployed"
-                              ? "Unemployed"
-                              : "Not provided"}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {showLogs && canViewAccessLogs && (
@@ -352,33 +279,5 @@ function AdminUsage() {
         </Modal>
       )}
     </AdminShell>
-  );
-}
-
-function ExportSelect({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string;
-  options: string[];
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <select
-      aria-label={label}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-muted-foreground outline-none focus:border-brand"
-    >
-      <option value="">All {label.toLowerCase()}s</option>
-      {options.map((o) => (
-        <option key={o} value={o}>
-          {o}
-        </option>
-      ))}
-    </select>
   );
 }
