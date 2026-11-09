@@ -54,18 +54,19 @@ export function AdminShell({
           </p>
         </div>
 
-        <nav className="scrollbar-thin mt-3 flex w-full max-w-full gap-2 overflow-x-auto whitespace-nowrap rounded-lg border border-border bg-card px-2 py-1 md:flex-col md:whitespace-normal md:overflow-visible">
+        <nav className="scrollbar-thin mt-3 grid w-full max-w-full grid-cols-3 gap-1.5 rounded-lg border border-border bg-card px-2 py-3 sm:flex sm:flex-row sm:overflow-x-auto sm:whitespace-nowrap md:flex-col md:whitespace-normal md:overflow-visible">
           {visibleLinks.map((l) => (
             <Link
               key={l.to}
               to={l.to}
+              title={l.label}
               activeOptions={{ exact: l.to === "/admin" }}
               activeProps={{ className: "bg-brand text-brand-foreground" }}
               inactiveProps={{ className: "text-foreground/80 hover:bg-muted" }}
-              className="flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors"
+              className="flex min-w-0 items-center gap-1.5 rounded-md px-2 py-2 text-xs font-medium transition-colors sm:shrink-0 sm:gap-2 sm:px-3 sm:text-sm"
             >
-              <l.icon className="size-4" />
-              <span className="whitespace-nowrap">{l.label}</span>
+              <l.icon className="size-4 shrink-0" />
+              <span className="truncate whitespace-nowrap md:whitespace-normal">{l.label}</span>
             </Link>
           ))}
         </nav>

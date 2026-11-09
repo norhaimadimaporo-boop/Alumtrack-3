@@ -395,17 +395,17 @@ function AdminPosts() {
         {rows.map((post) => (
           <li
             key={post.id}
-            className="flex flex-wrap items-start gap-3 rounded-lg border border-border bg-card p-5"
+            className="flex w-full max-w-full flex-col gap-3 rounded-lg border border-border bg-card p-5 sm:flex-row sm:flex-wrap sm:items-start"
           >
             {post.images[0] ? (
               <img
                 src={post.images[0]}
                 alt=""
                 loading="lazy"
-                className="size-20 shrink-0 rounded-lg object-cover"
+                className="h-24 w-full shrink-0 rounded-lg object-cover sm:h-20 sm:w-20"
               />
             ) : (
-              <div className="flex size-20 shrink-0 items-center justify-center rounded-lg bg-secondary">
+              <div className="flex h-24 w-full shrink-0 items-center justify-center rounded-lg bg-secondary sm:h-20 sm:w-20">
                 {(() => {
                   const Icon = icons[post.type];
                   return <Icon className="size-6 text-muted-foreground" />;
@@ -413,7 +413,7 @@ function AdminPosts() {
               </div>
             )}
 
-            <div className="min-w-0 flex-1">
+            <div className="w-full min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span
                   className={`rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${typeStyles[post.type]}`}
@@ -437,9 +437,9 @@ function AdminPosts() {
               </p>
             </div>
 
-            <div className="text-right">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
               <span
-                className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
                   post.status === "Published"
                     ? "bg-success text-success-foreground"
                     : "bg-highlight text-highlight-foreground"
@@ -447,12 +447,12 @@ function AdminPosts() {
               >
                 {post.status}
               </span>
-              <div className="mt-2 flex flex-wrap items-center justify-end gap-3">
+              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end sm:gap-3">
                 <button
                   onClick={() => setViewing(post)}
-                  className="flex items-center gap-1 text-xs font-semibold text-brand hover:underline"
+                  className="flex min-h-[40px] min-w-[72px] items-center justify-center gap-1 rounded-md border border-border px-3 py-2 text-xs font-semibold text-brand hover:bg-muted sm:min-h-0 sm:min-w-0 sm:border-0 sm:p-0 sm:hover:bg-transparent"
                 >
-                  <Eye className="size-3" /> View
+                  <Eye className="size-4 shrink-0 sm:size-3" /> View
                 </button>
                 {canManage && (
                   <>
@@ -462,27 +462,27 @@ function AdminPosts() {
                         setNotice("");
                         setComposing(toForm(post));
                       }}
-                      className="flex items-center gap-1 text-xs font-semibold text-brand hover:underline"
+                      className="flex min-h-[40px] min-w-[64px] items-center justify-center gap-1 rounded-md border border-border px-3 py-2 text-xs font-semibold text-brand hover:bg-muted sm:min-h-0 sm:min-w-0 sm:border-0 sm:p-0 sm:hover:bg-transparent sm:hover:underline"
                     >
-                      <Pencil className="size-3" /> Edit
+                      <Pencil className="size-4 shrink-0 sm:size-3" /> Edit
                     </button>
                     <button
                       disabled={busyId === post.id}
                       onClick={() => toggleStatus(post)}
-                      className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-brand hover:underline disabled:opacity-50"
+                      className="flex min-h-[40px] min-w-[96px] items-center justify-center gap-1 rounded-md border border-border px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-brand disabled:opacity-50 sm:min-h-0 sm:min-w-0 sm:border-0 sm:p-0 sm:hover:bg-transparent sm:hover:underline"
                     >
                       {busyId === post.id ? (
-                        <Loader2 className="size-3 animate-spin" />
+                        <Loader2 className="size-4 shrink-0 animate-spin sm:size-3" />
                       ) : (
-                        <CheckCircle2 className="size-3" />
+                        <CheckCircle2 className="size-4 shrink-0 sm:size-3" />
                       )}
                       {post.status === "Published" ? "Unpublish" : "Publish"}
                     </button>
                     <button
                       onClick={() => setDeleting(post)}
-                      className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-destructive hover:underline"
+                      className="flex min-h-[40px] min-w-[80px] items-center justify-center gap-1 rounded-md border border-border px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-destructive disabled:opacity-50 sm:min-h-0 sm:min-w-0 sm:border-0 sm:p-0 sm:hover:bg-transparent sm:hover:underline"
                     >
-                      <Trash2 className="size-3" /> Delete
+                      <Trash2 className="size-4 shrink-0 sm:size-3" /> Delete
                     </button>
                   </>
                 )}
