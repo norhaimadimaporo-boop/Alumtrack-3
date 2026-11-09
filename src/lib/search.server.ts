@@ -4,6 +4,7 @@ import { getSessionUser } from "./auth.server";
 import { getPool } from "./db.server";
 import { ensureSoftDeleteColumns } from "./soft-delete.server";
 import { formatAddress, fullName } from "./profile-format";
+import { formatLocationLabel } from "./geo";
 import type { ProfileEmploymentStatus } from "./admin.types";
 import type { PublicAlumniResult, PublicAlumnus } from "./search.types";
 
@@ -119,13 +120,19 @@ export async function listPublicAlumni(): Promise<PublicAlumniResult> {
       const showEmail = enabled(row.public_show_email, false);
       const showFacebook = signedIn && enabled(row.directory_show_facebook, false);
 
+      // Location label from the PRESENT address only — never the educational
+      // Region (BARMM): overseas = "City, Country"; PH = "City, Province,
+      // Philippines".
+      const presentLabel = formatLocationLabel({
+        city: row.current_city,
+        province: row.current_province,
+        country: row.current_country,
+      });
       const generalRegion =
-        row.current_region?.trim() ||
-        formatAddress([row.current_city, row.current_province]) ||
-        "Not provided";
-      const detailedLocation =
-        formatAddress([row.current_city, row.current_province, row.current_country]) ||
-        generalRegion;
+        presentLabel === "Not provided"
+          ? row.current_city?.trim() || row.current_province?.trim() || "Not provided"
+          : presentLabel;
+      const detailedLocation = presentLabel;
       const toYear = (value: number | string | null): number | null => {
         if (value === null || value === undefined) return null;
         const year = Number(value);

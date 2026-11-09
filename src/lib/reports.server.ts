@@ -2,7 +2,7 @@ import type { RowDataPacket } from "mysql2/promise";
 
 import { getPool } from "./db.server";
 import { ensureSoftDeleteColumns } from "./soft-delete.server";
-import { resolveLocation } from "./geo";
+import { resolvePresentAddress } from "./geo";
 import { fullName } from "./profile-format";
 import type { ReportRecord, ReportRecordsResult } from "./reports.types";
 import type { ProfileEmploymentStatus } from "./admin.types";
@@ -155,24 +155,30 @@ export async function listReportRecords(): Promise<ReportRecordsResult> {
       const employed = row.employment_status === "employed";
       const abroad = employed && !/^philippines?$/i.test(country);
 
-      // Map pin with the same GIS rules as the public map.
+      // Map pin with the same strict present-address GIS rules as the public map.
       let pin: ReportRecord["pin"] = null;
       if (row.gis_show_workplace !== 0) {
         const cityOnly = row.gis_city_only === 1;
         const storedLat = toNumber(row.latitude);
         const storedLng = toNumber(row.longitude);
-        const hasStored = storedLat !== null && storedLng !== null;
         const declaredCountry = country;
-        const location = hasStored
-          ? null
-          : resolveLocation(
-              row.current_city?.trim() || row.address_city || declaredCountry,
-              [declaredCountry, row.address_province || row.current_region].filter(Boolean).join(", ") ||
-                null,
-            );
-        const guessedPhilippines = location !== null && !location.matched;
-        const philippineCountry = !declaredCountry || /^philippines?$/i.test(declaredCountry);
-        if (!(guessedPhilippines && !philippineCountry)) {
+        const present = {
+          country: declaredCountry,
+          city: row.address_city?.trim() || row.current_city?.trim() || "",
+          province: row.address_province?.trim() || "",
+          subdivision: "",
+        };
+        const storedIsPhFallback =
+          storedLat !== null &&
+          storedLng !== null &&
+          ((Math.abs(storedLat - 12.8797) < 0.5 && Math.abs(storedLng - 121.774) < 0.5) ||
+            (storedLat >= 4 && storedLat <= 22 && storedLng >= 116 && storedLng <= 127.5)) &&
+          declaredCountry.trim().toLowerCase() !== "philippines";
+        const location =
+          storedLat === null || storedLng === null || storedIsPhFallback
+            ? resolvePresentAddress(present)
+            : null;
+        if (location === null || location.matched === true || storedLat !== null) {
           let lat = storedLat;
           let lng = storedLng;
           if (lat === null || lng === null) {
@@ -189,21 +195,10 @@ export async function listReportRecords(): Promise<ReportRecordsResult> {
               role: employed ? position || "Employed" : "Seeking employment",
               status: employed ? "Employed" : "Unemployed",
               company: employed && !cityOnly ? row.current_company?.trim() || null : null,
-              city:
-                row.current_city?.trim() ||
-                location?.city?.trim() ||
-                row.address_city?.trim() ||
-                declaredCountry ||
-                "Unknown",
-              region:
-                row.current_region?.trim() ||
-                location?.region?.trim() ||
-                row.address_province?.trim() ||
-                "",
+              city: present.city || location?.city?.trim() || declaredCountry || "Unknown",
+              region: present.province || location?.region?.trim() || row.address_province?.trim() || "",
               country: declaredCountry || location?.country?.trim() || "Philippines",
-              precision: row.current_city?.trim()
-                ? "city"
-                : (location?.precision ?? (row.address_city?.trim() ? "city" : "state")),
+              precision: present.city ? "city" : "state",
               lat: cityOnly ? coarsen(lat) : lat,
               lng: cityOnly ? coarsen(lng) : lng,
               course: row.course?.trim() || "Course not provided",

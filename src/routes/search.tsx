@@ -386,7 +386,7 @@ function Details({ alumnus }: { alumnus: PublicAlumnus }) {
       </div>
       <div className="flex gap-2">
         <MapPin className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-        <dd className="text-muted-foreground">{locationText ?? "Region is private"}</dd>
+        <dd className="text-muted-foreground">{locationText ?? "Location is private"}</dd>
       </div>
       {alumnus.mobile && (
         <div className="flex gap-2">

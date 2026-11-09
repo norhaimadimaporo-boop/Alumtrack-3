@@ -3,7 +3,7 @@ import type { RowDataPacket } from "mysql2/promise";
 import type { AlumniMapPin } from "../data/gis";
 import { getPool } from "./db.server";
 import { ensureSoftDeleteColumns } from "./soft-delete.server";
-import { resolveLocation } from "./geo";
+import { formatLocationLabel, resolvePresentAddress } from "./geo";
 import type { ProfileEmploymentStatus } from "./admin.types";
 
 type MapRow = RowDataPacket & {
@@ -28,6 +28,9 @@ type MapRow = RowDataPacket & {
   longitude: number | string | null;
   address_city: string | null;
   address_province: string | null;
+  address_country: string | null;
+  address_subdivision: string | null;
+  address_street: string | null;
   gis_show_workplace: number | null;
   gis_city_only: number | null;
 };
@@ -90,6 +93,8 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
               p.current_company, p.current_region, p.current_city, p.current_country,
               p.latitude, p.longitude,
               cur.city AS address_city, cur.province AS address_province,
+              cur.country AS address_country, cur.subdivision AS address_subdivision,
+              cur.street AS address_street,
               ps.gis_show_workplace, ps.gis_city_only
          FROM alumni_profiles p
          JOIN users u ON u.id = p.user_id AND u.is_active = 1 AND COALESCE(u.is_deleted, 0) = 0
@@ -108,34 +113,61 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
 
       const storedLat = toNumber(row.latitude);
       const storedLng = toNumber(row.longitude);
-      const hasStored = storedLat !== null && storedLng !== null;
-      const declaredCountry = row.current_country?.trim() ?? "";
+      const declaredCountry = row.current_country?.trim() || row.address_country?.trim() || "";
 
-      // Include the country so an overseas city without its country in the
-      // address ("Shanghai") still resolves to the right coordinates. Stored
-      // coordinates (from the Country → Province → City dropdowns) take priority.
-      const location = hasStored
-        ? null
-        : resolveLocation(
-            row.current_city?.trim() || row.address_city || declaredCountry,
-            [declaredCountry, row.address_province || row.current_region].filter(Boolean).join(", ") ||
-              null,
-          );
+      // STRICT present-address geocoding only: Country + Province/State + City
+      // (+ Subdivision only for the Philippines). The educational Region
+      // (current_region / BARMM) and Home Address never enter the query.
+      // Legacy CSV rows store street=city and city=country, so detect that
+      // layout before resolving.
+      const rawPresentCity = row.address_city?.trim() || row.current_city?.trim() || "";
+      const rawPresentProvince = row.address_province?.trim() || "";
+      const rawPresentSubdivision = row.address_subdivision?.trim() || "";
+      const streetText = row.address_street?.trim() || "";
+      let presentCity = rawPresentCity;
+      let presentCountry = row.address_country?.trim() || declaredCountry;
+      const looksLikeCountry =
+        presentCity !== "" &&
+        (presentCountry === "" || presentCity.toLowerCase() === presentCountry.toLowerCase());
+      if (streetText && looksLikeCountry && streetText.toLowerCase() !== presentCity.toLowerCase()) {
+        presentCountry = presentCity;
+        presentCity = streetText;
+      }
+      const present = {
+        country: presentCountry,
+        city: presentCity,
+        province: rawPresentProvince,
+        subdivision: rawPresentSubdivision,
+      };
+      const displayLabel = formatLocationLabel(present);
 
-      // A Philippine centroid is only a guess. Skip it when the profile is
-      // clearly overseas or when no coordinates were ever stored.
-      const guessedPhilippines = location !== null && !location.matched;
-      const philippineCountry = !declaredCountry || /^philippines?$/i.test(declaredCountry);
-      if (guessedPhilippines && !philippineCountry) continue;
+      // Stored dropdown coordinates are used only when they cannot be a
+      // Philippine fallback for an overseas present address.
+      const storedIsPhFallback =
+        storedLat !== null &&
+        storedLng !== null &&
+        ((Math.abs(storedLat - 12.8797) < 0.5 && Math.abs(storedLng - 121.774) < 0.5) ||
+          (storedLat >= 4 && storedLat <= 22 && storedLng >= 116 && storedLng <= 127.5)) &&
+        presentCountry !== "" &&
+        presentCountry.trim().toLowerCase() !== "philippines";
+      const presentLocation =
+        storedLat === null || storedLng === null || storedIsPhFallback
+          ? resolvePresentAddress(present)
+          : null;
 
       let lat = storedLat;
       let lng = storedLng;
-      if (lat === null || lng === null) {
-        if (!location) continue;
-        lat = location.lat;
-        lng = location.lng;
+      let pinCity = present.city || row.current_city?.trim() || "";
+      let pinProvince = present.province || "";
+      if (presentLocation) {
+        lat = presentLocation.lat;
+        lng = presentLocation.lng;
+        pinCity = present.city || presentLocation.city;
+        pinProvince = present.province || presentLocation.region;
       }
+      if (lat === null || lng === null) continue;
 
+      const pinCountry = present.country || presentLocation?.country || "Philippines";
       const employed = row.employment_status === "employed";
       const position = row.current_position?.trim();
       // Batch priority: Baccalaureate → Graduate → Post Graduate → stored
@@ -155,21 +187,11 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
         role: employed ? position || "Employed" : "Seeking employment",
         status: employed ? "Employed" : "Unemployed",
         company: employed && !cityOnly ? row.current_company?.trim() || null : null,
-        city:
-          row.current_city?.trim() ||
-          location?.city?.trim() ||
-          row.address_city?.trim() ||
-          declaredCountry ||
-          "Unknown",
-        region:
-          row.current_region?.trim() ||
-          location?.region?.trim() ||
-          row.address_province?.trim() ||
-          "",
-        country: declaredCountry || location?.country?.trim() || "Philippines",
-        precision: row.current_city?.trim()
-          ? "city"
-          : (location?.precision ?? (row.address_city?.trim() ? "city" : "state")),
+        city: pinCity || displayLabel || pinCountry || "Unknown",
+        // Province/State for PH labels; overseas popups hide this and show City, Country.
+        region: pinProvince,
+        country: pinCountry,
+        precision: pinCity ? "city" : "state",
         lat: cityOnly ? coarsen(lat) : lat,
         lng: cityOnly ? coarsen(lng) : lng,
         course: row.course?.trim() || "Course not provided",

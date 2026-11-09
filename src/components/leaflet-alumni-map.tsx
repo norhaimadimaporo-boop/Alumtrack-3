@@ -3,6 +3,7 @@ import { divIcon, latLngBounds, type DivIcon, type Map as LeafletMap } from "lea
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { MAP_VIEWS, type AlumniMapPin, type EmploymentStatus, type MapViewKey } from "@/data/gis";
+import { formatLocationLabel } from "@/lib/geo";
 
 const TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const TILE_ATTRIBUTION =
@@ -201,8 +202,7 @@ function SinglePinPopup({ pin }: { pin: AlumniMapPin }) {
             Location
           </dt>
           <dd className="min-w-0 font-semibold text-foreground">
-            {pin.city}, {pin.region}
-            <span className="block font-normal text-muted-foreground">{pin.country}</span>
+            {formatLocationLabel({ city: pin.city, province: pin.region, country: pin.country })}
           </dd>
         </div>
         <div className="flex gap-2">
@@ -231,8 +231,7 @@ function GroupedPinPopup({ group }: { group: PinGroup }) {
         {group.pins.length} alumni in {first.city}
       </p>
       <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-        {first.region ? `${first.region} · ` : ""}
-        {first.country}
+        {formatLocationLabel({ city: first.city, province: first.region, country: first.country })}
       </p>
       <p className="mt-1 text-[10px] font-semibold">
         <span className="text-success">{employed} employed</span>

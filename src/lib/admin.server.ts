@@ -4,7 +4,7 @@ import { getSessionUser, hashPassword, type AuthUser } from "./auth.server";
 import { getPool } from "./db.server";
 import { manilaClock, manilaDate } from "./manila-time";
 import { formatAddress, formatDate, fullName, calculateAge, relativeTime } from "./profile-format";
-import { savedLocation } from "./geo";
+import { formatLocationLabel, savedLocation } from "./geo";
 import { isAdminRole, type AdminRole } from "./session";
 import { ensureSoftDeleteColumns, notDeleted } from "./soft-delete.server";
 import type {
@@ -519,10 +519,11 @@ export async function listAdminAlumni(): Promise<AdminAlumniList> {
         employmentStatus: row.employment_status,
         job: row.current_position ?? currentEmployment?.position ?? "Not provided",
         company: row.current_company ?? currentEmployment?.company ?? "Not provided",
-        region:
-          row.current_region ||
-          formatAddress([row.current_city, row.current_province]) ||
-          "Not provided",
+        region: formatLocationLabel({
+          city: row.current_city,
+          province: row.current_province,
+          country: row.current_country,
+        }),
         verificationStatus: row.verification_status,
         verified: row.verification_status === "verified",
         createdAt: formatDate(row.created_at),

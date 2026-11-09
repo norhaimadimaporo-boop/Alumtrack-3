@@ -300,6 +300,8 @@ const FOREIGN_CITIES: Array<[string, string, string, number, number]> = [
   ["Yekaterinburg", "Sverdlovsk Oblast", "Russia", 56.8389, 60.6057],
   ["Vladivostok", "Primorsky Krai", "Russia", 43.1332, 131.9113],
   ["Kazan", "Tatarstan", "Russia", 55.7961, 49.1064],
+  ["Iskateley", "Nenets Autonomous Okrug", "Russia", 67.68026, 53.15117],
+  ["Uva", "Udmurtia", "Russia", 56.9908, 52.1852],
   // East and Southeast Asia
   ["Kaohsiung", "Kaohsiung", "Taiwan", 22.6273, 120.3014],
   ["Taichung", "Taichung", "Taiwan", 24.1477, 120.6736],
@@ -728,6 +730,172 @@ function findPlaceInSegments(
   return best ? { place: best.place, segment: best.segment } : null;
 }
 
+/** Canonical country key so aliases ("Kingdom of Saudi Arabia", "USA") match. */
+function canonicalCountryKey(country: string): string {
+  let key = normalize(country);
+  key = key.replace(/^(kingdom of|republic of|united states of|united kingdom of)\s+/, "");
+  const aliases: Record<string, string> = {
+    usa: "united states",
+    us: "united states",
+    uk: "united kingdom",
+    uae: "united arab emirates",
+    "united arab emirates": "united arab emirates",
+    ksa: "saudi arabia",
+    russia: "russia",
+    "russian federation": "russia",
+  };
+  return aliases[key] ?? key;
+}
+
+/** Legacy CSV rows store street=city and city=country; detect + swap. */
+export function normalizeLegacyPresent(present: PresentAddress & { street?: string }): PresentAddress {
+  let { country, city, province, subdivision, street } = {
+    country: present.country,
+    city: present.city,
+    province: present.province,
+    subdivision: present.subdivision ?? "",
+    street: (present as { street?: string }).street ?? "",
+  };
+  country = country.trim();
+  city = city.trim();
+  street = street.trim();
+  if (!street) return { country, city, province, subdivision };
+  const cityKey = canonicalCountryKey(city);
+  const countryKey = canonicalCountryKey(country);
+  const knownCountries = new Set([...FOREIGN_COUNTRY_INDEX.keys()].map((k) => canonicalCountryKey(k)));
+  const cityIsCountry =
+    Boolean(city) &&
+    (cityKey === countryKey || knownCountries.has(cityKey) || cityKey.endsWith(countryKey));
+  if (cityIsCountry && street.toLowerCase() !== city.toLowerCase()) {
+    country = city;
+    city = street;
+  }
+  return { country, city, province, subdivision };
+}
+
+/** True when the declared country is the Philippines (any casing/alias). */
+export function isPhilippinesCountryName(country: string | null | undefined): boolean {
+  const key = normalize(country);
+  return key === "philippines" || key === "ph" || key === "phil" || key === "republic of the philippines";
+}
+
+function isPhilippineCoords(lat: number, lng: number): boolean {
+  return lat >= 4 && lat <= 22 && lng >= 116 && lng <= 127.5;
+}
+
+function isPhFallbackCoords(lat: number, lng: number): boolean {
+  return Math.abs(lat - PH_FALLBACK.lat) < 0.5 && Math.abs(lng - PH_FALLBACK.lng) < 0.5;
+}
+
+/**
+ * Strict location label (GIS popups + alumni profiles). Never includes the
+ * educational Region (e.g. BARMM):
+ * - overseas: "City, Country" (e.g. "Iskateley, Russia")
+ * - Philippines: "City, Province, Philippines" (e.g. "Marawi City, Lanao del Sur, Philippines")
+ */
+export function formatLocationLabel(input: {
+  city?: string | null;
+  province?: string | null;
+  country?: string | null;
+}): string {
+  const city = (input.city ?? "").trim();
+  const province = (input.province ?? "").trim();
+  const country = (input.country ?? "").trim();
+  if (!city && !province && !country) return "Not provided";
+  if (isPhilippinesCountryName(country)) {
+    return [city, province, "Philippines"].filter(Boolean).join(", ");
+  }
+  if (country) return [city, country].filter(Boolean).join(", ");
+  // Unknown country: show the present city/province we were given.
+  return [city, province].filter(Boolean).join(", ");
+}
+
+export type PresentAddress = {
+  country: string;
+  city: string;
+  province: string;
+  subdivision?: string;
+};
+
+/**
+ * STRICT present-address-only geocoding.
+ * Uses ONLY Country + Province/State + City/Municipality + (Subdivision/
+ * Barangay ONLY when the country is the Philippines). It never consults the
+ * educational Region (BARMM etc.), the Home Address, or workplace addresses.
+ * When the declared country is not the Philippines, Philippine indexes and
+ * the Philippine fallback are never used — unknown overseas cities fall back
+ * to that country's own centroid, never to the Philippines.
+ */
+export function resolvePresentAddress(address: PresentAddress): ResolvedLocation | null {
+  const normalized = normalizeLegacyPresent(address);
+  const country = (normalized.country ?? "").trim();
+  const city = (normalized.city ?? "").trim();
+  const province = (normalized.province ?? "").trim();
+  const subdivision = (normalized.subdivision ?? "").trim();
+  if (!country && !city && !province && !subdivision) return null;
+
+  const declaredIsPh = isPhilippinesCountryName(country);
+  const declaredForeign = Boolean(country) && !declaredIsPh;
+
+  const cityKey = normalize(city);
+  const provinceKey = normalize(province);
+  const subdivisionKey = normalize(subdivision);
+  const countryKey = canonicalCountryKey(country);
+
+  const withPresentLabels = (place: Place, matched = true): ResolvedLocation =>
+    withLabels(
+      place,
+      city || place.city,
+      declaredForeign ? province || place.region : place.region,
+      matched,
+    );
+
+  if (declaredForeign) {
+    // 1. Exact foreign city in the declared country.
+    const cityPlace = cityKey ? FOREIGN_CITY_INDEX.get(cityKey) : undefined;
+    if (cityPlace && canonicalCountryKey(cityPlace.country) === countryKey)
+      return withPresentLabels(cityPlace);
+    // 2. City mentioned inside a longer present segment, restricted to the
+    //    declared country.
+    const inCity = findPlaceInSegments([city, province], (rank) => rank <= 1);
+    if (inCity && canonicalCountryKey(inCity.place.country) === countryKey)
+      return withPresentLabels(inCity.place);
+    // 3. Province/state in that country may disambiguate the city; the city
+    //    centroid is preferred when known, otherwise the country centroid
+    //    keeps the pin in the correct country (never the Philippines).
+    const countryPlace = countryKey ? FOREIGN_COUNTRY_INDEX.get(countryKey) : undefined;
+    if (countryPlace) return withPresentLabels(countryPlace, false);
+    // Unknown country name: no safe coordinates (do not guess the Philippines).
+    return null;
+  }
+
+  // Philippines (or country left blank for legacy rows).
+  if (cityKey) {
+    const place = PH_CITY_INDEX.get(cityKey);
+    if (place) return withPresentLabels(place);
+  }
+  if (provinceKey) {
+    const place = PH_PROVINCE_INDEX.get(provinceKey);
+    if (place) return withPresentLabels(place);
+  }
+  // Subdivision / Barangay is considered ONLY for Philippine addresses.
+  if (subdivisionKey) {
+    const place = PH_PROVINCE_INDEX.get(subdivisionKey);
+    if (place) return withPresentLabels(place);
+    const inSubdiv = findPlaceInSegments([subdivision], () => true);
+    if (inSubdiv) return withPresentLabels(inSubdiv.place);
+  }
+  // Longer present segments that embed a known PH place.
+  const local = findPlaceInSegments(
+    [city, province, subdivision].filter(Boolean),
+    () => true,
+  );
+  if (local) return withPresentLabels(local.place);
+  // Unknown municipality in PH: keep a country-level pin instead of dropping
+  // the record from the map entirely.
+  return withPresentLabels(PH_FALLBACK, false);
+}
+
 /**
  * Resolve a free-text city/province pair into map coordinates.
  *
@@ -736,11 +904,16 @@ function findPlaceInSegments(
  * `null` when there is no location text at all, or when the text looks like an
  * unrecognized overseas address — plotting those on the Philippines would be
  * worse than leaving the profile off the map.
+ * When `declaredCountry` is provided and is not the Philippines, Philippine
+ * indexes and the Philippine fallback are never used.
  */
 export function resolveLocation(
   cityInput: string | null | undefined,
   provinceInput: string | null | undefined,
+  declaredCountry?: string | null,
 ): ResolvedLocation | null {
+  const declared = (declaredCountry ?? "").trim();
+  const declaredForeign = Boolean(declared) && !isPhilippinesCountryName(declared);
   const cityParts = splitAddress(cityInput);
   const provinceParts = splitAddress(provinceInput);
   const segments = [...cityParts, ...provinceParts];
@@ -762,7 +935,10 @@ export function resolveLocation(
 
     for (const { index } of EXACT_INDEXES) {
       const place = index.get(key);
-      if (place) return withLabels(place, segment, "");
+      if (!place) continue;
+      // A declared overseas country never matches a Philippine entry.
+      if (declaredForeign && place.country === "Philippines") continue;
+      return withLabels(place, segment, "");
     }
   }
 
@@ -771,6 +947,12 @@ export function resolveLocation(
   if (overseas) return withLabels(overseas.place, "", "");
 
   // 3. Unknown overseas address — do not fall back to Philippine coordinates.
+  if (declaredForeign) {
+    const countryPlace = normalize(declared)
+      ? FOREIGN_COUNTRY_INDEX.get(normalize(declared))
+      : undefined;
+    return countryPlace ? withLabels(countryPlace, cityParts[0] ?? "", "", false) : null;
+  }
   if (hasInternationalPostalCode(rawText)) return null;
 
   // 4. Philippine place mentioned inside a longer segment.
@@ -788,23 +970,37 @@ function validCoordinate(value: number | null | undefined, limit: number): numbe
 }
 
 /**
- * Location to store for an address. Coordinates chosen from the Country →
- * Province → City dropdowns are used as-is so the map pin lands on the exact
- * place; a typed place falls back to the offline gazetteer.
+ * Location to store for a PRESENT address. Strictly uses Country + Province /
+ * State + City/Municipality + (Subdivision only for the Philippines) — never
+ * the educational Region, Home Address, or workplace. Stored dropdown
+ * coordinates are trusted only when they cannot be a Philippine fallback for
+ * an overseas address; otherwise the present address is re-resolved.
  */
 export function savedLocation(address: {
   country: string;
   city: string;
   province: string;
+  subdivision?: string;
   latitude?: number | null | undefined;
   longitude?: number | null | undefined;
 }): { country: string | null; lat: number | null; lng: number | null } {
   const country = address.country.trim() || null;
   const lat = validCoordinate(address.latitude, 90);
   const lng = validCoordinate(address.longitude, 180);
-  if (lat !== null && lng !== null) return { country, lat, lng };
+  const storedMismatch =
+    lat !== null &&
+    lng !== null &&
+    country !== null &&
+    !isPhilippinesCountryName(country) &&
+    (isPhFallbackCoords(lat, lng) || isPhilippineCoords(lat, lng));
+  if (lat !== null && lng !== null && !storedMismatch) return { country, lat, lng };
 
-  const location = resolveLocation(address.city, address.province);
+  const location = resolvePresentAddress({
+    country: address.country,
+    city: address.city,
+    province: address.province,
+    subdivision: address.subdivision ?? "",
+  });
   return {
     country: country ?? location?.country ?? null,
     lat: location?.lat ?? null,

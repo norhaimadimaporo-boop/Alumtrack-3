@@ -612,11 +612,10 @@ async function importRow(
   const homeRaw = get("homeAddress");
   const present = splitAddress(presentRaw);
   const home = splitAddress(homeRaw || presentRaw);
-  const location =
-    resolveAddressLocation(presentRaw) ??
-    resolveAddressLocation(homeRaw) ??
-    resolveAddressLocation(get("workplaceAddress")) ??
-    bestLocation(present.city || presentRaw, present.province);
+  // STRICT present-address-only geocoding: never fall back to Home Address
+  // or workplace. The CSV "Present Address" free text is resolved on its own
+  // (city/province/country segments); subdivision only matters for PH rows.
+  const location = resolveAddressLocation(presentRaw);
 
   const providedEmail = get("email").trim().toLowerCase();
   const contactEmail = (EMAIL_PATTERN.test(providedEmail) ? providedEmail : email).slice(0, 255);
