@@ -1,27 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { LayoutDashboard, Users, Megaphone, BarChart3, ShieldCheck, Activity } from "lucide-react";
-import { NotificationBell } from "@/components/notification-bell";
 import { useAdminName, useAdminRole } from "@/hooks/use-session";
 import type { AdminRole } from "@/lib/session";
-
-const NOTIFICATIONS = [
-  {
-    title: "5 alumni for verification",
-    body: "New registrations are waiting for review in the directory.",
-    time: "1 hour ago",
-  },
-  {
-    title: "Tracer form responses",
-    body: "23 alumni updated their employment records this week.",
-    time: "Today",
-  },
-  {
-    title: "Job posting expiring",
-    body: "IT Officer I — DICT Region X closes in 3 days.",
-    time: "2 days ago",
-  },
-];
 
 const ADMIN_RANK: Record<AdminRole, number> = { viewer: 0, standard: 1, head: 2 };
 
@@ -96,10 +77,7 @@ export function AdminShell({
             <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
             {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
           </div>
-          <div className="flex items-center gap-3">
-            {action}
-            <NotificationBell items={NOTIFICATIONS} />
-          </div>
+          {action && <div className="flex items-center gap-3">{action}</div>}
         </div>
         <div className="mt-6">{children}</div>
       </section>

@@ -134,7 +134,7 @@ function NewsPage() {
         ))}
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-6 grid max-h-[520px] overflow-y-auto gap-4 pr-2 md:grid-cols-2 lg:grid-cols-3">
         {listed.length === 0 && (
           <p className="col-span-full rounded-sm border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
             No posts in this category yet.

@@ -386,7 +386,7 @@ function AdminPosts() {
         {drafts === 1 ? "" : "s"}
       </p>
 
-      <ul className="mt-4 space-y-3">
+      <ul className="mt-4 max-h-[520px] overflow-y-auto space-y-3 pr-2">
         {rows.length === 0 && (
           <li className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
             No posts match this filter yet.

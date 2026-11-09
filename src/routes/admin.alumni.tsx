@@ -199,7 +199,9 @@ function AdminAlumni() {
   const [importBusy, setImportBusy] = useState(false);
   const [importResult, setImportResult] = useState<AdminImportResult | null>(null);
   const [exporting, setExporting] = useState(false);
-  const [fields, setFields] = useState<string[]>([...EXPORT_FIELDS]);
+  const [exportBatch, setExportBatch] = useState("");
+  const [exportCourse, setExportCourse] = useState("");
+  const [exportGender, setExportGender] = useState("");
   const [step, setStep] = useState(0);
   const [currentAddress, setCurrentAddress] = useState<AddressInput>(emptyAddress);
   const [homeAddress, setHomeAddress] = useState<AddressInput>(emptyAddress);
@@ -647,6 +649,66 @@ function AdminAlumni() {
     );
   });
 
+  // Cascading export filters — independent of the directory search filters above.
+  const exportRows = alumni.filter(
+    (a) =>
+      (exportBatch ? a.batch === exportBatch : true) &&
+      (exportCourse ? a.course === exportCourse : true) &&
+      (exportGender ? a.gender.trim() === exportGender : true),
+  );
+
+  const handleExport = () => {
+    if (exportRows.length === 0) return;
+    const escapeCsv = (value: string) => {
+      const text = String(value ?? "");
+      return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
+    const fieldValue = (a: Alumnus, field: string) => {
+      const employmentAddress =
+        a.employment.find((entry) => entry.isCurrent)?.companyAddress ?? "";
+      const values: Record<string, string> = {
+        "Last Name": a.lastName,
+        "First Name": a.firstName,
+        "Middle Name": a.middleName,
+        College: a.college,
+        "Degree / Course": a.course,
+        "Date Graduated": a.batch,
+        "Home Address": a.homeAddress,
+        "Employment and Business Address": employmentAddress,
+        Position: a.job,
+        "Present Address": a.currentAddress,
+        "MSU ID No.": idNumber(a),
+        "Email Address": a.contactEmail || a.email,
+        "Contact Number": a.mobileNumber,
+        Gender: a.gender,
+        Religion: a.religion,
+      };
+      return values[field] ?? "";
+    };
+    const lines = [
+      EXPORT_FIELDS.join(","),
+      ...exportRows.map((a) => EXPORT_FIELDS.map((f) => escapeCsv(fieldValue(a, f))).join(",")),
+    ];
+    const blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "alumtrack-alumni-export.csv";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    setExporting(false);
+    setExportBatch("");
+    setExportCourse("");
+    setExportGender("");
+    // Reset/clear the active directory filters after a successful export.
+    setQuery("");
+    setCourse("");
+    setBatch("");
+    setVerification("");
+  };
+
   const open = adding || editing !== null;
   const importRowCount = importFile
     ? Math.max(0, importFile.text.split(/\r?\n/).filter((line) => line.trim() !== "").length - 1)
@@ -744,7 +806,7 @@ function AdminAlumni() {
         {rows.length} record{rows.length === 1 ? "" : "s"} found
       </p>
 
-      <div className="mt-3 overflow-x-auto rounded-lg border border-border bg-card">
+      <div className="mt-3 max-h-[580px] overflow-y-auto overflow-x-auto rounded-lg border border-border bg-card">
         <table className="w-full min-w-[720px] text-left text-sm">
           <thead className="border-b border-border bg-muted/60">
             <tr className="text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -839,44 +901,68 @@ function AdminAlumni() {
         <Modal title="Export alumni records" onClose={() => setExporting(false)}>
           <div className="space-y-4">
             <p className="rounded-md border-l-4 border-highlight bg-muted/50 px-3 py-2 text-[11px] text-muted-foreground">
-              Select the information you want to include. Only the selected columns are written to
-              the CSV file, following the current search and filters.
+              Filter the alumni records to include in the CSV export. The count updates as you
+              change the filters.
             </p>
 
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setFields([...EXPORT_FIELDS])}
-                className="rounded-full border border-brand px-3 py-1 text-[11px] font-semibold text-brand hover:bg-brand hover:text-brand-foreground"
-              >
-                Select all
-              </button>
-              <button
-                onClick={() => setFields([])}
-                className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted-foreground hover:border-brand"
-              >
-                Clear all
-              </button>
+            <div className="grid gap-3">
+              <div>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Batch Year
+                </label>
+                <select
+                  value={exportBatch}
+                  onChange={(e) => setExportBatch(e.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+                >
+                  <option value="">All batch years</option>
+                  {batchOptions.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  College / Course
+                </label>
+                <select
+                  value={exportCourse}
+                  onChange={(e) => setExportCourse(e.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+                >
+                  <option value="">All courses</option>
+                  {courseOptions.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Gender
+                </label>
+                <select
+                  value={exportGender}
+                  onChange={(e) => setExportGender(e.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+                >
+                  <option value="">All genders</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-2">
-              {EXPORT_FIELDS.map((f) => {
-                const on = fields.includes(f);
-                return (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => setFields((s) => (on ? s.filter((x) => x !== f) : [...s, f]))}
-                    className={`rounded-md border px-3 py-2 text-left text-xs font-semibold transition-colors ${
-                      on
-                        ? "border-brand bg-brand/10 text-brand"
-                        : "border-border text-muted-foreground hover:border-brand"
-                    }`}
-                  >
-                    {f}
-                  </button>
-                );
-              })}
-            </div>
+            <p className="text-xs text-muted-foreground">
+              Showing{" "}
+              <span className="font-semibold text-foreground">{exportRows.length}</span> of{" "}
+              {alumni.length} alumni
+            </p>
 
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -886,12 +972,11 @@ function AdminAlumni() {
                 Cancel
               </button>
               <button
-                disabled={fields.length === 0}
-                onClick={() => setExporting(false)}
+                disabled={exportRows.length === 0}
+                onClick={handleExport}
                 className="inline-flex items-center justify-center gap-1.5 rounded-md bg-brand py-2.5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark disabled:opacity-40"
               >
-                <FileSpreadsheet className="size-4" /> Export {fields.length} column
-                {fields.length === 1 ? "" : "s"} to CSV
+                <FileSpreadsheet className="size-4" /> Export {exportRows.length} data from alumni
               </button>
             </div>
           </div>

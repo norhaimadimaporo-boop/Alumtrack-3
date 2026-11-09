@@ -10,25 +10,6 @@ import {
   MapPinned,
   Settings,
 } from "lucide-react";
-import { NotificationBell } from "@/components/notification-bell";
-
-const NOTIFICATIONS = [
-  {
-    title: "Profile verified",
-    body: "OARCC has verified your alumni record.",
-    time: "2 hours ago",
-  },
-  {
-    title: "New job offering",
-    body: "IT Officer I — DICT Region X is now accepting applicants.",
-    time: "Yesterday",
-  },
-  {
-    title: "Upcoming event",
-    body: "MSU Grand Alumni Homecoming 2026 registration is open.",
-    time: "3 days ago",
-  },
-];
 
 const links = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -93,7 +74,6 @@ export function AlumniShell({
             <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
             {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
           </div>
-          <NotificationBell items={NOTIFICATIONS} />
         </div>
         <div className="mt-6">{children}</div>
       </section>

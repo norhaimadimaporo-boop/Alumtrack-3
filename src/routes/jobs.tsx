@@ -176,7 +176,7 @@ function JobsPage() {
       subtitle="Click a job to view the full details, then apply."
       user={user ? { name: user.fullName, batch: user.batch, initials: user.initials } : undefined}
     >
-      <ul className="grid gap-3 md:grid-cols-2">
+      <ul className="grid max-h-[520px] overflow-y-auto gap-3 pr-2 md:grid-cols-2">
         {jobs.map((j) => (
           <li key={j.id}>
             <button
