@@ -133,7 +133,7 @@ function DashboardPage() {
         initials: userInitials,
       }}
     >
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="rounded-lg border border-border bg-card p-4">
             <s.icon className="size-4 text-brand" />
@@ -143,8 +143,8 @@ function DashboardPage() {
         ))}
       </div>
 
-      <div className="mt-4 rounded-lg border border-border bg-card p-5">
-        <div className="flex items-center justify-between gap-4">
+      <div className="mt-4 w-full rounded-lg border border-border bg-card p-5">
+        <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-sm font-semibold text-foreground">Complete your profile</h2>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -165,7 +165,7 @@ function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+      <div className="mt-4 grid w-full gap-4 lg:grid-cols-[1.5fr_1fr]">
         <div className="rounded-lg border border-border bg-card p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -181,10 +181,10 @@ function DashboardPage() {
           <p className="mt-1 text-[11px] text-muted-foreground">
             Batchmates at home and overseas — green pins are employed, yellow pins are unemployed.
           </p>
-          <div className="mt-4">
+          <div className="mt-4 w-full">
             <RealAlumniMap
               pins={pins}
-              heightClassName="h-[260px] sm:h-[320px] lg:h-[420px]"
+              heightClassName="w-full h-[300px] sm:h-[450px] lg:h-[420px]"
               compact
             />
           </div>
@@ -213,7 +213,7 @@ function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+      <div className="mt-4 grid w-full gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div className="rounded-lg border border-border bg-card p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-foreground">Latest posts</h2>

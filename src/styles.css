@@ -164,7 +164,19 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    overflow-x: hidden;
+    max-width: 100%;
   }
+}
+
+/* Hide the scrollbar while keeping the element horizontally scrollable
+   (mobile sub-navigation tabs). Animates nothing; scroll still works. */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }
 
 /* ---------- Interactive Leaflet alumni map ---------- */

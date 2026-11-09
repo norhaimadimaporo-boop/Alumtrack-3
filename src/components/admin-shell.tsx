@@ -40,7 +40,7 @@ export function AdminShell({
   );
 
   return (
-    <div className="mx-auto grid max-w-6xl items-start gap-8 overflow-x-clip px-4 pb-4 pt-6 md:grid-cols-[230px_1fr]">
+    <div className="mx-auto grid w-full max-w-6xl items-start gap-8 overflow-x-clip px-4 pb-4 pt-6 md:grid-cols-[230px_1fr]">
       <aside className="md:sticky md:top-[73px] md:self-start">
         <div className="rounded-lg border-t-4 border-brand bg-card p-4">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand">
@@ -54,7 +54,7 @@ export function AdminShell({
           </p>
         </div>
 
-        <nav className="mt-3 flex gap-1 overflow-x-auto rounded-lg border border-border bg-card p-2 md:flex-col md:overflow-visible">
+        <nav className="scrollbar-none mt-3 flex gap-1 overflow-x-auto whitespace-nowrap rounded-lg border border-border bg-card px-1 py-2 md:flex-col md:whitespace-normal md:overflow-visible">
           {visibleLinks.map((l) => (
             <Link
               key={l.to}

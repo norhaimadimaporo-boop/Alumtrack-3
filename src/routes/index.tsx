@@ -245,8 +245,8 @@ function Index() {
               Green pins are employed alumni, yellow pins are unemployed. Home cities and overseas
               workplaces are plotted — tap a pin for details.
             </p>
-            <div className="mt-4">
-              <RealAlumniMap pins={pins} heightClassName="h-[320px] sm:h-[420px] lg:h-[520px]" />
+            <div className="mt-4 w-full">
+              <RealAlumniMap pins={pins} heightClassName="w-full h-[300px] sm:h-[450px] lg:h-[520px]" />
             </div>
           </div>
 

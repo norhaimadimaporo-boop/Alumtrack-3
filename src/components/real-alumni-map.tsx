@@ -112,13 +112,13 @@ export function RealAlumniMap({
     <div
       className={
         fullscreen
-          ? `${className} fixed inset-0 z-50 flex flex-col overflow-hidden bg-background p-3 sm:p-4`
-          : `${className} w-full overflow-hidden`
+          ? `${className} fixed inset-0 z-50 flex w-full flex-col overflow-hidden bg-background p-3 sm:p-4`
+          : `${className} w-full max-w-full overflow-hidden`
       }
     >
       <div
         className={
-          "relative w-full overflow-hidden rounded-xl border border-border bg-secondary/40" +
+          "relative w-full max-w-full overflow-hidden rounded-xl border border-border bg-secondary/40" +
           (fullscreen ? " min-h-0 flex-1" : ` ${heightClassName}`)
         }
       >
@@ -203,12 +203,12 @@ export function RealAlumniMap({
 
       {/* Footer bar below/outside the map canvas: plotted count on the left,
           zoom + fullscreen controls on the right. Nothing overlaps the map. */}
-      <div className="mt-2 flex items-center justify-between gap-3">
-        <p className="min-w-0 text-[11px] text-muted-foreground">
+      <div className="mt-2 flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <p className="min-w-0 w-full text-[11px] text-muted-foreground sm:w-auto">
           {pins.length} alumni plotted · Tap pin for details
         </p>
 
-        <div role="group" aria-label="Map zoom" className="flex shrink-0 items-center gap-1">
+        <div role="group" aria-label="Map zoom" className="flex w-full shrink-0 items-center gap-1 sm:w-auto">
           <button
             type="button"
             onClick={() => mapRef.current?.zoomIn()}

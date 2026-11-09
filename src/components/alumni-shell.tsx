@@ -38,7 +38,7 @@ export function AlumniShell({
   const displayInitials = user?.initials || "AL";
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-8 px-4 py-4 md:grid-cols-[220px_1fr]">
+    <div className="mx-auto grid w-full max-w-6xl gap-8 overflow-x-clip px-4 py-4 md:grid-cols-[220px_1fr]">
       <aside className="md:sticky md:top-[73px] md:self-start">
         <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-bold text-brand-foreground">
@@ -52,7 +52,7 @@ export function AlumniShell({
           </span>
         </div>
 
-        <nav className="mt-3 flex gap-1 overflow-x-auto rounded-lg border border-border bg-card p-2 md:flex-col md:overflow-visible">
+        <nav className="scrollbar-none mt-3 flex gap-2 overflow-x-auto whitespace-nowrap rounded-lg border border-border bg-card px-1 py-2 md:flex-col md:whitespace-normal md:overflow-visible">
           {links.map((l) => (
             <Link
               key={l.to}
@@ -61,15 +61,15 @@ export function AlumniShell({
               inactiveProps={{ className: "text-foreground/80 hover:bg-muted" }}
               className="flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors"
             >
-              <l.icon className="size-4" />
+              <l.icon className="size-4 shrink-0" />
               <span className="whitespace-nowrap">{l.label}</span>
             </Link>
           ))}
         </nav>
       </aside>
 
-      <section>
-        <div className="flex flex-wrap items-start justify-between gap-3 border-l-4 border-brand pl-4">
+      <section className="w-full min-w-0">
+        <div className="flex w-full flex-col gap-3 border-l-4 border-brand pl-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
             {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}

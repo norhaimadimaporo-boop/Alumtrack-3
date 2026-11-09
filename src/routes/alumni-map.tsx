@@ -157,11 +157,11 @@ function AlumniMapPage() {
             </button>
           )}
 
-          <div className="mt-4">
+          <div className="mt-4 w-full">
             <RealAlumniMap
               pins={pins}
               focusView={focusForCountry(country)}
-              heightClassName="h-[360px] sm:h-[460px] lg:h-[560px]"
+              heightClassName="w-full h-[300px] sm:h-[450px] lg:h-[560px]"
             />
           </div>
           <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">

@@ -242,8 +242,8 @@ function SettingsPage() {
         </div>
       )}
 
-      <div className="space-y-4">
-        <section className="rounded-lg border border-border bg-card p-5">
+      <div className="w-full space-y-4">
+        <section className="w-full rounded-lg border border-border bg-card p-5">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Shield className="size-4 text-brand" /> Public profile visibility
           </h2>
@@ -253,7 +253,7 @@ function SettingsPage() {
           <div className="mt-2 divide-y divide-border">{renderRows(publicRows)}</div>
         </section>
 
-        <section className="rounded-lg border-t-4 border-brand bg-card p-5">
+        <section className="w-full rounded-lg border-t-4 border-brand bg-card p-5">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <MapPinned className="size-4 text-brand" /> GIS Alumni Map preferences
           </h2>
@@ -263,7 +263,7 @@ function SettingsPage() {
           <div className="mt-2 divide-y divide-border">{renderRows(gisRows)}</div>
         </section>
 
-        <section className="rounded-lg border border-border bg-card p-5">
+        <section className="w-full rounded-lg border border-border bg-card p-5">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Users className="size-4 text-brand" /> Verified alumni directory
           </h2>
@@ -273,14 +273,14 @@ function SettingsPage() {
           <div className="mt-2 divide-y divide-border">{renderRows(directoryRows)}</div>
         </section>
 
-        <section className="rounded-lg border border-border bg-card p-5">
+        <section className="w-full rounded-lg border border-border bg-card p-5">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Bell className="size-4 text-brand" /> Notifications
           </h2>
           <div className="mt-2 divide-y divide-border">{renderRows(notificationRows)}</div>
         </section>
 
-        <section className="rounded-lg border border-border bg-card p-5">
+        <section className="w-full rounded-lg border border-border bg-card p-5">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <KeyRound className="size-4 text-brand" /> Account security
           </h2>
@@ -295,7 +295,7 @@ function SettingsPage() {
           </button>
         </section>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-5">
+        <div className="flex w-full flex-col gap-3 rounded-lg border border-border bg-card p-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">
             {hasUnsavedChanges
               ? "You have unsaved changes. Save to apply them to the database, Search Alumni, and GIS Map."
