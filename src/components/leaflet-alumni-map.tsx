@@ -5,9 +5,12 @@ import "leaflet/dist/leaflet.css";
 import { MAP_VIEWS, type AlumniMapPin, type EmploymentStatus, type MapViewKey } from "@/data/gis";
 import { formatLocationLabel } from "@/lib/geo";
 
-const TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+const TILE_URL =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const LABEL_URL =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
 const TILE_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors';
+  'Esri, Maxar, Earthstar Geographics, and the GIS User Community';
 
 const STATUS_BADGE: Record<EmploymentStatus, { badge: string; dot: string }> = {
   Employed: {
@@ -303,6 +306,7 @@ export function LeafletAlumniMap({
       className={`relative z-0 w-full ${heightClassName}`}
     >
       <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} maxZoom={19} />
+      <TileLayer url={LABEL_URL} attribution={TILE_ATTRIBUTION} maxZoom={19} />
       <MapCamera viewKey={viewKey} pins={pins} />
       <MapBridge onMapReady={onMapReady} />
 
