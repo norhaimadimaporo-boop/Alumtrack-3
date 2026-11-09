@@ -217,6 +217,20 @@ export type AdminImportResult =
     }
   | { ok: false; message: string; errors: string[] };
 
+export type AdminImportHistoryItem = {
+  id: number;
+  filename: string;
+  totalRows: number;
+  createdRows: number;
+  updatedRows: number;
+  importedAt: string;
+  stamp: string;
+};
+
+export type AdminImportHistoryResult =
+  | { ok: true; history: AdminImportHistoryItem[] }
+  | { ok: false; message: string; history: [] };
+
 export type MyProfile = {
   userId: number;
   firstName: string;

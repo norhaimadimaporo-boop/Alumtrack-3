@@ -658,6 +658,29 @@ export async function deleteAlumniRecord(profileId: number): Promise<AdminAction
   }
 }
 
+/** Logs an alumni CSV export so it appears in Recent Admin Activity. */
+export async function recordAlumniExport(count: number): Promise<AdminActionResult> {
+  const access = await requireAdmin("viewer");
+  if (!access.ok) return { ok: false, message: access.message };
+  if (!Number.isInteger(count) || count < 0)
+    return { ok: false, message: "Invalid export count." };
+  try {
+    await getPool().execute(
+      `INSERT INTO activity_log (actor_user_id, actor_name, action, entity_type, entity_id)
+       VALUES (?, ?, ?, 'admin', NULL)`,
+      [
+        access.admin.id,
+        access.admin.fullName ?? access.admin.email,
+        `Exported alumni records — ${count} record${count === 1 ? "" : "s"} exported`,
+      ],
+    );
+    return { ok: true, message: "Export recorded in recent admin activity." };
+  } catch (error) {
+    console.error("[admin] Export log failed:", error);
+    return { ok: false, message: "The export could not be recorded right now." };
+  }
+}
+
 function splitFullName(fullName: string): { first: string; middle: string; last: string } {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return { first: "", middle: "", last: "" };

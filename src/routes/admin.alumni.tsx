@@ -9,6 +9,8 @@ import {
   BadgeCheck,
   Upload,
   FileSpreadsheet,
+  Loader2,
+  CheckCircle2,
   GraduationCap,
   Briefcase,
   Users,
@@ -28,11 +30,17 @@ import {
   createAlumni,
   deleteAlumni,
   getAdminAlumni,
+  getImportHistory,
   importAlumni,
+  logAlumniExport,
   updateAlumni,
   verifyAlumni,
 } from "@/lib/admin.functions";
-import type { AdminAlumnus as Alumnus, AdminImportResult } from "@/lib/admin.types";
+import type {
+  AdminAlumnus as Alumnus,
+  AdminImportHistoryItem,
+  AdminImportResult,
+} from "@/lib/admin.types";
 import { calculateAge, toIsoDate } from "@/lib/profile-format";
 import {
   primaryEducationRecord,
@@ -198,6 +206,8 @@ function AdminAlumni() {
   } | null>(null);
   const [importBusy, setImportBusy] = useState(false);
   const [importResult, setImportResult] = useState<AdminImportResult | null>(null);
+  const [importDone, setImportDone] = useState(false);
+  const [importHistory, setImportHistory] = useState<AdminImportHistoryItem[]>([]);
   const [exporting, setExporting] = useState(false);
   const [confirmingExport, setConfirmingExport] = useState(false);
   const [exportBatch, setExportBatch] = useState("");
@@ -531,14 +541,29 @@ function AdminAlumni() {
   const openImport = () => {
     setImportFile(null);
     setImportResult(null);
+    setImportDone(false);
     setImporting(true);
   };
+
+  useEffect(() => {
+    if (!importing) return;
+    let active = true;
+    void getImportHistory()
+      .then((result) => {
+        if (active && result.ok) setImportHistory(result.history);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [importing]);
 
   const closeImport = () => {
     if (importBusy) return;
     setImporting(false);
     setImportFile(null);
     setImportResult(null);
+    setImportDone(false);
   };
 
   const downloadImportTemplate = () => {
@@ -593,15 +618,20 @@ function AdminAlumni() {
   const handleImport = async () => {
     if (!importFile || importBusy) return;
 
+    const filename = importFile.name;
+    setImportDone(false);
     setImportBusy(true);
     setImportResult(null);
 
     try {
-      const result = await importAlumni({ data: { csv: importFile.text } });
+      const result = await importAlumni({ data: { csv: importFile.text, filename } });
       setImportResult(result);
       if (result.ok) {
+        setImportDone(true);
         setImportFile(null);
         await router.invalidate();
+        const historyResult = await getImportHistory();
+        if (historyResult.ok) setImportHistory(historyResult.history);
       }
     } catch (error) {
       console.error(error);
@@ -699,6 +729,8 @@ function AdminAlumni() {
     anchor.click();
     anchor.remove();
     URL.revokeObjectURL(url);
+    // Record the export so it appears in Recent Admin Activity.
+    void logAlumniExport({ data: { count: exportRows.length } }).catch(() => undefined);
     setConfirmingExport(false);
     setExporting(false);
     setExportBatch("");
@@ -1095,6 +1127,32 @@ function AdminAlumni() {
               >
                 <FileSpreadsheet className="size-3.5" /> Download CSV template
               </button>
+
+              <details className="mt-3">
+                <summary className="cursor-pointer text-xs font-semibold text-brand">
+                  Imported CSV files
+                </summary>
+                <div className="mt-2 max-h-40 overflow-y-auto rounded bg-muted/60 px-2 py-1.5">
+                  {importHistory.length === 0 ? (
+                    <p className="text-[11px] text-muted-foreground">
+                      No imported CSV files yet.
+                    </p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {importHistory.map((item) => (
+                        <li key={item.id} className="text-[11px] leading-snug text-muted-foreground">
+                          <span className="font-semibold text-foreground">{item.filename}</span>
+                          {" · "}
+                          {item.importedAt}
+                          {" · "}
+                          {item.createdRows + item.updatedRows} imported row
+                          {item.createdRows + item.updatedRows === 1 ? "" : "s"}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </details>
             </div>
 
             <label className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border px-4 py-6 text-center transition-colors hover:border-brand">
@@ -1180,6 +1238,51 @@ function AdminAlumni() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {canManage && importing && (importBusy || importDone) && (
+        <div
+          role="alertdialog"
+          aria-live="polite"
+          aria-label={
+            importDone
+              ? "Import completed successfully"
+              : "Importing alumni records, please wait"
+          }
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground/60 p-4"
+        >
+          <div className="w-full max-w-sm rounded-lg bg-card p-6 text-center shadow-xl">
+            {importBusy ? (
+              <>
+                <Loader2 className="mx-auto size-10 animate-spin text-brand" />
+                <p className="mt-4 text-sm font-bold text-foreground">Importing...</p>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  Please do not close or refresh this tab. Importing alumni records, please
+                  wait...
+                </p>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="mx-auto size-10 text-success" />
+                <p className="mt-4 text-sm font-bold text-foreground">
+                  Import completed successfully!
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  {importResult?.ok
+                    ? `${importResult.created + importResult.updated} alumni records added/updated.`
+                    : "Import finished."}
+                </p>
+                <button
+                  type="button"
+                  onClick={closeImport}
+                  className="mt-5 w-full rounded-md bg-brand py-2.5 text-sm font-semibold text-brand-foreground hover:bg-brand-dark"
+                >
+                  OK
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       {canManage && open && (

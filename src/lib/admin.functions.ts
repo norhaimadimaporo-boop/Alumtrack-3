@@ -9,11 +9,12 @@ import {
   getAdminDashboard,
   listAdminAccounts,
   listAdminAlumni,
+  recordAlumniExport,
   updateAdminAccount,
   updateAlumniRecord,
   verifyAlumniRecord,
 } from "./admin.server";
-import { importAlumniCsv } from "./admin-import.server";
+import { importAlumniCsv, listImportHistory } from "./admin-import.server";
 
 const recordSchema = z.object({
   id: z.number().int().positive(),
@@ -21,6 +22,11 @@ const recordSchema = z.object({
 
 const importSchema = z.object({
   csv: z.string().min(1, "Upload a CSV file first.").max(5_000_000, "The CSV file is too large."),
+  filename: z.string().max(255).optional(),
+});
+
+const exportSchema = z.object({
+  count: z.number().int().min(0),
 });
 
 const adminRoleSchema = z.enum(["head", "standard", "viewer"]);
@@ -142,7 +148,15 @@ export const createAlumni = createServerFn({ method: "POST" })
 
 export const importAlumni = createServerFn({ method: "POST" })
   .validator(importSchema)
-  .handler(async ({ data }) => importAlumniCsv(data.csv));
+  .handler(async ({ data }) => importAlumniCsv(data.csv, data.filename));
+
+export const getImportHistory = createServerFn({ method: "GET" }).handler(async () =>
+  listImportHistory(),
+);
+
+export const logAlumniExport = createServerFn({ method: "POST" })
+  .validator(exportSchema)
+  .handler(async ({ data }) => recordAlumniExport(data.count));
 
 export const getAdminAccounts = createServerFn({ method: "GET" }).handler(async () =>
   listAdminAccounts(),

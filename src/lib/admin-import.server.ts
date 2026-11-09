@@ -1,8 +1,9 @@
 import type { Connection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
-import type { AdminImportResult } from "./admin.types";
+import type { AdminImportHistoryResult, AdminImportResult } from "./admin.types";
 import { getSessionUser, hashPassword, type AuthUser } from "./auth.server";
 import { getPool } from "./db.server";
+import { manilaClock, manilaDate } from "./manila-time";
 import { resolveLocation, type ResolvedLocation } from "./geo";
 import { calculateAge, fullName } from "./profile-format";
 import { syncPrimaryEducation, syncPrimaryEmployment } from "./profile.server";
@@ -19,6 +20,79 @@ import type { EducationLevel, EmploymentInput } from "./registration.types";
 const DEFAULT_PASSWORD = "Alumtrack2026!";
 const MAX_ROWS = 5000;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+let importHistoryPromise: Promise<void> | null = null;
+
+/** Idempotently creates the alumni_imports history table. */
+export function ensureImportHistoryTable(): Promise<void> {
+  if (!importHistoryPromise) {
+    importHistoryPromise = (async () => {
+      await getPool().query(`
+        CREATE TABLE IF NOT EXISTS alumni_imports (
+          id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+          filename VARCHAR(255) NULL,
+          total_rows INT UNSIGNED NOT NULL DEFAULT 0,
+          created_rows INT UNSIGNED NOT NULL DEFAULT 0,
+          updated_rows INT UNSIGNED NOT NULL DEFAULT 0,
+          created_by BIGINT UNSIGNED NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (id),
+          KEY idx_imports_created (created_at),
+          CONSTRAINT fk_imports_actor FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
+        ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci
+      `);
+    })().catch((error) => {
+      importHistoryPromise = null;
+      throw error;
+    });
+  }
+  return importHistoryPromise;
+}
+
+type ImportHistoryRow = RowDataPacket & {
+  id: number;
+  filename: string | null;
+  total_rows: number;
+  created_rows: number;
+  updated_rows: number;
+  created_at: Date | string;
+};
+
+/** Recent imported CSV files for the collapsible history list. */
+export async function listImportHistory(): Promise<AdminImportHistoryResult> {
+  const admin = await getSessionUser();
+  if (!admin || admin.role !== "admin") {
+    return { ok: true, history: [] };
+  }
+  try {
+    await ensureImportHistoryTable();
+    const [rows] = await getPool().query<ImportHistoryRow[]>(
+      `SELECT id, filename, total_rows, created_rows, updated_rows, created_at
+         FROM alumni_imports
+        ORDER BY created_at DESC, id DESC
+        LIMIT 20`,
+    );
+    return {
+      ok: true,
+      history: rows.map((row) => {
+        const date = row.created_at instanceof Date ? row.created_at : new Date(row.created_at);
+        const valid = !Number.isNaN(date.getTime());
+        return {
+          id: row.id,
+          filename: row.filename?.trim() || "CSV import",
+          totalRows: Number(row.total_rows ?? 0),
+          createdRows: Number(row.created_rows ?? 0),
+          updatedRows: Number(row.updated_rows ?? 0),
+          importedAt: valid ? `${manilaDate(date)} · ${manilaClock(date)}` : "—",
+          stamp: valid ? date.toISOString() : "",
+        };
+      }),
+    };
+  } catch (error) {
+    console.error("[admin-import] History query failed:", error);
+    return { ok: false, message: "Import history could not be loaded right now.", history: [] };
+  }
+}
 
 type FieldKey =
   | "lastName"
@@ -843,7 +917,10 @@ async function importRow(
   return created ? "created" : "updated";
 }
 
-export async function importAlumniCsv(csv: string): Promise<AdminImportResult> {
+export async function importAlumniCsv(
+  csv: string,
+  filename?: string,
+): Promise<AdminImportResult> {
   const admin = await getSessionUser();
   if (!admin || admin.role !== "admin") {
     return {
@@ -941,6 +1018,23 @@ export async function importAlumniCsv(csv: string): Promise<AdminImportResult> {
           `Imported CSV — ${created} new, ${updated} updated`,
         ],
       );
+      try {
+        await ensureImportHistoryTable();
+        await pool.execute(
+          `INSERT INTO alumni_imports (filename, total_rows, created_rows, updated_rows, created_by)
+           VALUES (?, ?, ?, ?, ?)`,
+          [
+            (filename ?? "").trim().slice(0, 255) || "CSV import",
+            dataRows.length,
+            created,
+            updated,
+            admin.id,
+          ],
+        );
+      } catch (historyError) {
+        // History must never block a successful import.
+        console.error("[admin-import] History insert failed:", historyError);
+      }
     }
   } catch (error) {
     console.error("[admin-import] Import failed:", error);

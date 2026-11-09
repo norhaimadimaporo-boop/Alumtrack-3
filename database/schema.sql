@@ -194,6 +194,20 @@ CREATE TABLE IF NOT EXISTS activity_log (
   CONSTRAINT fk_activity_actor FOREIGN KEY (actor_user_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
+-- History of alumni CSV imports (collapsible list in the import modal).
+CREATE TABLE IF NOT EXISTS alumni_imports (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  filename VARCHAR(255) NULL,
+  total_rows INT UNSIGNED NOT NULL DEFAULT 0,
+  created_rows INT UNSIGNED NOT NULL DEFAULT 0,
+  updated_rows INT UNSIGNED NOT NULL DEFAULT 0,
+  created_by BIGINT UNSIGNED NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_imports_created (created_at),
+  CONSTRAINT fk_imports_actor FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS posts (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   is_deleted TINYINT(1) NOT NULL DEFAULT 0,

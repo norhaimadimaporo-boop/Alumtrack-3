@@ -22,6 +22,7 @@
     "deploy:env": "node scripts/configure-vercel-env.mjs",
     "db:geo": "node scripts/build-geo-data.mjs",
     "db:recycle": "node scripts/migrate-soft-delete.mjs",
+    "db:imports": "node scripts/migrate-import-history.mjs",
     "db:purge": "node scripts/purge-recycle-bin.mjs",
     "db:address-country": "node scripts/migrate-address-country.mjs"
   },
