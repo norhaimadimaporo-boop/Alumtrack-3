@@ -13,13 +13,18 @@ CREATE TABLE IF NOT EXISTS users (
   admin_role ENUM('head', 'standard', 'viewer') NULL,
   full_name VARCHAR(150) NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
+  -- Soft delete (Head Admin Recycle Bin): 1 = binned, hidden from live UIs.
+  is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+  deleted_at DATETIME NULL,
   last_login_at DATETIME NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_users_email (email),
   KEY idx_users_role (role),
-  KEY idx_users_admin_role (admin_role)
+  KEY idx_users_admin_role (admin_role),
+  KEY idx_users_is_deleted (is_deleted),
+  KEY idx_users_deleted_at (deleted_at)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -37,6 +42,8 @@ CREATE TABLE IF NOT EXISTS sessions (
 -- the profile and its related records below in a single transaction.
 CREATE TABLE IF NOT EXISTS alumni_profiles (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+  deleted_at DATETIME NULL,
   user_id BIGINT UNSIGNED NOT NULL,
   last_name VARCHAR(100) NOT NULL,
   first_name VARCHAR(100) NOT NULL,
@@ -72,6 +79,8 @@ CREATE TABLE IF NOT EXISTS alumni_profiles (
   KEY idx_profiles_verification (verification_status),
   KEY idx_profiles_employment (employment_status),
   KEY idx_profiles_batch (batch_year),
+  KEY idx_alumni_profiles_is_deleted (is_deleted),
+  KEY idx_alumni_profiles_deleted_at (deleted_at),
   CONSTRAINT fk_profiles_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
   CONSTRAINT fk_profiles_verifier FOREIGN KEY (verified_by) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
@@ -187,6 +196,8 @@ CREATE TABLE IF NOT EXISTS activity_log (
 
 CREATE TABLE IF NOT EXISTS posts (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+  deleted_at DATETIME NULL,
   type ENUM('Announcement', 'News / Event', 'Job Offering') NOT NULL,
   title VARCHAR(255) NOT NULL,
   content TEXT NULL,
@@ -210,5 +221,7 @@ CREATE TABLE IF NOT EXISTS posts (
   UNIQUE KEY uq_posts_title (title),
   KEY idx_posts_status (status),
   KEY idx_posts_type (type),
+  KEY idx_posts_is_deleted (is_deleted),
+  KEY idx_posts_deleted_at (deleted_at),
   CONSTRAINT fk_posts_author FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;

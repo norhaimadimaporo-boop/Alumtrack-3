@@ -2,6 +2,7 @@ import type { RowDataPacket } from "mysql2/promise";
 
 import { requireAdmin } from "./admin.server";
 import { getPool } from "./db.server";
+import { ensureSoftDeleteColumns } from "./soft-delete.server";
 import { manilaClock, manilaDate } from "./manila-time";
 import { fullName } from "./profile-format";
 import type { SystemUsageData, SystemUsageResult } from "./usage.types";
@@ -45,20 +46,21 @@ export async function getSystemUsage(): Promise<SystemUsageResult> {
   const canViewAccessLogs = access.admin.adminRole === "head";
 
   try {
+    await ensureSoftDeleteColumns();
     const pool = getPool();
     const [[counts], [logRows]] = await Promise.all([
       pool.query<CountRow[]>(
         `SELECT
            (SELECT COUNT(DISTINCT user_id) FROM sessions WHERE expires_at > UTC_TIMESTAMP()) AS active_sessions,
-           (SELECT COUNT(*) FROM users WHERE DATE(CONVERT_TZ(last_login_at, '+00:00', '+08:00')) = DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '+08:00'))) AS logins_today,
+           (SELECT COUNT(*) FROM users WHERE COALESCE(is_deleted, 0) = 0 AND DATE(CONVERT_TZ(last_login_at, '+00:00', '+08:00')) = DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '+08:00'))) AS logins_today,
            (SELECT COUNT(DISTINCT p.current_region)
               FROM sessions s
-              JOIN alumni_profiles p ON p.user_id = s.user_id
+              JOIN alumni_profiles p ON p.user_id = s.user_id AND COALESCE(p.is_deleted, 0) = 0
              WHERE s.expires_at > UTC_TIMESTAMP()
                AND p.current_region IS NOT NULL AND TRIM(p.current_region) <> '') AS regions,
            (SELECT COUNT(DISTINCT s.user_id)
               FROM sessions s
-              JOIN alumni_profiles p ON p.user_id = s.user_id
+              JOIN alumni_profiles p ON p.user_id = s.user_id AND COALESCE(p.is_deleted, 0) = 0
              WHERE s.expires_at > UTC_TIMESTAMP()
                AND p.current_country IS NOT NULL AND TRIM(p.current_country) <> ''
                AND LOWER(TRIM(p.current_country)) NOT LIKE '%philippines%') AS overseas`,
@@ -73,8 +75,8 @@ export async function getSystemUsage(): Promise<SystemUsageResult> {
                     cur.city AS address_city, cur.province AS address_province,
                     s.expires_at, s.created_at
                FROM sessions s
-               JOIN users u ON u.id = s.user_id
-          LEFT JOIN alumni_profiles p ON p.user_id = s.user_id
+               JOIN users u ON u.id = s.user_id AND COALESCE(u.is_deleted, 0) = 0
+          LEFT JOIN alumni_profiles p ON p.user_id = s.user_id AND COALESCE(p.is_deleted, 0) = 0
           LEFT JOIN alumni_addresses cur ON cur.user_id = s.user_id AND cur.kind = 'current'
               ORDER BY s.created_at DESC, s.user_id ASC
               LIMIT 200`,

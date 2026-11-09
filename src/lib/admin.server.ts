@@ -6,6 +6,7 @@ import { manilaClock, manilaDate } from "./manila-time";
 import { formatAddress, formatDate, fullName, calculateAge, relativeTime } from "./profile-format";
 import { savedLocation } from "./geo";
 import { isAdminRole, type AdminRole } from "./session";
+import { ensureSoftDeleteColumns, notDeleted } from "./soft-delete.server";
 import type {
   AdminAccount,
   AdminAccountInput,
@@ -241,17 +242,18 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
   if (!access.ok) return { ok: false, message: access.message };
 
   try {
+    await ensureSoftDeleteColumns();
     const pool = getPool();
 
     const [[counts], [activityRows], [recentRows]] = await Promise.all([
       pool.query<CountRow[]>(
         `SELECT
-           (SELECT COUNT(*) FROM alumni_profiles) AS registered,
-           (SELECT COUNT(*) FROM alumni_profiles WHERE verification_status = 'pending') AS pending,
-           (SELECT COUNT(*) FROM alumni_profiles WHERE verification_status = 'verified') AS verified,
-           (SELECT COUNT(*) FROM alumni_profiles WHERE employment_status = 'employed') AS employed,
-           (SELECT COUNT(*) FROM posts WHERE status = 'Published') AS active_posts,
-           (SELECT COUNT(*) FROM users WHERE role = 'admin' AND is_active = 1) AS admins`,
+           (SELECT COUNT(*) FROM alumni_profiles WHERE ${notDeleted("")}) AS registered,
+           (SELECT COUNT(*) FROM alumni_profiles WHERE verification_status = 'pending' AND ${notDeleted("")}) AS pending,
+           (SELECT COUNT(*) FROM alumni_profiles WHERE verification_status = 'verified' AND ${notDeleted("")}) AS verified,
+           (SELECT COUNT(*) FROM alumni_profiles WHERE employment_status = 'employed' AND ${notDeleted("")}) AS employed,
+           (SELECT COUNT(*) FROM posts WHERE status = 'Published' AND ${notDeleted("")}) AS active_posts,
+           (SELECT COUNT(*) FROM users WHERE role = 'admin' AND is_active = 1 AND ${notDeleted("")}) AS admins`,
       ),
       pool.query<ActivityRow[]>(
         `SELECT id, actor_name, action, entity_type, created_at
@@ -275,6 +277,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
                   ORDER BY graduated_on DESC LIMIT 1) AS postgrad_grad_year,
                 employment_status, verification_status, created_at
            FROM alumni_profiles
+          WHERE COALESCE(is_deleted, 0) = 0
           ORDER BY created_at DESC, id DESC
           LIMIT 5`,
       ),
@@ -358,6 +361,7 @@ export async function listAdminAlumni(): Promise<AdminAlumniList> {
   if (!access.ok) return { ok: false, message: access.message };
 
   try {
+    await ensureSoftDeleteColumns();
     const pool = getPool();
 
     const [rows] = await pool.query<AlumniRow[]>(
@@ -390,9 +394,10 @@ export async function listAdminAlumni(): Promise<AdminAlumniList> {
               home.province AS home_province, home.country AS home_country,
               home.zip_code AS home_zip_code
          FROM alumni_profiles p
-         JOIN users u ON u.id = p.user_id
+         JOIN users u ON u.id = p.user_id AND COALESCE(u.is_deleted, 0) = 0
     LEFT JOIN alumni_addresses cur ON cur.user_id = p.user_id AND cur.kind = 'current'
     LEFT JOIN alumni_addresses home ON home.user_id = p.user_id AND home.kind = 'home'
+        WHERE COALESCE(p.is_deleted, 0) = 0
         ORDER BY p.created_at DESC, p.id DESC`,
     );
 
@@ -542,10 +547,11 @@ export async function listAdminAlumni(): Promise<AdminAlumniList> {
 }
 
 async function findProfileOwner(profileId: number): Promise<ProfileOwnerRow | null> {
+  await ensureSoftDeleteColumns();
   const [rows] = await getPool().execute<ProfileOwnerRow[]>(
     `SELECT p.user_id, p.first_name, p.middle_name, p.last_name
        FROM alumni_profiles p
-      WHERE p.id = ?
+      WHERE p.id = ? AND COALESCE(p.is_deleted, 0) = 0
       LIMIT 1`,
     [profileId],
   );
@@ -603,10 +609,11 @@ export async function deleteAlumniRecord(profileId: number): Promise<AdminAction
   const connection = await pool.getConnection();
 
   try {
+    await ensureSoftDeleteColumns();
     const [rows] = await connection.execute<ProfileOwnerRow[]>(
       `SELECT p.user_id, p.first_name, p.middle_name, p.last_name
          FROM alumni_profiles p
-        WHERE p.id = ?
+        WHERE p.id = ? AND COALESCE(p.is_deleted, 0) = 0
         LIMIT 1`,
       [profileId],
     );
@@ -617,15 +624,21 @@ export async function deleteAlumniRecord(profileId: number): Promise<AdminAction
 
     await connection.beginTransaction();
 
-    const [result] = await connection.execute<ResultSetHeader>(
-      "DELETE FROM users WHERE id = ? AND role = 'alumni'",
-      [owner.user_id],
+    // Soft delete: keep the rows for the Head Admin Recycle Bin (7-day purge).
+    const [profileResult] = await connection.execute<ResultSetHeader>(
+      `UPDATE alumni_profiles SET is_deleted = 1, deleted_at = UTC_TIMESTAMP()
+        WHERE id = ? AND COALESCE(is_deleted, 0) = 0`,
+      [profileId],
     );
-
-    if (result.affectedRows === 0) {
+    if (profileResult.affectedRows === 0) {
       await connection.rollback();
       return { ok: false, message: "That alumni account no longer exists." };
     }
+    await connection.execute(
+      `UPDATE users SET is_deleted = 1, deleted_at = UTC_TIMESTAMP()
+        WHERE id = ? AND role = 'alumni'`,
+      [owner.user_id],
+    );
 
     await connection.execute(
       `INSERT INTO activity_log (actor_user_id, actor_name, action, entity_type, entity_id)
@@ -1036,6 +1049,7 @@ async function countActiveHeads(excludeId: number): Promise<number> {
       WHERE role = 'admin'
         AND admin_role = 'head'
         AND is_active = 1
+        AND COALESCE(is_deleted, 0) = 0
         AND id <> ?`,
     [excludeId],
   );
@@ -1055,10 +1069,12 @@ export async function listAdminAccounts(): Promise<AdminAccountList> {
   if (!access.ok) return { ok: false, message: access.message };
 
   try {
+    await ensureSoftDeleteColumns();
     const [rows] = await getPool().query<AdminAccountRow[]>(
       `SELECT id, email, full_name, admin_role, is_active, created_at, last_login_at
          FROM users
         WHERE role = 'admin'
+          AND COALESCE(is_deleted, 0) = 0
         ORDER BY FIELD(admin_role, 'head', 'standard', 'viewer'), created_at ASC, id ASC`,
     );
 
@@ -1220,11 +1236,12 @@ export async function deleteAdminAccount(id: number): Promise<AdminActionResult>
   }
 
   try {
+    await ensureSoftDeleteColumns();
     const pool = getPool();
     const [rows] = await pool.execute<AdminAccountRow[]>(
       `SELECT id, email, full_name, admin_role, is_active, created_at, last_login_at
          FROM users
-        WHERE id = ? AND role = 'admin'
+        WHERE id = ? AND role = 'admin' AND COALESCE(is_deleted, 0) = 0
         LIMIT 1`,
       [id],
     );
@@ -1239,7 +1256,12 @@ export async function deleteAdminAccount(id: number): Promise<AdminActionResult>
       }
     }
 
-    await pool.execute("DELETE FROM users WHERE id = ? AND role = 'admin'", [id]);
+    // Soft delete: restorable from the Head Admin Recycle Bin for 7 days.
+    await pool.execute(
+      `UPDATE users SET is_deleted = 1, deleted_at = UTC_TIMESTAMP()
+        WHERE id = ? AND role = 'admin'`,
+      [id],
+    );
     await logAdminActivity(
       access.admin,
       `Deleted admin account — ${target.full_name ?? target.email}`,

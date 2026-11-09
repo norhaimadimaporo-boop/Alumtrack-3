@@ -2,6 +2,7 @@ import type { RowDataPacket } from "mysql2/promise";
 
 import { getPool } from "./db.server";
 import { manilaDate } from "./manila-time";
+import { ensureSoftDeleteColumns } from "./soft-delete.server";
 import type { PublicStats, PublicStatsResult } from "./public-stats.types";
 
 type EmploymentCountsRow = RowDataPacket & {
@@ -32,7 +33,7 @@ type SectorRow = RowDataPacket & {
 };
 
 const VERIFIED_ACTIVE =
-  "p.verification_status = 'verified' AND u.is_active = 1";
+  "p.verification_status = 'verified' AND u.is_active = 1 AND COALESCE(p.is_deleted, 0) = 0 AND COALESCE(u.is_deleted, 0) = 0";
 
 /** Friendly labels for the `alumni_employment.sector` enum. */
 function industryLabel(sector: string): string {
@@ -61,6 +62,7 @@ function industryLabel(sector: string): string {
  */
 export async function getPublicStats(): Promise<PublicStatsResult> {
   const currentYear = Number(manilaDate(new Date()).slice(0, 4)) || new Date().getFullYear();
+  await ensureSoftDeleteColumns();
   const pool = getPool();
 
   try {
@@ -123,6 +125,7 @@ export async function getPublicStats(): Promise<PublicStatsResult> {
         `SELECT COUNT(*) AS n
            FROM posts
           WHERE status = 'Published'
+            AND COALESCE(is_deleted, 0) = 0
             AND type = 'News / Event'
             AND YEAR(COALESCE(posted_at, CONVERT_TZ(created_at, @@session.time_zone, '+08:00'))) = ?`,
         [currentYear],

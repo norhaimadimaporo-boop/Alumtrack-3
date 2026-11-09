@@ -2,6 +2,7 @@ import type { RowDataPacket } from "mysql2/promise";
 
 import type { AlumniMapPin } from "../data/gis";
 import { getPool } from "./db.server";
+import { ensureSoftDeleteColumns } from "./soft-delete.server";
 import { resolveLocation } from "./geo";
 import type { ProfileEmploymentStatus } from "./admin.types";
 
@@ -69,6 +70,7 @@ function toBatchYear(value: number | string | null): string {
  */
 export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
   try {
+    await ensureSoftDeleteColumns();
     const [rows] = await getPool().query<MapRow[]>(
       `SELECT p.id, p.user_id, p.first_name, p.middle_name, p.last_name,
               p.course, p.batch_year,
@@ -90,10 +92,10 @@ export async function listAlumniMapPins(): Promise<AlumniMapPinsResult> {
               cur.city AS address_city, cur.province AS address_province,
               ps.gis_show_workplace, ps.gis_city_only
          FROM alumni_profiles p
-         JOIN users u ON u.id = p.user_id AND u.is_active = 1
+         JOIN users u ON u.id = p.user_id AND u.is_active = 1 AND COALESCE(u.is_deleted, 0) = 0
     LEFT JOIN alumni_addresses cur ON cur.user_id = p.user_id AND cur.kind = 'current'
     LEFT JOIN alumni_privacy_settings ps ON ps.user_id = p.user_id
-        WHERE p.verification_status = 'verified'
+        WHERE p.verification_status = 'verified' AND COALESCE(p.is_deleted, 0) = 0
      ORDER BY p.last_name ASC, p.first_name ASC`,
     );
 

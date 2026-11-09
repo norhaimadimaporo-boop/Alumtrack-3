@@ -4,6 +4,7 @@ import type { RowDataPacket } from "mysql2/promise";
 import { getRequestHeader, setResponseHeader } from "@tanstack/react-start/server";
 
 import { getPool } from "./db.server";
+import { ensureSoftDeleteColumns } from "./soft-delete.server";
 import type { AdminRole, Role } from "./session";
 
 const scrypt = promisify(scryptCallback) as (
@@ -38,6 +39,7 @@ type UserRow = RowDataPacket & {
   admin_role: AdminRole | null;
   full_name: string | null;
   is_active: number;
+  is_deleted?: number | boolean | null;
   verification_status: "pending" | "verified" | "rejected" | null;
 };
 
@@ -136,10 +138,11 @@ export async function loginUser(input: { email: string; password: string; role: 
   const email = input.email.trim().toLowerCase();
 
   try {
+    await ensureSoftDeleteColumns();
     const pool = getPool();
 
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT u.id, u.email, u.password_hash, u.role, u.admin_role, u.full_name, u.is_active,
+      `SELECT u.id, u.email, u.password_hash, u.role, u.admin_role, u.full_name, u.is_active, u.is_deleted,
               p.verification_status
          FROM users u
          LEFT JOIN alumni_profiles p ON p.user_id = u.id
@@ -159,6 +162,10 @@ export async function loginUser(input: { email: string; password: string; role: 
         ok: false as const,
         message: "This account has been deactivated. Contact the OARCC for assistance.",
       };
+    }
+
+    if (user.is_deleted === 1 || user.is_deleted === true) {
+      return invalidCredentials();
     }
 
     const valid = await verifyPassword(input.password, user.password_hash);
@@ -213,6 +220,7 @@ export async function getSessionUser(): Promise<AuthUser | null> {
   if (!token) return null;
 
   try {
+    await ensureSoftDeleteColumns();
     const [rows] = await getPool().execute<RowDataPacket[]>(
       `SELECT u.id, u.email, u.role, u.admin_role, u.full_name
          FROM sessions s
@@ -220,6 +228,7 @@ export async function getSessionUser(): Promise<AuthUser | null> {
         WHERE s.token_hash = ?
           AND s.expires_at > UTC_TIMESTAMP()
           AND u.is_active = 1
+          AND COALESCE(u.is_deleted, 0) = 0
         LIMIT 1`,
       [hashToken(token)],
     );

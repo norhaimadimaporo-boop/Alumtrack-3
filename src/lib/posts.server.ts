@@ -5,6 +5,7 @@ import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { requireAdmin } from "./admin.server";
 import { getSessionUser } from "./auth.server";
 import { getPool } from "./db.server";
+import { ensureSoftDeleteColumns } from "./soft-delete.server";
 import { formatDate } from "./profile-format";
 import { postExcerpt } from "./posts.types";
 import type {
@@ -219,13 +220,14 @@ export async function listPublishedPosts(
   options: { limit?: number; includeJobs?: boolean } = {},
 ): Promise<PostListResult> {
   try {
+    await ensureSoftDeleteColumns();
     const limit = options.limit;
     const safeLimit = Number.isFinite(limit) && (limit ?? 0) > 0 ? Math.min(Math.floor(limit!), 100) : null;
     const jobFilter = options.includeJobs ? "" : "AND p.type <> 'Job Offering'";
     const [rows] = await getPool().query<PostRow[]>(
       `SELECT ${SELECT_COLUMNS}
          ${FROM_POSTS}
-        WHERE p.status = 'Published' ${jobFilter}
+        WHERE p.status = 'Published' AND COALESCE(p.is_deleted, 0) = 0 ${jobFilter}
         ORDER BY p.featured DESC, COALESCE(p.posted_at, DATE(p.created_at)) DESC, p.id DESC
         ${safeLimit ? "LIMIT ?" : ""}`,
       safeLimit ? [safeLimit] : [],
@@ -247,9 +249,11 @@ export async function listAdminPosts(): Promise<PostListResult> {
   if (!access.ok) return { ok: false, posts: [], message: access.message };
 
   try {
+    await ensureSoftDeleteColumns();
     const [rows] = await getPool().query<PostRow[]>(
       `SELECT ${SELECT_COLUMNS}
          ${FROM_POSTS}
+        WHERE COALESCE(p.is_deleted, 0) = 0
         ORDER BY
           CASE p.status WHEN 'Published' THEN 0 ELSE 1 END,
           p.featured DESC,
@@ -327,8 +331,9 @@ export async function updatePost(input: PostInput): Promise<PostActionResult> {
   const post = validated.input;
 
   try {
+    await ensureSoftDeleteColumns();
     const [existing] = await getPool().execute<PostRow[]>(
-      `SELECT images ${FROM_POSTS} WHERE p.id = ?`,
+      `SELECT images ${FROM_POSTS} WHERE p.id = ? AND COALESCE(p.is_deleted, 0) = 0`,
       [input.id],
     );
     if (existing.length === 0) return { ok: false, message: "That post no longer exists." };
@@ -386,8 +391,9 @@ export async function setPostStatus(id: number, status: PostStatus): Promise<Pos
   if (!isPostStatus(status)) return { ok: false, message: "Choose a valid post status." };
 
   try {
+    await ensureSoftDeleteColumns();
     const [result] = await getPool().execute<ResultSetHeader>(
-      `UPDATE posts SET status = ?, updated_by = ? WHERE id = ?`,
+      `UPDATE posts SET status = ?, updated_by = ? WHERE id = ? AND COALESCE(is_deleted, 0) = 0`,
       [status, access.admin.id, id],
     );
     if (result.affectedRows === 0) return { ok: false, message: "That post no longer exists." };
@@ -408,16 +414,19 @@ export async function deletePost(id: number): Promise<PostActionResult> {
   if (!access.ok) return { ok: false, message: access.message || MESSAGES.forbidden };
 
   try {
+    await ensureSoftDeleteColumns();
     const [existing] = await getPool().execute<PostRow[]>(
-      `SELECT p.title, p.images FROM posts p WHERE p.id = ?`,
+      `SELECT p.title, p.images FROM posts p WHERE p.id = ? AND COALESCE(p.is_deleted, 0) = 0`,
       [id],
     );
     if (existing.length === 0) return { ok: false, message: "That post no longer exists." };
 
     const title = existing[0]?.title ?? `#${id}`;
-    const images = parseImages(existing[0]?.images ?? null);
-    await getPool().execute(`DELETE FROM posts WHERE id = ?`, [id]);
-    await deleteBlobs(images);
+    // Soft delete: keep images/row for the Head Admin Recycle Bin (7-day purge).
+    await getPool().execute(
+      `UPDATE posts SET is_deleted = 1, deleted_at = UTC_TIMESTAMP() WHERE id = ?`,
+      [id],
+    );
     await logPostActivity(access.admin, `Deleted post: ${title}`, null);
     return { ok: true, message: "Post deleted." };
   } catch (error) {
