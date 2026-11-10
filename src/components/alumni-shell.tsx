@@ -62,7 +62,7 @@ export function AlumniSidebar({
 
   return (
     <aside className="w-full shrink-0 md:sticky md:top-[73px] md:w-64 md:self-start">
-      <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-brand p-3 text-white shadow-sm">
+      <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-[#5A0012]/85 p-3 text-white shadow-sm backdrop-blur-sm">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-highlight text-sm font-bold text-highlight-foreground">
           {displayInitials}
         </span>
@@ -74,7 +74,7 @@ export function AlumniSidebar({
 
       <nav
         aria-label="Alumni portal navigation"
-        className="mt-3 grid w-full min-w-0 grid-cols-3 gap-1.5 rounded-2xl border border-white/15 bg-brand p-2 shadow-sm md:flex md:flex-col md:overflow-visible"
+        className="mt-3 grid w-full min-w-0 grid-cols-3 gap-1.5 rounded-2xl border border-white/15 bg-[#5A0012]/85 p-2 text-white shadow-sm backdrop-blur-sm md:flex md:flex-col md:overflow-visible"
       >
         {links.map((l) => (
           <Link

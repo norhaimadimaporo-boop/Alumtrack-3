@@ -36,8 +36,8 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-brand px-2 pt-2 sm:px-4">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 rounded-2xl border border-white/15 bg-brand px-3 py-3 shadow-sm sm:px-4">
+    <header className="sticky top-0 z-50 bg-[#5A0012]/85 px-2 pt-2 backdrop-blur-sm sm:px-4">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 rounded-2xl border border-white/15 bg-[#5A0012]/85 px-3 py-3 shadow-sm backdrop-blur-sm sm:px-4">
         <Link to="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
           <BrandMark className="size-11 shrink-0" />
           <span className="leading-tight">
@@ -100,7 +100,7 @@ export function SiteHeader() {
       </div>
 
       {open && (
-        <nav className="mx-2 rounded-b-2xl border-t border-white/15 bg-brand px-4 py-2 md:hidden">
+        <nav className="mx-2 rounded-b-2xl border-t border-white/15 bg-[#5A0012]/85 px-4 py-2 text-white shadow-lg backdrop-blur-sm md:hidden">
           {nav.map((item) => (
             <Link
               key={item.to}

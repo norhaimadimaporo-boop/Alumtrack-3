@@ -42,7 +42,7 @@ export function AdminShell({
   return (
     <div className="mx-auto grid w-full max-w-6xl items-start gap-8 overflow-x-clip px-4 pb-4 pt-6 md:grid-cols-[230px_1fr]">
       <aside className="md:sticky md:top-[73px] md:self-start">
-        <div className="rounded-2xl border border-white/15 bg-brand p-4 text-white shadow-sm">
+        <div className="rounded-2xl border border-white/15 bg-[#5A0012]/85 p-4 text-white shadow-sm backdrop-blur-sm">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand">
             <span className="text-highlight">Administrator</span>
           </p>
@@ -54,7 +54,7 @@ export function AdminShell({
           </p>
         </div>
 
-        <nav className="mt-3 grid w-full max-w-full grid-cols-3 gap-1.5 rounded-2xl border border-white/15 bg-brand px-2 py-3 shadow-sm md:flex md:flex-col md:overflow-visible">
+        <nav className="mt-3 grid w-full max-w-full grid-cols-3 gap-1.5 rounded-2xl border border-white/15 bg-[#5A0012]/85 px-2 py-3 text-white shadow-sm backdrop-blur-sm md:flex md:flex-col md:overflow-visible">
           {visibleLinks.map((l) => (
             <Link
               key={l.to}
