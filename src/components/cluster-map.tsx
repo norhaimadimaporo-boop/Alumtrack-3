@@ -118,7 +118,7 @@ export function ColumnChart({
     tone === "success" ? "bg-success" : tone === "highlight" ? "bg-highlight" : "bg-brand";
 
   return (
-    <div className="flex w-full min-w-[560px] max-w-full items-end gap-3 sm:min-w-0">
+    <div className="flex w-full min-w-0 max-w-full items-end gap-3">
       {items.map((i) => (
         <div key={i.label} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
           <span className="text-[11px] font-bold text-foreground">{i.value}</span>

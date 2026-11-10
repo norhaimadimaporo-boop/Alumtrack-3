@@ -389,21 +389,17 @@ function AdminReports() {
         </div>
       </div>
 
-      <div className="mt-4 grid w-full max-w-full min-w-0 gap-4 lg:grid-cols-2">
+      <div className="mt-4 grid w-full max-w-full min-w-0 gap-4 md:grid-cols-2">
         <Panel title="1. No. of graduates per year (masteral & undergrad)" icon>
-          <div className="block w-full max-w-full overflow-x-auto">
-            <div className="w-full min-w-[560px] sm:min-w-0">
-              <ColumnChart items={perYear} />
-            </div>
-          </div>
+          <ResponsiveColumnChart items={perYear} />
         </Panel>
         <Panel title="2. Tribal percentage — Muslim / Non-Muslim graduates" icon>
           <DonutChart items={tribalSplit} />
         </Panel>
         <Panel title="3. No. of graduates by province" icon>
-          <div className="block max-h-[350px] w-full max-w-full min-w-0 overflow-y-auto overflow-x-hidden pr-2 scrollbar-thin scrollbar-thumb-gray-400">
+          <div className="block max-h-[350px] w-full max-w-full min-w-0 overflow-y-auto overflow-x-hidden pr-2 scrollbar-thin scrollbar-thumb-gray-400 md:max-h-none md:overflow-y-visible md:pr-0">
             <div className="w-full max-w-full min-w-0">
-              <BarList items={byProvince} suffix="" rowClassName="min-h-[60px]" />
+              <BarList items={byProvince} suffix="" />
             </div>
           </div>
         </Panel>
@@ -415,6 +411,28 @@ function AdminReports() {
         </Panel>
       </div>
     </AdminShell>
+  );
+}
+
+/** Keep the full single-row year chart scrollable on phones only. */
+function ResponsiveColumnChart({
+  items,
+  tone,
+}: {
+  items: { label: string; value: number }[];
+  tone?: "brand" | "success" | "highlight";
+}) {
+  return (
+    <div className="w-full min-w-0 max-w-full">
+      <div className="block w-full overflow-x-auto md:hidden">
+        <div className="min-w-[560px]">
+          <ColumnChart items={items} {...(tone ? { tone } : {})} />
+        </div>
+      </div>
+      <div className="hidden w-full min-w-0 md:block">
+        <ColumnChart items={items} {...(tone ? { tone } : {})} />
+      </div>
+    </div>
   );
 }
 
@@ -433,7 +451,7 @@ function Panel({
         {icon && <BarChart3 className="size-4 text-brand" />}
         {title}
       </h2>
-      <div className="mt-4 block w-full min-w-0 max-w-full overflow-x-auto">{children}</div>
+      <div className="mt-4 w-full min-w-0 max-w-full">{children}</div>
     </div>
   );
 }
