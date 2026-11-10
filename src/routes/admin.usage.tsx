@@ -169,7 +169,7 @@ function AdminUsage() {
           graduate&apos;s status, location, and company.
         </p>
         <div className="mt-3 w-full">
-          <RealAlumniMap pins={pins} heightClassName="h-[450px] sm:h-[500px] lg:h-[550px] w-full" />
+          <RealAlumniMap pins={pins} heightClassName="h-[400px] md:h-[480px] w-full" />
         </div>
       </div>
 

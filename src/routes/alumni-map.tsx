@@ -161,7 +161,7 @@ function AlumniMapPage() {
             <RealAlumniMap
               pins={pins}
               focusView={focusForCountry(country)}
-              heightClassName="h-[450px] sm:h-[500px] lg:h-[550px] w-full"
+              heightClassName="h-[400px] md:h-[480px] w-full"
             />
           </div>
           <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
