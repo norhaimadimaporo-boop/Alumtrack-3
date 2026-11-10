@@ -74,11 +74,7 @@ function AdminUsage() {
   const [restoring, setRestoring] = useState(false);
   const [recycleMessage, setRecycleMessage] = useState("");
 
-  const handleRestore = async (
-    kind: "alumni" | "posts" | "admin",
-    id: number,
-    key: string,
-  ) => {
+  const handleRestore = async (kind: "alumni" | "posts" | "admin", id: number, key: string) => {
     if (confirmingRestoreKey !== key) {
       setConfirmingRestoreKey(key);
       return;
@@ -108,15 +104,16 @@ function AdminUsage() {
     : -1;
 
   const yearOptions = useMemo(() => {
-    const dataYears = (usage?.accessLogs ?? []).map((item) => item.date.slice(0, 4)).filter(Boolean);
-    const merged = [
-      ...new Set([...dataYears, ...BASE_YEAR_OPTIONS.map((o) => o.label)]),
-    ].sort((a, b) => b.localeCompare(a));
+    const dataYears = (usage?.accessLogs ?? [])
+      .map((item) => item.date.slice(0, 4))
+      .filter(Boolean);
+    const merged = [...new Set([...dataYears, ...BASE_YEAR_OPTIONS.map((o) => o.label)])].sort(
+      (a, b) => b.localeCompare(a),
+    );
     return merged.map((year) => ({ label: year }));
   }, [usage]);
 
   const logs = usage?.accessLogs ?? [];
-  const previewLogs = logs.slice(0, 6);
   const filteredLogs = useMemo(
     () =>
       logs.filter((item) => {
@@ -175,44 +172,54 @@ function AdminUsage() {
 
       <div className="mt-4">
         {canViewAccessLogs && (
-        <div className="rounded-lg border border-border bg-card p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <LogIn className="size-4 text-brand" /> Access logs
-            </h2>
-            <button
-              type="button"
-              onClick={() => setShowLogs(true)}
-              className="text-xs font-semibold text-brand hover:underline"
-            >
-              View All Access Logs
-            </button>
+          <div className="rounded-lg border border-border bg-card p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <LogIn className="size-4 text-brand" /> Access logs
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowLogs(true)}
+                className="text-xs font-semibold text-brand hover:underline"
+              >
+                View All Access Logs
+              </button>
+            </div>
+            <ul className="mt-3 max-h-[280px] space-y-3 overflow-y-auto pr-2 custom-scrollbar">
+              {logs.map((l) => (
+                <li
+                  key={l.id}
+                  className="flex min-h-[52px] items-start justify-between gap-3 border-b border-border py-2 last:border-b-0"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground" title={l.user}>
+                      {l.user}
+                    </p>
+                    <p
+                      className="truncate text-xs text-muted-foreground"
+                      title={`${l.action} · ${l.where}`}
+                    >
+                      <span>{l.action}</span>
+                      <span className="text-brand"> · {l.where}</span>
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className="inline-flex rounded-sm bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                      {l.role}
+                    </span>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {l.date} {l.clock}
+                    </p>
+                  </div>
+                </li>
+              ))}
+              {logs.length === 0 && (
+                <li className="py-6 text-center text-xs text-muted-foreground">
+                  No access logs yet. Logins will appear here.
+                </li>
+              )}
+            </ul>
           </div>
-          <ul className="mt-3 divide-y divide-border">
-            {previewLogs.map((l) => (
-              <li key={l.id} className="flex items-start justify-between gap-3 py-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground">{l.user}</p>
-                  <p className="text-xs text-muted-foreground">{l.action}</p>
-                  <p className="mt-0.5 text-xs text-brand">{l.where}</p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <span className="inline-flex rounded-sm bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                    {l.role}
-                  </span>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {l.date} {l.clock}
-                  </p>
-                </div>
-              </li>
-            ))}
-            {previewLogs.length === 0 && (
-              <li className="py-6 text-center text-xs text-muted-foreground">
-                No access logs yet. Logins will appear here.
-              </li>
-            )}
-          </ul>
-        </div>
         )}
       </div>
 
@@ -227,8 +234,8 @@ function AdminUsage() {
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Soft-deleted alumni, posts, and admin accounts. Records are permanently removed after
-            7 days. Restore returns them to the live directory.
+            Soft-deleted alumni, posts, and admin accounts. Records are permanently removed after 7
+            days. Restore returns them to the live directory.
           </p>
 
           {recycleMessage && (
@@ -397,7 +404,9 @@ function AdminUsage() {
                     <tr key={item.id}>
                       <td className="px-4 py-2.5 text-xs text-muted-foreground">{item.date}</td>
                       <td className="px-4 py-2.5 text-xs text-muted-foreground">{item.clock}</td>
-                      <td className="px-4 py-2.5 text-xs font-semibold text-foreground">{item.user}</td>
+                      <td className="px-4 py-2.5 text-xs font-semibold text-foreground">
+                        {item.user}
+                      </td>
                       <td className="px-4 py-2.5 text-xs text-muted-foreground">{item.role}</td>
                       <td className="px-4 py-2.5 text-xs text-muted-foreground">{item.action}</td>
                       <td className="px-4 py-2.5 text-xs text-muted-foreground">{item.where}</td>
