@@ -71,10 +71,16 @@ export function RealAlumniMap({
 
   useEffect(() => {
     if (!mapReady) return;
-    const timer = window.setTimeout(() => {
+    const map = mapRef.current;
+    map?.invalidateSize({ pan: false });
+    const frame = window.requestAnimationFrame(() => {
       mapRef.current?.invalidateSize({ pan: false });
-    }, 250);
-    return () => window.clearTimeout(timer);
+    });
+    const timer = window.setTimeout(() => mapRef.current?.invalidateSize({ pan: false }), 200);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
   }, [fullscreen, mapReady, viewKey]);
 
   useEffect(() => {
@@ -237,94 +243,87 @@ export function RealAlumniMap({
         mounted &&
         createPortal(
           <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md md:p-8"
-            onMouseDown={(event) => {
-              if (event.currentTarget === event.target) setFullscreen(false);
-            }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="gis-map-dialog-title"
+            className="fixed inset-0 z-[9999] h-screen w-screen overflow-hidden rounded-none border-none bg-slate-900 p-0"
           >
-            <section
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="gis-map-dialog-title"
-              className="relative flex h-[85vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/50 bg-white/90 shadow-2xl backdrop-blur-xl"
+            <h2 id="gis-map-dialog-title" className="sr-only">
+              GIS Alumni Map Overview
+            </h2>
+            <div className="absolute left-1/2 top-4 z-[1000] hidden -translate-x-1/2 rounded-lg bg-white/80 px-3 py-1.5 text-sm font-bold text-brand shadow-md backdrop-blur-md xl:block">
+              GIS Alumni Map Overview
+            </div>
+
+            <div
+              ref={viewportRef}
+              className="absolute inset-0 z-0 h-full w-full overflow-hidden"
             >
-              <header className="flex shrink-0 flex-col gap-3 border-b border-border/70 bg-white/70 px-4 py-3 sm:px-6 sm:py-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 id="gis-map-dialog-title" className="text-base font-bold text-foreground sm:text-lg">
-                      GIS Alumni Map Overview
-                    </h2>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {pins.length} alumni plotted · Select a pin for details
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setFullscreen(false)}
-                    aria-label="Close map view"
-                    title="Close map view"
-                    className="inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border border-border bg-white/80 px-3 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted"
-                  >
-                    <span className="hidden sm:inline">Close</span>
-                    <X className="size-4" />
-                  </button>
+              <Suspense fallback={<MapSkeleton heightClassName="h-full w-full" />}>
+                <LeafletAlumniMap
+                  pins={pins}
+                  viewKey={viewKey}
+                  initialView={viewKey}
+                  heightClassName="h-full w-full"
+                  onMapReady={handleMapReady}
+                />
+              </Suspense>
+              {pins.length === 0 && (
+                <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center bg-card/60 p-6">
+                  <p className="rounded-lg border border-border bg-card px-3 py-2 text-center text-xs text-muted-foreground shadow-sm">
+                    No alumni pins match these filters.
+                  </p>
                 </div>
-                <div role="group" aria-label="Quick map filters" className="flex flex-wrap items-center gap-2">
-                  {FULLSCREEN_VIEWS.map((option) => (
-                    <button
-                      key={option.key}
-                      type="button"
-                      onClick={() => setViewKey(option.key)}
-                      aria-pressed={viewKey === option.key}
-                      className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                        viewKey === option.key
-                          ? "border-brand bg-brand text-brand-foreground"
-                          : "border-highlight text-brand hover:bg-accent"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </header>
+              )}
+            </div>
 
-              <div className="relative flex min-h-0 flex-1 flex-col p-2 sm:p-4">
-                <div
-                  ref={viewportRef}
-                  className="relative z-10 min-h-0 w-full flex-1 overflow-hidden rounded-2xl border border-white/40 bg-secondary/40 shadow-md"
+            <div
+              role="group"
+              aria-label="Map view filters"
+              className="absolute left-4 top-4 z-[1000] flex max-w-[calc(100vw-5.5rem)] flex-wrap gap-2"
+            >
+              {FULLSCREEN_VIEWS.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setViewKey(option.key)}
+                  aria-pressed={viewKey === option.key}
+                  className={`rounded-xl border px-3 py-2 text-xs font-semibold shadow-md backdrop-blur-md transition-colors sm:text-sm ${
+                    viewKey === option.key
+                      ? "border-highlight bg-brand text-brand-foreground"
+                      : "border-white/50 bg-white/80 text-brand hover:bg-white"
+                  }`}
                 >
-                  <Suspense fallback={<MapSkeleton heightClassName="h-full w-full" />}>
-                    <LeafletAlumniMap
-                      pins={pins}
-                      viewKey={viewKey}
-                      initialView={viewKey}
-                      heightClassName="h-full w-full"
-                      onMapReady={handleMapReady}
-                    />
-                  </Suspense>
-                  {showLegend && <MapLegend counts={counts} />}
-                  {pins.length === 0 && (
-                    <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center bg-card/60 p-6">
-                      <p className="rounded-lg border border-border bg-card px-3 py-2 text-center text-xs text-muted-foreground shadow-sm">
-                        No alumni pins match these filters.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
+                  {option.key === "region" ? "Asia & Middle East" : option.key === "philippines" ? "Philippines" : "Middle East"}
+                </button>
+              ))}
+            </div>
 
-              <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-border/70 bg-white/70 px-4 py-3 sm:px-6">
-                <p className="text-xs text-muted-foreground">Use the map controls to zoom and explore.</p>
-                <div role="group" aria-label="Map zoom" className="flex shrink-0 items-center gap-2">
-                  <ZoomButton label="Zoom in" onClick={() => mapRef.current?.zoomIn()} disabled={!mapReady}>
-                    +
-                  </ZoomButton>
-                  <ZoomButton label="Zoom out" onClick={() => mapRef.current?.zoomOut()} disabled={!mapReady}>
-                    −
-                  </ZoomButton>
-                </div>
-              </footer>
-            </section>
+            {showLegend && (
+              <MapLegend counts={counts} placementClassName="absolute right-4 top-4 z-[1000]" />
+            )}
+
+            <div className="absolute bottom-4 left-4 z-[1000] rounded-lg bg-white/80 px-3 py-1.5 text-xs text-foreground shadow-md backdrop-blur-md">
+              {pins.length} alumni plotted · Tap pin for details
+            </div>
+
+            <div role="group" aria-label="Map zoom" className="absolute bottom-4 right-4 z-[1000] flex items-center gap-1.5">
+              <ZoomButton label="Zoom in" onClick={() => mapRef.current?.zoomIn()} disabled={!mapReady}>
+                +
+              </ZoomButton>
+              <ZoomButton label="Zoom out" onClick={() => mapRef.current?.zoomOut()} disabled={!mapReady}>
+                −
+              </ZoomButton>
+              <button
+                type="button"
+                onClick={() => setFullscreen(false)}
+                aria-label="Close fullscreen map"
+                title="Close fullscreen map"
+                className="inline-flex size-8 items-center justify-center rounded-lg border border-white/50 bg-white/80 text-foreground shadow-md backdrop-blur-md transition-colors hover:bg-white"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
           </div>,
           document.body,
         )}
@@ -332,11 +331,16 @@ export function RealAlumniMap({
   );
 }
 
-function MapLegend({ counts }: { counts: Record<"success" | "highlight", number> }) {
+function MapLegend({
+  counts,
+  placementClassName = "absolute right-3 top-3 z-20",
+}: {
+  counts: Record<"success" | "highlight", number>;
+  placementClassName?: string;
+}) {
   return (
     <div
-      style={{ position: "absolute", top: 12, right: 12, zIndex: 20 }}
-      className="map-legend pointer-events-none max-w-[148px] rounded-lg border border-border bg-card/95 px-2.5 py-2 shadow-md backdrop-blur sm:max-w-none sm:px-3"
+      className={`${placementClassName} map-legend pointer-events-none max-w-[148px] rounded-lg border border-border bg-card/95 px-2.5 py-2 shadow-md backdrop-blur sm:max-w-none sm:px-3`}
     >
       <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Map legend</p>
       <ul className="mt-1.5 space-y-1">
