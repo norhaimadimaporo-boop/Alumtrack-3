@@ -403,7 +403,7 @@ function AdminReports() {
         <Panel title="3. No. of graduates by province" icon>
           <div className="block max-h-[350px] w-full max-w-full min-w-0 overflow-y-auto overflow-x-hidden pr-2 scrollbar-thin scrollbar-thumb-gray-400">
             <div className="w-full max-w-full min-w-0">
-              <BarList items={byProvince} suffix="" rowClassName="min-h-[48px]" />
+              <BarList items={byProvince} suffix="" rowClassName="min-h-[60px]" />
             </div>
           </div>
         </Panel>
