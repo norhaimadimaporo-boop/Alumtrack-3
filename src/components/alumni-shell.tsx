@@ -38,7 +38,7 @@ export function AlumniShell({
   const displayInitials = user?.initials || "AL";
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-col items-start gap-6 overflow-x-hidden px-4 py-6 md:flex-row">
+    <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-col items-start gap-6 overflow-x-hidden px-4 pt-6 pb-12 md:flex-row">
       <aside className="w-full shrink-0 md:sticky md:top-[73px] md:w-64 md:self-start">
         <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-brand p-3 text-white shadow-sm">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-highlight text-sm font-bold text-highlight-foreground">
