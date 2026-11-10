@@ -125,14 +125,14 @@
 }
 
 /* Give native form controls the same soft, warm surface across every route. */
-input:not([type="checkbox"]):not([type="radio"]),
+input:not([type="checkbox"]):not([type="radio"]):not(.login-input),
 textarea,
 select {
   border-color: #d4c5b3;
   background-color: rgb(255 255 255 / 80%);
 }
 
-input:not([type="checkbox"]):not([type="radio"]):focus,
+input:not([type="checkbox"]):not([type="radio"]):not(.login-input):focus,
 textarea:focus,
 select:focus {
   border-color: #80001b;
