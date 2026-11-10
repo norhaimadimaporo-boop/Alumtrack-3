@@ -48,7 +48,7 @@ export function RealAlumniMap({
   pins,
   initialView = "region",
   focusView,
-  heightClassName = "h-[320px] sm:h-[420px] lg:h-[520px]",
+  heightClassName = "h-[450px] sm:h-[500px] lg:h-[550px] w-full",
   compact = false,
   showLegend = true,
   className = "",
@@ -56,15 +56,38 @@ export function RealAlumniMap({
   const [mounted, setMounted] = useState(false);
   const [viewKey, setViewKey] = useState<MapViewKey>(initialView);
   const mapRef = useRef<LeafletMap | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => mapRef.current?.invalidateSize(), 60);
+    if (!mapReady) return;
+    const timer = window.setTimeout(() => {
+      mapRef.current?.invalidateSize({ pan: false });
+    }, 250);
     return () => window.clearTimeout(timer);
-  }, [fullscreen, viewKey]);
+  }, [fullscreen, mapReady, viewKey]);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport || !mapReady || typeof ResizeObserver === "undefined") return;
+
+    let timer = 0;
+    const observer = new ResizeObserver(() => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        mapRef.current?.invalidateSize({ pan: false });
+      }, 100);
+    });
+    observer.observe(viewport);
+
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(timer);
+    };
+  }, [mapReady]);
 
   // The zoom buttons live below the canvas (outside the map), so they need
   // the live map instance handed over by the Leaflet child component.
@@ -112,13 +135,14 @@ export function RealAlumniMap({
     <div
       className={
         fullscreen
-          ? `${className} fixed inset-0 z-50 flex w-full flex-col overflow-hidden bg-background p-3 sm:p-4`
+          ? `${className} fixed inset-0 z-50 flex h-screen w-screen flex-col overflow-hidden bg-black/60 p-4 backdrop-blur-md`
           : `${className} w-full max-w-full overflow-hidden`
       }
     >
       <div
+        ref={viewportRef}
         className={
-          "relative w-full max-w-full overflow-hidden rounded-xl border border-border bg-secondary/40" +
+          "relative z-10 w-full max-w-full overflow-hidden rounded-2xl border border-border bg-secondary/40" +
           (fullscreen ? " min-h-0 flex-1" : ` ${heightClassName}`)
         }
       >

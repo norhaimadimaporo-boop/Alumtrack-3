@@ -184,7 +184,7 @@ function DashboardPage() {
           <div className="mt-4 w-full">
             <RealAlumniMap
               pins={pins}
-              heightClassName="w-full h-[300px] sm:h-[450px] lg:h-[420px]"
+              heightClassName="h-[450px] sm:h-[500px] lg:h-[550px] w-full"
               compact
             />
           </div>

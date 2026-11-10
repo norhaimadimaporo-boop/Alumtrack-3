@@ -60,9 +60,9 @@ function pinIcon(pin: AlumniMapPin): DivIcon {
     html: `<span class="alumni-pin alumni-pin--${variant}"><span>${pin.name.charAt(
       0,
     )}</span></span>`,
-    iconSize: [26, 32],
-    iconAnchor: [13, 31],
-    popupAnchor: [0, -28],
+    iconSize: [34, 42],
+    iconAnchor: [17, 41],
+    popupAnchor: [0, -37],
   });
 }
 
@@ -75,9 +75,9 @@ function clusterIcon(group: PinGroup): DivIcon {
   return divIcon({
     className: "alumni-marker alumni-marker--cluster",
     html: `<span class="alumni-pin alumni-pin--cluster alumni-pin--${variant}"><span>${group.pins.length}</span></span>`,
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
-    popupAnchor: [0, -18],
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+    popupAnchor: [0, -24],
   });
 }
 
@@ -303,7 +303,7 @@ export function LeafletAlumniMap({
       scrollWheelZoom={false}
       zoomControl={false}
       worldCopyJump
-      className={`relative z-0 w-full ${heightClassName}`}
+      className={`relative z-10 w-full ${heightClassName}`}
     >
       <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} maxZoom={19} />
       <TileLayer url={LABEL_URL} attribution={TILE_ATTRIBUTION} maxZoom={19} />
@@ -322,6 +322,7 @@ export function LeafletAlumniMap({
             key={group.key}
             position={[group.lat, group.lng]}
             icon={icon}
+            zIndexOffset={10}
             title={label}
             alt={label}
             keyboard

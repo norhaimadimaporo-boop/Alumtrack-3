@@ -242,8 +242,8 @@ a.bg-destructive {
 
 .alumni-pin {
   display: flex;
-  width: 26px;
-  height: 26px;
+  width: 34px;
+  height: 34px;
   align-items: center;
   justify-content: center;
   border: 2px solid #fff;
@@ -263,7 +263,7 @@ a.bg-destructive {
 
 .alumni-pin > span {
   transform: rotate(45deg);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1;
 }
@@ -287,7 +287,7 @@ a.bg-destructive {
   height: 100%;
   border-radius: 9999px;
   transform: none;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .alumni-marker--cluster:hover .alumni-pin--cluster,
@@ -297,7 +297,7 @@ a.bg-destructive {
 
 .alumni-pin--cluster > span {
   transform: none;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 /* Mixed group (employed + unemployed alumni in the same city). */
