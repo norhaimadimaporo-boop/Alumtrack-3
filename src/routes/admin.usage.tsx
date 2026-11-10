@@ -237,7 +237,7 @@ function AdminUsage() {
             </p>
           )}
 
-          <div className="mt-3 max-h-[350px] overflow-y-auto rounded-lg border border-border">
+          <div className="mt-3 max-h-[350px] w-full overflow-x-auto overflow-y-auto rounded-2xl border border-border">
             {recycleItems.length === 0 ? (
               <p className="px-4 py-8 text-center text-xs text-muted-foreground">
                 Recycle bin is empty. Deleted records will appear here for 7 days.
@@ -374,7 +374,7 @@ function AdminUsage() {
             Showing {filteredLogs.length} of {logs.length} access logs
           </p>
 
-          <div className="mt-2 max-h-96 overflow-y-auto rounded-lg border border-border">
+          <div className="mt-2 max-h-96 w-full overflow-x-auto overflow-y-auto rounded-2xl border border-border">
             {filteredLogs.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-muted-foreground">
                 No access logs on the selected date. Try clearing the filter.

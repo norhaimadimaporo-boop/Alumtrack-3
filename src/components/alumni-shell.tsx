@@ -40,30 +40,30 @@ export function AlumniShell({
   return (
     <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-5 overflow-x-hidden px-3 py-4 sm:gap-8 md:grid-cols-[220px_minmax(0,1fr)] md:px-4">
       <aside className="md:sticky md:top-[73px] md:self-start">
-        <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-bold text-brand-foreground">
+        <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-brand p-3 text-white shadow-sm">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-highlight text-sm font-bold text-highlight-foreground">
             {displayInitials}
           </span>
           <span className="min-w-0">
-            <span className="block truncate text-sm font-semibold text-foreground">
+            <span className="block truncate text-sm font-semibold text-white">
               {displayName}
             </span>
-            <span className="block text-[11px] text-muted-foreground">Batch {displayBatch}</span>
+            <span className="block text-[11px] text-white/70">Batch {displayBatch}</span>
           </span>
         </div>
 
         <nav
           aria-label="Alumni portal navigation"
-          className="mt-3 grid w-full min-w-0 grid-cols-3 gap-1.5 rounded-lg border border-border bg-card p-2 md:flex md:flex-col md:overflow-visible"
+          className="mt-3 grid w-full min-w-0 grid-cols-3 gap-1.5 rounded-2xl border border-white/15 bg-brand p-2 shadow-sm md:flex md:flex-col md:overflow-visible"
         >
           {links.map((l) => (
             <Link
               key={l.to}
               title={l.label}
               to={l.to}
-              activeProps={{ className: "bg-brand text-brand-foreground" }}
-              inactiveProps={{ className: "text-foreground/80 hover:bg-muted" }}
-              className="flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1.5 py-2 text-center text-[11px] font-medium leading-tight transition-colors md:min-h-0 md:flex-row md:justify-start md:gap-2 md:px-3 md:text-left md:text-sm"
+              activeProps={{ className: "bg-highlight text-highlight-foreground shadow-sm" }}
+              inactiveProps={{ className: "text-white/85 hover:bg-white/10" }}
+              className="flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-center text-[11px] font-medium leading-tight transition-colors md:min-h-0 md:flex-row md:justify-start md:gap-2 md:px-3 md:text-left md:text-sm"
             >
               <l.icon className="size-4 shrink-0" />
               <span className="min-w-0 whitespace-normal">{l.label}</span>

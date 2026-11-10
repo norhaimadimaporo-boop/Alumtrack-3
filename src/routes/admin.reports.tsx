@@ -347,7 +347,7 @@ function AdminReports() {
             Showing {filtered.length} of {all.length}
           </p>
         </div>
-        <div className="mt-3 max-h-80 overflow-y-auto rounded-lg border border-border">
+        <div className="mt-3 max-h-80 w-full overflow-x-auto overflow-y-auto rounded-2xl border border-border">
           {filtered.length === 0 ? (
             <p className="px-4 py-8 text-center text-sm text-muted-foreground">
               No alumni match the selected filters. Try clearing a filter.

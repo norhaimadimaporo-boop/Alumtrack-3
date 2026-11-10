@@ -255,7 +255,7 @@ function OrganizationPage() {
               type="button"
               onClick={confirmDelete}
               disabled={removing}
-              className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-destructive px-3 py-2 text-xs font-semibold text-destructive-foreground shadow-sm hover:bg-destructive/90 disabled:opacity-60"
             >
               {removing && <Loader2 className="size-3.5 animate-spin" />}
               {removing ? "Removing…" : "Remove organization"}

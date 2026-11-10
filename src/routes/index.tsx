@@ -1,5 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Search, MapPinned, Newspaper, UserRoundPen, ArrowRight, CalendarDays, Database } from "lucide-react";
+import {
+  Search,
+  MapPinned,
+  Newspaper,
+  UserRoundPen,
+  ArrowRight,
+  CalendarDays,
+  Database,
+} from "lucide-react";
 const heroImage = "/assets/hero-bg.jpg";
 import { POSTS, findPostPhoto } from "@/data/news";
 import { BarList } from "@/components/cluster-map";
@@ -157,7 +165,7 @@ function Index() {
 
   return (
     <div>
-      <section className="relative isolate overflow-hidden bg-foreground">
+      <section className="relative isolate overflow-hidden bg-brand-dark">
         <img
           src={heroImage}
           alt="Graduates at the 62nd Pre-Commencement Exercises in the Dimaporo Gymnasium"
@@ -166,7 +174,7 @@ function Index() {
           fetchPriority="high"
           className="absolute inset-0 size-full object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-foreground/85 via-foreground/65 to-foreground/35" />
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-dark/90 via-brand-dark/70 to-brand-dark/40" />
         <div className="relative mx-auto max-w-6xl px-4 py-24 md:py-32">
           <span className="inline-block bg-highlight px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-highlight-foreground">
             Office of Alumni Relations and Career Center
@@ -184,13 +192,13 @@ function Index() {
           <div className="mt-9 flex flex-wrap gap-3">
             <Link
               to="/search"
-              className="inline-flex items-center gap-2 rounded-sm bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark"
+              className="inline-flex items-center gap-2 rounded-xl bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground shadow-sm transition-colors hover:bg-brand-dark"
             >
               <Search className="size-4" /> Search Alumni
             </Link>
             <Link
               to="/login"
-              className="inline-flex items-center gap-2 rounded-sm border border-background/35 px-6 py-3 text-sm font-semibold text-background transition-colors hover:bg-background hover:text-foreground"
+              className="inline-flex items-center gap-2 rounded-xl border border-highlight px-6 py-3 text-sm font-semibold text-background transition-colors hover:bg-highlight hover:text-highlight-foreground"
             >
               Alumni Login
             </Link>
@@ -231,7 +239,10 @@ function Index() {
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {publicStats.map((s) => (
-            <div key={s.label} className="rounded-lg border-t-4 border-brand bg-card p-5">
+            <div
+              key={s.label}
+              className="rounded-2xl border border-[#E6DFD5] border-t-4 border-t-brand bg-gradient-to-br from-card to-background p-5 shadow-sm"
+            >
               <p className="text-3xl font-bold text-foreground">{s.value}</p>
               <p className="mt-1 text-sm font-semibold text-foreground">{s.label}</p>
               <p className="mt-1 text-xs text-muted-foreground">{s.note}</p>
@@ -240,19 +251,22 @@ function Index() {
         </div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-          <div className="rounded-lg border border-border bg-card p-5">
+          <div className="rounded-2xl border border-[#E6DFD5] bg-gradient-to-br from-card to-background p-5 shadow-sm">
             <h3 className="text-sm font-semibold text-foreground">Where our alumni are now</h3>
             <p className="mt-1 text-xs text-muted-foreground">
               Green pins are employed alumni, yellow pins are unemployed. Home cities and overseas
               workplaces are plotted — tap a pin for details.
             </p>
             <div className="mt-4 w-full">
-              <RealAlumniMap pins={pins} heightClassName="w-full h-[300px] sm:h-[450px] lg:h-[520px]" />
+              <RealAlumniMap
+                pins={pins}
+                heightClassName="w-full h-[300px] sm:h-[450px] lg:h-[520px]"
+              />
             </div>
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-lg border border-border bg-card p-5">
+            <div className="rounded-2xl border border-[#E6DFD5] bg-gradient-to-br from-card to-background p-5 shadow-sm">
               <h3 className="text-sm font-semibold text-foreground">Top industries</h3>
               <p className="mt-1 text-xs text-muted-foreground">
                 {stats && stats.employedWithSector > 0
@@ -270,7 +284,7 @@ function Index() {
                 )}
               </div>
             </div>
-            <div className="rounded-lg border-l-4 border-highlight bg-card p-5">
+            <div className="rounded-2xl border border-[#E6DFD5] border-l-4 border-l-highlight bg-gradient-to-br from-card to-background p-5 shadow-sm">
               <h3 className="text-sm font-semibold text-foreground">Privacy notice</h3>
               <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                 Public maps and statistics show only where alumni are based — never exact street
@@ -291,7 +305,7 @@ function Index() {
             <Link
               key={f.title}
               to={f.to}
-              className="group flex flex-col rounded-sm border border-border bg-card p-6 transition-colors hover:border-brand"
+              className="group flex flex-col rounded-2xl border border-[#E6DFD5] bg-gradient-to-br from-card to-background p-6 shadow-sm transition-colors hover:border-brand"
             >
               <span className="flex size-10 items-center justify-center rounded-sm bg-brand/8 text-brand transition-colors group-hover:bg-brand group-hover:text-brand-foreground">
                 <f.icon className="size-5" />
@@ -324,7 +338,7 @@ function Index() {
               <Link
                 key={post.id}
                 to="/news"
-                className="group rounded-sm border border-border bg-card p-6 transition-colors hover:border-brand"
+                className="group rounded-2xl border border-[#E6DFD5] bg-gradient-to-br from-card to-background p-6 shadow-sm transition-colors hover:border-brand"
               >
                 <p className="flex items-center gap-2 text-xs text-muted-foreground">
                   <CalendarDays className="size-3.5" />

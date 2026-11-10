@@ -4,22 +4,22 @@ import { BrandMark } from "@/components/brand-mark";
 
 export function SiteFooter() {
   return (
-    <footer className="mt-24 border-t-4 border-brand bg-foreground text-background">
+    <footer className="mt-24 border-t-4 border-highlight bg-brand-dark text-white">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 md:grid-cols-3">
         <div>
           <div className="flex items-center gap-3">
             <BrandMark className="size-12 shrink-0" />
             <p className="text-lg font-bold">AlumTrack</p>
           </div>
-          <p className="mt-3 max-w-xs text-sm leading-relaxed text-background/70">
+          <p className="mt-3 max-w-xs text-sm leading-relaxed text-white/70">
             Alumni Tracing System and Online Platform for Mindanao State University — Main
             Campus, Marawi City.
           </p>
           <div className="mt-5 flex gap-2">
-            <span className="inline-flex size-9 items-center justify-center rounded-sm border border-background/25 transition-colors hover:bg-brand">
+            <span className="inline-flex size-9 items-center justify-center rounded-xl border border-white/25 transition-colors hover:bg-brand">
               <Facebook className="size-4" />
             </span>
-            <span className="inline-flex size-9 items-center justify-center rounded-sm border border-background/25 transition-colors hover:bg-brand">
+            <span className="inline-flex size-9 items-center justify-center rounded-xl border border-white/25 transition-colors hover:bg-brand">
               <Mail className="size-4" />
             </span>
           </div>
@@ -29,7 +29,7 @@ export function SiteFooter() {
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-highlight">
             Quick Links
           </p>
-          <ul className="mt-4 space-y-2 text-sm text-background/75">
+          <ul className="mt-4 space-y-2 text-sm text-white/75">
             <li>
               <Link to="/" className="hover:text-highlight">
                 Home
@@ -67,7 +67,7 @@ export function SiteFooter() {
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-highlight">
             Office of Alumni Relations and Career Center
           </p>
-          <ul className="mt-4 space-y-3 text-sm text-background/75">
+          <ul className="mt-4 space-y-3 text-sm text-white/75">
             <li className="flex gap-2">
               <MapPin className="mt-0.5 size-4 shrink-0 text-highlight" />
               Ground Floor, Isidro Hall Building, 2nd Street, MSU, Marawi City, Lanao del
@@ -88,7 +88,7 @@ export function SiteFooter() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-background/15 py-5 text-center text-xs text-background/55">
+      <div className="border-t border-white/15 py-5 text-center text-xs text-white/55">
         © {new Date().getFullYear()} AlumTrack — MSU Main Campus. Capstone Project, College
         of Information and Computing Sciences.
       </div>

@@ -36,16 +36,15 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background">
-      <div className="h-1 w-full bg-brand" />
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+    <header className="sticky top-0 z-50 bg-brand px-2 pt-2 sm:px-4">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 rounded-2xl border border-white/15 bg-brand px-3 py-3 shadow-sm sm:px-4">
         <Link to="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
           <BrandMark className="size-11 shrink-0" />
           <span className="leading-tight">
-            <span className="block text-base font-bold tracking-tight text-foreground">
+            <span className="block text-base font-bold tracking-tight text-white">
               AlumTrack
             </span>
-            <span className="block text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            <span className="block text-[10px] uppercase tracking-[0.18em] text-white/70">
               MSU Main Campus
             </span>
           </span>
@@ -57,8 +56,8 @@ export function SiteHeader() {
               key={item.to}
               to={item.to}
               activeOptions={{ exact: item.to === "/" }}
-              activeProps={{ className: "text-brand after:scale-x-100" }}
-              className="relative px-3 py-2 text-sm font-medium text-foreground/80 transition-colors after:absolute after:inset-x-3 after:bottom-1 after:h-0.5 after:origin-left after:scale-x-0 after:bg-brand after:transition-transform hover:text-brand"
+              activeProps={{ className: "text-highlight after:scale-x-100" }}
+              className="relative px-3 py-2 text-sm font-medium text-white/85 transition-colors after:absolute after:inset-x-3 after:bottom-1 after:h-0.5 after:origin-left after:scale-x-0 after:bg-highlight after:transition-transform hover:text-highlight"
             >
               {item.label}
             </Link>
@@ -68,7 +67,7 @@ export function SiteHeader() {
             <button
               type="button"
               onClick={() => void logout()}
-              className="ml-2 inline-flex items-center rounded-md bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark"
+              className="ml-2 inline-flex items-center rounded-xl bg-highlight px-4 py-2 text-sm font-semibold text-highlight-foreground transition-colors hover:bg-highlight/90"
             >
               Logout
             </button>
@@ -76,13 +75,13 @@ export function SiteHeader() {
             <>
               <Link
                 to="/login"
-                className="ml-2 inline-flex items-center rounded-md bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark"
+                className="ml-2 inline-flex items-center rounded-xl bg-highlight px-4 py-2 text-sm font-semibold text-highlight-foreground transition-colors hover:bg-highlight/90"
               >
                 Login
               </Link>
               <Link
                 to="/register"
-                className="inline-flex items-center rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand transition-colors hover:bg-brand hover:text-brand-foreground"
+                className="inline-flex items-center rounded-xl border border-highlight px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-highlight hover:text-highlight-foreground"
               >
                 Register
               </Link>
@@ -94,22 +93,22 @@ export function SiteHeader() {
           type="button"
           aria-label="Toggle menu"
           onClick={() => setOpen((v) => !v)}
-          className="inline-flex size-9 items-center justify-center rounded-md border border-border text-foreground md:hidden"
+          className="inline-flex size-9 items-center justify-center rounded-xl border border-white/25 text-white md:hidden"
         >
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
       </div>
 
       {open && (
-        <nav className="border-t border-border bg-background px-4 py-2 md:hidden">
+        <nav className="mx-2 rounded-b-2xl border-t border-white/15 bg-brand px-4 py-2 md:hidden">
           {nav.map((item) => (
             <Link
               key={item.to}
               to={item.to}
               onClick={() => setOpen(false)}
               activeOptions={{ exact: item.to === "/" }}
-              activeProps={{ className: "text-brand" }}
-              className="block border-b border-border py-3 text-sm font-medium text-foreground/80"
+              activeProps={{ className: "text-highlight" }}
+              className="block border-b border-white/15 py-3 text-sm font-medium text-white/85"
             >
               {item.label}
             </Link>
@@ -118,7 +117,7 @@ export function SiteHeader() {
             <button
               type="button"
               onClick={() => void logout()}
-              className="my-3 inline-flex w-full items-center justify-center rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground"
+              className="my-3 inline-flex w-full items-center justify-center rounded-xl bg-highlight px-4 py-2.5 text-sm font-semibold text-highlight-foreground"
             >
               Logout
             </button>
@@ -127,14 +126,14 @@ export function SiteHeader() {
               <Link
                 to="/login"
                 onClick={() => setOpen(false)}
-                className="my-3 inline-flex w-full items-center justify-center rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground"
+                className="my-3 inline-flex w-full items-center justify-center rounded-xl bg-highlight px-4 py-2.5 text-sm font-semibold text-highlight-foreground"
               >
                 Login
               </Link>
               <Link
                 to="/register"
                 onClick={() => setOpen(false)}
-                className="mb-3 inline-flex w-full items-center justify-center rounded-md border border-brand px-4 py-2.5 text-sm font-semibold text-brand"
+                className="mb-3 inline-flex w-full items-center justify-center rounded-xl border border-highlight px-4 py-2.5 text-sm font-semibold text-white"
               >
                 Register
               </Link>

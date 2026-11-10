@@ -237,7 +237,7 @@ function AdminDashboard() {
             Time (Asia/Manila)
           </p>
 
-          <div className="mt-2 max-h-96 overflow-y-auto rounded-lg border border-border">
+          <div className="mt-2 max-h-96 w-full overflow-x-auto overflow-y-auto rounded-2xl border border-border">
             {filteredHistory.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-muted-foreground">
                 No activities on the selected date. Try clearing the filter.

@@ -42,31 +42,31 @@ export function AdminShell({
   return (
     <div className="mx-auto grid w-full max-w-6xl items-start gap-8 overflow-x-clip px-4 pb-4 pt-6 md:grid-cols-[230px_1fr]">
       <aside className="md:sticky md:top-[73px] md:self-start">
-        <div className="rounded-lg border-t-4 border-brand bg-card p-4">
+        <div className="rounded-2xl border border-white/15 bg-brand p-4 text-white shadow-sm">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand">
-            Administrator
+            <span className="text-highlight">Administrator</span>
           </p>
-          <p className="mt-1 text-sm font-semibold text-foreground">
+          <p className="mt-1 text-sm font-semibold text-white">
             {adminName ?? "OARCC Main Office"}
           </p>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-[11px] text-white/70">
             {adminRole ? ROLE_LABEL[adminRole] : "System Administrator"}
           </p>
         </div>
 
-        <nav className="scrollbar-thin mt-3 grid w-full max-w-full grid-cols-3 gap-1.5 rounded-lg border border-border bg-card px-2 py-3 sm:flex sm:flex-row sm:overflow-x-auto sm:whitespace-nowrap md:flex-col md:whitespace-normal md:overflow-visible">
+        <nav className="mt-3 grid w-full max-w-full grid-cols-3 gap-1.5 rounded-2xl border border-white/15 bg-brand px-2 py-3 shadow-sm md:flex md:flex-col md:overflow-visible">
           {visibleLinks.map((l) => (
             <Link
               key={l.to}
               to={l.to}
               title={l.label}
               activeOptions={{ exact: l.to === "/admin" }}
-              activeProps={{ className: "bg-brand text-brand-foreground" }}
-              inactiveProps={{ className: "text-foreground/80 hover:bg-muted" }}
-              className="flex min-w-0 items-center gap-1.5 rounded-md px-2 py-2 text-xs font-medium transition-colors sm:shrink-0 sm:gap-2 sm:px-3 sm:text-sm"
+              activeProps={{ className: "bg-highlight text-highlight-foreground shadow-sm" }}
+              inactiveProps={{ className: "text-white/85 hover:bg-white/10" }}
+              className="flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-center text-[10px] font-medium leading-tight transition-colors md:min-h-0 md:flex-row md:justify-start md:gap-2 md:px-3 md:text-left md:text-sm"
             >
               <l.icon className="size-4 shrink-0" />
-              <span className="truncate whitespace-nowrap md:whitespace-normal">{l.label}</span>
+              <span className="min-w-0 whitespace-normal">{l.label}</span>
             </Link>
           ))}
         </nav>
