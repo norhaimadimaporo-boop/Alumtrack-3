@@ -56,18 +56,20 @@ function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-[calc(100svh-5rem)] items-center justify-center px-4 py-10">
-      <section className="w-full max-w-md rounded-3xl border border-white/50 bg-white/60 p-8 shadow-2xl ring-1 ring-black/5 backdrop-blur-xl">
+    <div className="flex min-h-screen w-full flex-col items-center justify-center overflow-y-auto p-4 md:p-6">
+      <section className="my-auto w-full max-w-[380px] rounded-3xl border border-white/50 bg-white/60 p-5 shadow-2xl ring-1 ring-black/5 backdrop-blur-xl sm:max-w-[400px] sm:p-6">
         <div className="flex justify-center">
-          <BrandMark className="size-16" />
+          <BrandMark className="size-12 sm:size-14" />
         </div>
-        <h1 className="mt-5 text-center text-2xl font-bold text-[#2B2827]">Sign in to AlumTrack</h1>
-        <p className="mt-2 text-center text-sm text-slate-600">
+        <h1 className="mt-3 text-center text-xl font-bold text-[#2B2827] sm:text-2xl">
+          Sign in to AlumTrack
+        </h1>
+        <p className="mt-1 mb-4 text-center text-xs text-slate-600 sm:text-sm">
           Use your MSU alumni credentials to manage your profile.
         </p>
 
         <form
-          className="mt-7 space-y-5"
+          className="space-y-3.5"
           onSubmit={(e) => {
             e.preventDefault();
             void signIn();
@@ -114,7 +116,7 @@ function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={pending}
-                className="login-input w-full rounded-2xl border border-[#E6DFD5] bg-[#F5EFE6]/80 py-3 pl-11 pr-4 text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-[#80001B] focus:bg-white disabled:opacity-60"
+                className="login-input h-10 w-full rounded-2xl border border-[#E6DFD5] bg-[#F5EFE6]/80 py-2.5 pl-11 pr-4 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-[#80001B] focus:bg-white disabled:opacity-60 sm:h-11"
                 placeholder="you@example.com"
               />
             </div>
@@ -140,7 +142,7 @@ function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={pending}
-                className="login-input w-full rounded-2xl border border-[#E6DFD5] bg-[#F5EFE6]/80 py-3 pl-11 pr-11 text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-[#80001B] focus:bg-white disabled:opacity-60"
+                className="login-input h-10 w-full rounded-2xl border border-[#E6DFD5] bg-[#F5EFE6]/80 py-2.5 pl-11 pr-11 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-[#80001B] focus:bg-white disabled:opacity-60 sm:h-11"
                 placeholder="Enter your password"
               />
               <button
@@ -167,7 +169,7 @@ function LoginPage() {
           <button
             type="submit"
             disabled={pending}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#80001B] py-3.5 font-medium text-white shadow-md transition-all hover:bg-[#600014] disabled:cursor-not-allowed disabled:opacity-70"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#80001B] py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-[#600014] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {pending ? (
               <>
@@ -190,7 +192,7 @@ function LoginPage() {
           )}
         </form>
 
-        <div className="mt-6 border-t border-[#5A0012]/10 pt-5">
+        <div className="mt-4 border-t border-[#5A0012]/10 pt-4">
           <Link
             to="/"
             className="mx-auto flex w-fit items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-[#80001B] transition-colors hover:bg-[#F5EFE6]"
