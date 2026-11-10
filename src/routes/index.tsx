@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search, MapPinned, Newspaper, UserRoundPen, ArrowRight, CalendarDays, Database } from "lucide-react";
-import heroImage from "@/assets/msu-graduation.jpg";
+const heroImage = "/assets/hero-bg.jpg";
 import { POSTS, findPostPhoto } from "@/data/news";
 import { BarList } from "@/components/cluster-map";
 import { RealAlumniMap } from "@/components/real-alumni-map";
@@ -160,10 +160,11 @@ function Index() {
       <section className="relative isolate overflow-hidden bg-foreground">
         <img
           src={heroImage}
-          alt="Mindanao State University graduation ceremony"
-          width={739}
-          height={415}
-          className="absolute inset-0 size-full object-cover"
+          alt="Graduates at the 62nd Pre-Commencement Exercises in the Dimaporo Gymnasium"
+          width={1536}
+          height={1024}
+          fetchPriority="high"
+          className="absolute inset-0 size-full object-cover object-center"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/85 via-foreground/65 to-foreground/35" />
         <div className="relative mx-auto max-w-6xl px-4 py-24 md:py-32">
