@@ -174,18 +174,18 @@ function Index() {
           fetchPriority="high"
           className="absolute inset-0 size-full object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-dark/90 via-brand-dark/70 to-brand-dark/40" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#5A0012]/70 via-[#80001B]/40 to-transparent" />
         <div className="relative mx-auto max-w-6xl px-4 py-24 md:py-32">
           <span className="inline-block bg-highlight px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-highlight-foreground">
             Office of Alumni Relations and Career Center
           </span>
-          <h1 className="mt-6 max-w-3xl text-4xl font-bold leading-[1.1] text-background sm:text-5xl md:text-6xl">
+          <h1 className="mt-6 max-w-3xl text-4xl font-bold leading-[1.1] text-background drop-shadow-md sm:text-5xl md:text-6xl">
             AlumTrack
             <span className="mt-3 block text-lg font-medium leading-snug text-background/80 sm:text-xl">
               Alumni Tracing System and Online Platform for Mindanao State University — Main Campus
             </span>
           </h1>
-          <p className="mt-6 max-w-xl text-sm leading-relaxed text-background/70">
+          <p className="mt-6 max-w-xl text-sm leading-relaxed text-background/70 drop-shadow-md">
             One centralized portal for tracing graduates, keeping alumni records current, and
             strengthening the bond between the University and her alumni.
           </p>
