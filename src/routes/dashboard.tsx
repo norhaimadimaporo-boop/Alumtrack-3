@@ -133,7 +133,7 @@ function DashboardPage() {
         initials: userInitials,
       }}
     >
-      <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid w-full min-w-0 max-w-full gap-3 overflow-x-hidden sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="rounded-lg border border-border bg-card p-4">
             <s.icon className="size-4 text-brand" />
@@ -143,7 +143,7 @@ function DashboardPage() {
         ))}
       </div>
 
-      <div className="mt-4 w-full rounded-lg border border-border bg-card p-5">
+      <div className="mt-4 w-full min-w-0 max-w-full rounded-lg border border-border bg-card p-5">
         <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-sm font-semibold text-foreground">Complete your profile</h2>
@@ -165,8 +165,8 @@ function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-4 grid w-full gap-4 lg:grid-cols-[1.5fr_1fr]">
-        <div className="rounded-lg border border-border bg-card p-5">
+      <div className="mt-4 grid w-full min-w-0 max-w-full gap-4 overflow-x-hidden lg:grid-cols-[1.5fr_1fr]">
+        <div className="min-w-0 rounded-lg border border-border bg-card p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <MapPinned className="size-4 text-brand" /> GIS Alumni Map
@@ -189,7 +189,7 @@ function DashboardPage() {
             />
           </div>
         </div>
-        <div className="rounded-lg border-t-4 border-brand bg-card p-5">
+        <div className="min-w-0 rounded-lg border-t-4 border-brand bg-card p-5">
           <h2 className="text-sm font-semibold text-foreground">Tracer study snapshot</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Where batchmates are employed, by sector.
@@ -213,8 +213,8 @@ function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-4 grid w-full gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <div className="rounded-lg border border-border bg-card p-5">
+      <div className="mt-4 grid w-full min-w-0 max-w-full gap-4 overflow-x-hidden lg:grid-cols-[1.4fr_1fr]">
+        <div className="min-w-0 rounded-lg border border-border bg-card p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-foreground">Latest posts</h2>
             <Link to="/news" className="text-xs font-semibold text-brand hover:underline">

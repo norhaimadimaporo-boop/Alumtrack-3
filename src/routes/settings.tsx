@@ -242,7 +242,7 @@ function SettingsPage() {
         </div>
       )}
 
-      <div className="w-full space-y-4">
+      <div className="w-full min-w-0 max-w-full overflow-x-hidden space-y-4">
         <section className="w-full rounded-lg border border-border bg-card p-5">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Shield className="size-4 text-brand" /> Public profile visibility

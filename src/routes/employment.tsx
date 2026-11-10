@@ -251,7 +251,7 @@ function EmploymentPage() {
       subtitle="Keep your current and previous jobs up to date for the OARCC tracer study."
       user={{ name: user.fullName, batch: user.batch, initials: user.initials }}
     >
-      <div className="rounded-lg border-l-4 border-highlight bg-card p-4">
+      <div className="w-full min-w-0 max-w-full rounded-lg border-l-4 border-highlight bg-card p-4">
         <p className="text-xs leading-relaxed text-muted-foreground">
           <span className="font-semibold text-foreground">Graduate Tracer Study.</span> Your
           employment sector and work location are aggregated anonymously into OARCC tracer
@@ -269,21 +269,21 @@ function EmploymentPage() {
           </button>
         </div>
       ) : (
-        <p className="mt-4 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+        <p className="mt-4 w-full min-w-0 max-w-full rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
           Adding or editing employment becomes available once the OARCC verifies your alumni record.
         </p>
       )}
 
       {employment.length === 0 ? (
-        <p className="mt-4 rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
+        <p className="mt-4 w-full min-w-0 max-w-full rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
           No employment records on file yet.
         </p>
       ) : (
-        <ol className="mt-4 space-y-3">
+        <ol className="mt-4 w-full min-w-0 max-w-full space-y-3">
           {employment.map((record) => (
             <li
               key={record.id}
-              className={`rounded-lg border bg-card p-5 transition-colors hover:border-brand ${
+              className={`w-full min-w-0 rounded-lg border bg-card p-5 transition-colors hover:border-brand ${
                 record.isCurrent ? "border-l-4 border-l-success border-border" : "border-border"
               }`}
             >

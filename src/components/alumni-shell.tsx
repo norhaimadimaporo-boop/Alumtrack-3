@@ -38,7 +38,7 @@ export function AlumniShell({
   const displayInitials = user?.initials || "AL";
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl gap-8 overflow-x-hidden px-3 py-4 sm:px-4 md:grid-cols-[220px_1fr]">
+    <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-5 overflow-x-hidden px-3 py-4 sm:gap-8 md:grid-cols-[220px_minmax(0,1fr)] md:px-4">
       <aside className="md:sticky md:top-[73px] md:self-start">
         <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-bold text-brand-foreground">
@@ -52,7 +52,10 @@ export function AlumniShell({
           </span>
         </div>
 
-        <nav className="mt-3 grid w-full max-w-full grid-cols-3 gap-1.5 rounded-lg border border-border bg-card px-2 py-2 sm:flex sm:flex-row sm:overflow-x-auto sm:whitespace-nowrap md:flex-col md:whitespace-normal md:overflow-visible">
+        <nav
+          aria-label="Alumni portal navigation"
+          className="mt-3 grid w-full min-w-0 grid-cols-3 gap-1.5 rounded-lg border border-border bg-card p-2 md:flex md:flex-col md:overflow-visible"
+        >
           {links.map((l) => (
             <Link
               key={l.to}
@@ -60,10 +63,10 @@ export function AlumniShell({
               to={l.to}
               activeProps={{ className: "bg-brand text-brand-foreground" }}
               inactiveProps={{ className: "text-foreground/80 hover:bg-muted" }}
-              className="flex min-w-0 items-center gap-1.5 rounded-md px-2 py-2 text-xs font-medium transition-colors sm:shrink-0 sm:gap-2 sm:px-3 sm:text-sm"
+              className="flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1.5 py-2 text-center text-[11px] font-medium leading-tight transition-colors md:min-h-0 md:flex-row md:justify-start md:gap-2 md:px-3 md:text-left md:text-sm"
             >
               <l.icon className="size-4 shrink-0" />
-              <span className="truncate whitespace-nowrap">{l.label}</span>
+              <span className="min-w-0 whitespace-normal">{l.label}</span>
             </Link>
           ))}
         </nav>
