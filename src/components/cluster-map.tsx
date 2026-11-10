@@ -2,10 +2,12 @@ export function BarList({
   items,
   suffix = "%",
   tone = "brand",
+  rowClassName = "",
 }: {
   items: { label: string; value: number }[];
   suffix?: string;
   tone?: "brand" | "success" | "highlight";
+  rowClassName?: string;
 }) {
   const max = Math.max(1, ...items.map((i) => i.value));
   const bar =
@@ -14,7 +16,7 @@ export function BarList({
   return (
     <ul className="w-full max-w-full min-w-0 space-y-3">
       {items.map((i) => (
-        <li key={i.label} className="w-full max-w-full min-w-0">
+        <li key={i.label} className={`w-full max-w-full min-w-0 ${rowClassName}`}>
           <div className="flex min-w-0 flex-col gap-1 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <span className="min-w-0 break-words text-foreground">{i.label}</span>
             <span className="shrink-0 font-semibold text-muted-foreground">
