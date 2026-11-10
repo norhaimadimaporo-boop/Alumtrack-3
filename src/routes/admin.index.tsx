@@ -1,13 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import {
-  Users,
-  UserCheck,
-  Briefcase,
-  Megaphone,
-  History,
-  Database,
-} from "lucide-react";
+import { Users, UserCheck, Briefcase, Megaphone, History, Database } from "lucide-react";
 
 import { AdminShell } from "@/components/admin-shell";
 import { LocationCombobox } from "@/components/location-combobox";
@@ -50,8 +43,6 @@ const STAT_META: Array<{
   { key: "employedAlumni", label: "Employed alumni", icon: Briefcase },
   { key: "activePosts", label: "Active posts", icon: Megaphone },
 ];
-
-const ACTIVITY_PREVIEW_COUNT = 6;
 
 const MONTH_NAMES = [
   "January",
@@ -105,7 +96,7 @@ function AdminDashboard() {
   }
 
   const { stats, activity } = data;
-  const previewActivity = activity.slice(0, ACTIVITY_PREVIEW_COUNT);
+  const previewActivity = activity;
   const yearOptions = useMemo(() => {
     const dataYears = activity.map((item) => item.date.slice(0, 4)).filter(Boolean);
     const merged = [...new Set([...dataYears, ...BASE_YEAR_OPTIONS.map((o) => o.label)])].sort(
@@ -179,9 +170,9 @@ function AdminDashboard() {
             No activity yet. New registrations and verification actions will appear here.
           </p>
         ) : (
-          <ul className="mt-3 divide-y divide-border">
+          <ul className="mt-3 max-h-[350px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 divide-y divide-border">
             {previewActivity.map((item) => (
-              <li key={item.id} className="py-3">
+              <li key={item.id} className="min-h-[48px] py-2.5">
                 <p className="text-sm leading-snug text-foreground">{item.text}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {item.actorName} · {item.time}
@@ -242,8 +233,8 @@ function AdminDashboard() {
           </div>
 
           <p className="mt-4 text-xs text-muted-foreground">
-            Showing {filteredHistory.length} of {activity.length} activities · Times in
-            Philippine Time (Asia/Manila)
+            Showing {filteredHistory.length} of {activity.length} activities · Times in Philippine
+            Time (Asia/Manila)
           </p>
 
           <div className="mt-2 max-h-96 overflow-y-auto rounded-lg border border-border">
@@ -269,7 +260,9 @@ function AdminDashboard() {
                       <td className="px-4 py-2.5 text-xs font-semibold text-foreground">
                         {item.actorName}
                       </td>
-                      <td className="px-4 py-2.5 text-xs leading-snug text-foreground">{item.text}</td>
+                      <td className="px-4 py-2.5 text-xs leading-snug text-foreground">
+                        {item.text}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

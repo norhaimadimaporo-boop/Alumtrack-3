@@ -191,6 +191,12 @@
   background-color: var(--color-border);
   border-radius: 9999px;
 }
+.scrollbar-thumb-gray-400 {
+  scrollbar-color: #9ca3af transparent;
+}
+.scrollbar-thumb-gray-400::-webkit-scrollbar-thumb {
+  background-color: #9ca3af;
+}
 .scrollbar-thin::-webkit-scrollbar-track {
   background: transparent;
 }

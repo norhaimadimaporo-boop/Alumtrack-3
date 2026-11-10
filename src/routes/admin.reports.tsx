@@ -63,9 +63,9 @@ function sameValue(value: string, filter: string) {
 }
 
 function uniqueSorted(values: string[]) {
-  return [...new Set(values.map((v) => v.trim()).filter((v) => v && v !== "—" && v !== "Not provided"))].sort(
-    (a, b) => a.localeCompare(b),
-  );
+  return [
+    ...new Set(values.map((v) => v.trim()).filter((v) => v && v !== "—" && v !== "Not provided")),
+  ].sort((a, b) => a.localeCompare(b));
 }
 
 function AdminReports() {
@@ -142,10 +142,7 @@ function AdminReports() {
     ];
   }, [filtered]);
 
-  const pins = useMemo(
-    () => filtered.flatMap((r) => (r.pin ? [r.pin] : [])),
-    [filtered],
-  );
+  const pins = useMemo(() => filtered.flatMap((r) => (r.pin ? [r.pin] : [])), [filtered]);
   const domesticCount = pins.filter((pin) => pin.country === "Philippines").length;
   const overseasCount = pins.length - domesticCount;
 
@@ -201,9 +198,18 @@ function AdminReports() {
 
   const byAffiliation = useMemo(
     () => [
-      { label: "Secular organizations", value: filtered.filter((r) => r.affiliation === "Secular").length },
-      { label: "Non-secular organizations", value: filtered.filter((r) => r.affiliation === "Non-secular").length },
-      { label: "No affiliation", value: filtered.filter((r) => r.affiliation === "No affiliation").length },
+      {
+        label: "Secular organizations",
+        value: filtered.filter((r) => r.affiliation === "Secular").length,
+      },
+      {
+        label: "Non-secular organizations",
+        value: filtered.filter((r) => r.affiliation === "Non-secular").length,
+      },
+      {
+        label: "No affiliation",
+        value: filtered.filter((r) => r.affiliation === "No affiliation").length,
+      },
     ],
     [filtered],
   );
@@ -230,25 +236,81 @@ function AdminReports() {
             </button>
           )}
         </div>
-        {!data.ok && (
-          <p className="mt-2 text-xs text-red-600">{data.message}</p>
-        )}
+        {!data.ok && <p className="mt-2 text-xs text-red-600">{data.message}</p>}
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <FilterSelect label="Batch year" options={options.batches} value={filters.batch} onChange={(v) => set("batch", v)} />
-          <FilterSelect label="College" options={options.colleges} value={filters.college} onChange={(v) => set("college", v)} />
-          <FilterSelect label="Course" options={options.courses} value={filters.course} onChange={(v) => set("course", v)} />
-          <FilterSelect label="Tribe" options={options.tribes} value={filters.tribe} onChange={(v) => set("tribe", v)} />
-          <FilterSelect label="Religion" options={options.religions} value={filters.religion} onChange={(v) => set("religion", v)} />
-          <FilterSelect label="Province" options={options.provinces} value={filters.province} onChange={(v) => set("province", v)} />
-          <FilterSelect label="Gender" options={options.genders} value={filters.gender} onChange={(v) => set("gender", v)} />
-          <FilterSelect label="Group affiliation" options={options.affiliations} value={filters.affiliation} onChange={(v) => set("affiliation", v)} allLabel="All group affiliations" />
-          <FilterSelect label="Employment status" options={options.employments} value={filters.employment} onChange={(v) => set("employment", v)} allLabel="All employment statuses" />
-          <FilterSelect label="Region" options={options.regions} value={filters.region} onChange={(v) => set("region", v)} />
-          <FilterSelect label="Country" options={options.countries} value={filters.country} onChange={(v) => set("country", v)} allLabel="All countries" />
+          <FilterSelect
+            label="Batch year"
+            options={options.batches}
+            value={filters.batch}
+            onChange={(v) => set("batch", v)}
+          />
+          <FilterSelect
+            label="College"
+            options={options.colleges}
+            value={filters.college}
+            onChange={(v) => set("college", v)}
+          />
+          <FilterSelect
+            label="Course"
+            options={options.courses}
+            value={filters.course}
+            onChange={(v) => set("course", v)}
+          />
+          <FilterSelect
+            label="Tribe"
+            options={options.tribes}
+            value={filters.tribe}
+            onChange={(v) => set("tribe", v)}
+          />
+          <FilterSelect
+            label="Religion"
+            options={options.religions}
+            value={filters.religion}
+            onChange={(v) => set("religion", v)}
+          />
+          <FilterSelect
+            label="Province"
+            options={options.provinces}
+            value={filters.province}
+            onChange={(v) => set("province", v)}
+          />
+          <FilterSelect
+            label="Gender"
+            options={options.genders}
+            value={filters.gender}
+            onChange={(v) => set("gender", v)}
+          />
+          <FilterSelect
+            label="Group affiliation"
+            options={options.affiliations}
+            value={filters.affiliation}
+            onChange={(v) => set("affiliation", v)}
+            allLabel="All group affiliations"
+          />
+          <FilterSelect
+            label="Employment status"
+            options={options.employments}
+            value={filters.employment}
+            onChange={(v) => set("employment", v)}
+            allLabel="All employment statuses"
+          />
+          <FilterSelect
+            label="Region"
+            options={options.regions}
+            value={filters.region}
+            onChange={(v) => set("region", v)}
+          />
+          <FilterSelect
+            label="Country"
+            options={options.countries}
+            value={filters.country}
+            onChange={(v) => set("country", v)}
+            allLabel="All countries"
+          />
         </div>
       </section>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mt-4 grid w-full max-w-full min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {kpis.map((kpi) => (
           <div key={kpi.label} className="rounded-lg border border-border bg-card p-4">
             <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
@@ -327,10 +389,10 @@ function AdminReports() {
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+      <div className="mt-4 grid w-full max-w-full min-w-0 gap-4 lg:grid-cols-2">
         <Panel title="1. No. of graduates per year (masteral & undergrad)" icon>
-          <div className="overflow-x-auto">
-            <div className="min-w-[640px]">
+          <div className="block w-full max-w-full overflow-x-auto">
+            <div className="w-full min-w-[560px] sm:min-w-0">
               <ColumnChart items={perYear} />
             </div>
           </div>
@@ -339,8 +401,10 @@ function AdminReports() {
           <DonutChart items={tribalSplit} />
         </Panel>
         <Panel title="3. No. of graduates by province" icon>
-          <div className="max-h-60 overflow-y-auto pr-1">
-            <BarList items={byProvince} suffix="" />
+          <div className="block w-full max-w-full min-w-0 overflow-x-auto">
+            <div className="max-w-full">
+              <BarList items={byProvince} suffix="" />
+            </div>
           </div>
         </Panel>
         <Panel title="4. No. of graduates by gender" icon>
@@ -364,12 +428,12 @@ function Panel({
   icon?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-5">
+    <div className="w-full min-w-0 max-w-full rounded-lg border border-border bg-card p-4 sm:p-5">
       <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
         {icon && <BarChart3 className="size-4 text-brand" />}
         {title}
       </h2>
-      <div className="mt-4">{children}</div>
+      <div className="mt-4 block w-full min-w-0 max-w-full overflow-x-auto">{children}</div>
     </div>
   );
 }
