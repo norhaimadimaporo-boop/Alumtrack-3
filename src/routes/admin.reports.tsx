@@ -397,7 +397,7 @@ function AdminReports() {
           <DonutChart items={tribalSplit} />
         </Panel>
         <Panel title="3. No. of graduates by province" icon>
-          <div className="block max-h-[350px] w-full max-w-full min-w-0 overflow-y-auto overflow-x-hidden pr-2 scrollbar-thin scrollbar-thumb-gray-400 md:max-h-none md:overflow-y-visible md:pr-0">
+          <div className="block w-full max-w-full min-w-0 overflow-x-hidden md:max-h-[220px] md:overflow-y-auto md:pr-2 md:scrollbar-thin md:scrollbar-thumb-gray-400 [&_ul>li]:min-h-[43px]">
             <div className="w-full max-w-full min-w-0">
               <BarList items={byProvince} suffix="" />
             </div>
@@ -423,16 +423,20 @@ function ResponsiveColumnChart({
   tone?: "brand" | "success" | "highlight";
 }) {
   return (
-    <div className="w-full min-w-0 max-w-full">
-      <div className="block w-full overflow-x-auto md:hidden">
-        <div className="min-w-[560px]">
-          <ColumnChart items={items} {...(tone ? { tone } : {})} />
+      <div className="w-full min-w-0 max-w-full">
+        <div className="block w-full overflow-x-auto md:hidden">
+          <div className="min-w-[560px]">
+            <ColumnChart items={items} {...(tone ? { tone } : {})} />
+          </div>
+        </div>
+        <div className="hidden w-full min-w-0 md:block">
+          <div className="overflow-x-auto md:max-h-[350px] md:overflow-y-auto md:scrollbar-thin md:scrollbar-thumb-gray-400">
+            <div className="min-w-[720px]">
+              <ColumnChart items={items} {...(tone ? { tone } : {})} />
+            </div>
+          </div>
         </div>
       </div>
-      <div className="hidden w-full min-w-0 md:block">
-        <ColumnChart items={items} {...(tone ? { tone } : {})} />
-      </div>
-    </div>
   );
 }
 
