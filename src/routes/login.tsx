@@ -59,7 +59,7 @@ function LoginPage() {
     <div className="flex min-h-screen w-full flex-col items-center justify-center overflow-y-auto p-4 md:p-6">
       <section className="my-auto w-full max-w-[380px] rounded-3xl border border-white/50 bg-white/60 p-5 shadow-2xl ring-1 ring-black/5 backdrop-blur-xl sm:max-w-[400px] sm:p-6">
         <div className="flex justify-center">
-          <BrandMark className="size-12 sm:size-14" />
+          <BrandMark className="h-12 w-12 sm:h-14 sm:w-14" />
         </div>
         <h1 className="mt-3 text-center text-xl font-bold text-[#2B2827] sm:text-2xl">
           Sign in to AlumTrack

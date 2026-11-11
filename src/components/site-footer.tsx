@@ -8,7 +8,7 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 md:grid-cols-3">
         <div>
           <div className="flex items-center gap-3">
-            <BrandMark className="size-12 shrink-0" />
+            <BrandMark className="h-12 w-auto shrink-0" />
             <p className="text-lg font-bold">AlumTrack</p>
           </div>
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-[#5A0012]/80">

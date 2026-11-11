@@ -480,7 +480,7 @@ function RegisterPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <div className="flex items-center gap-3">
-        <BrandMark className="size-14 shrink-0" />
+        <BrandMark className="h-12 w-12 shrink-0 sm:h-14 sm:w-14" />
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Alumni Registration</h1>
           <p className="text-sm text-muted-foreground">

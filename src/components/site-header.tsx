@@ -39,7 +39,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 bg-[#5A0012]/85 px-2 pt-2 backdrop-blur-sm sm:px-4">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 rounded-2xl border border-white/15 bg-[#5A0012]/85 px-3 py-3 shadow-sm backdrop-blur-sm sm:px-4">
         <Link to="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
-          <BrandMark className="size-11 shrink-0" />
+          <BrandMark className="h-10 w-auto shrink-0 sm:h-12" />
           <span className="leading-tight">
             <span className="block text-base font-bold tracking-tight text-white">
               AlumTrack

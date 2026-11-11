@@ -1,14 +1,12 @@
-import msuSeal from "@/assets/msu-seal.png";
-
-/** Official Mindanao State University seal used as the AlumTrack brand mark. */
-export function BrandMark({ className = "size-9" }: { className?: string }) {
+/** Shared transparent AlumTrack logo for the public, alumni, and admin shells. */
+export function BrandMark({ className = "h-9 w-9" }: { className?: string }) {
   return (
     <img
-      src={msuSeal}
-      alt="Mindanao State University seal"
-      width={256}
-      height={256}
-      className={`${className} rounded-md object-contain bg-white p-0.5`}
+      src="/assets/alumtrack-logo.png"
+      alt="AlumTrack — MSU Main Campus"
+      width={1254}
+      height={1254}
+      className={`${className} block object-contain`}
     />
   );
 }
