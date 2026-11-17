@@ -16,6 +16,7 @@ import { Route as EducationRouteImport } from './routes/education'
 import { Route as EmploymentRouteImport } from './routes/employment'
 import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as MapRouteImport } from './routes/map'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as OarccRouteImport } from './routes/oarcc'
 import { Route as OrganizationRouteImport } from './routes/organization'
@@ -63,6 +64,11 @@ const JobsRoute = JobsRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MapRoute = MapRouteImport.update({
+  id: '/map',
+  path: '/map',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewsRoute = NewsRouteImport.update({
@@ -139,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/employment': typeof EmploymentRoute
   '/jobs': typeof JobsRoute
   '/login': typeof LoginRoute
+  '/map': typeof MapRoute
   '/news': typeof NewsRoute
   '/oarcc': typeof OarccRoute
   '/organization': typeof OrganizationRoute
@@ -161,6 +168,7 @@ export interface FileRoutesByTo {
   '/employment': typeof EmploymentRoute
   '/jobs': typeof JobsRoute
   '/login': typeof LoginRoute
+  '/map': typeof MapRoute
   '/news': typeof NewsRoute
   '/oarcc': typeof OarccRoute
   '/organization': typeof OrganizationRoute
@@ -184,6 +192,7 @@ export interface FileRoutesById {
   '/employment': typeof EmploymentRoute
   '/jobs': typeof JobsRoute
   '/login': typeof LoginRoute
+  '/map': typeof MapRoute
   '/news': typeof NewsRoute
   '/oarcc': typeof OarccRoute
   '/organization': typeof OrganizationRoute
@@ -208,6 +217,7 @@ export interface FileRouteTypes {
     | '/employment'
     | '/jobs'
     | '/login'
+    | '/map'
     | '/news'
     | '/oarcc'
     | '/organization'
@@ -230,6 +240,7 @@ export interface FileRouteTypes {
     | '/employment'
     | '/jobs'
     | '/login'
+    | '/map'
     | '/news'
     | '/oarcc'
     | '/organization'
@@ -252,6 +263,7 @@ export interface FileRouteTypes {
     | '/employment'
     | '/jobs'
     | '/login'
+    | '/map'
     | '/news'
     | '/oarcc'
     | '/organization'
@@ -275,6 +287,7 @@ export interface RootRouteChildren {
   EmploymentRoute: typeof EmploymentRoute
   JobsRoute: typeof JobsRoute
   LoginRoute: typeof LoginRoute
+  MapRoute: typeof MapRoute
   NewsRoute: typeof NewsRoute
   OarccRoute: typeof OarccRoute
   OrganizationRoute: typeof OrganizationRoute
@@ -339,6 +352,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/map': {
+      id: '/map'
+      path: '/map'
+      fullPath: '/map'
+      preLoaderRoute: typeof MapRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/news': {
@@ -443,6 +463,7 @@ const rootRouteChildren: RootRouteChildren = {
   EmploymentRoute: EmploymentRoute,
   JobsRoute: JobsRoute,
   LoginRoute: LoginRoute,
+  MapRoute: MapRoute,
   NewsRoute: NewsRoute,
   OarccRoute: OarccRoute,
   OrganizationRoute: OrganizationRoute,

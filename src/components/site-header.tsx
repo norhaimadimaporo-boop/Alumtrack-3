@@ -9,6 +9,7 @@ import { clearSession } from "@/lib/session";
 const publicNav = [
   { to: "/", label: "Home" },
   { to: "/search", label: "Search Alumni" },
+  { to: "/map", label: "Map" },
   { to: "/news", label: "Latest Posts" },
   { to: "/oarcc", label: "OARCC" },
 ] as const;
