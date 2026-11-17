@@ -23,6 +23,7 @@
     "db:geo": "node scripts/build-geo-data.mjs",
     "db:recycle": "node scripts/migrate-soft-delete.mjs",
     "db:imports": "node scripts/migrate-import-history.mjs",
+    "db:chat": "node scripts/migrate-chat-tables.mjs",
     "db:delete-test": "node scripts/delete-test-alumni.mjs",
     "db:delete-test:dry": "node scripts/delete-test-alumni.mjs --dry-run",
     "db:purge": "node scripts/purge-recycle-bin.mjs",

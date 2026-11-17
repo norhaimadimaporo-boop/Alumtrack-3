@@ -10,6 +10,8 @@ import {
   MapPinned,
   Settings,
 } from "lucide-react";
+import { AlumniChatWidget } from "@/components/alumni-chat-widget";
+import { useSession } from "@/hooks/use-session";
 
 const links = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -33,20 +35,25 @@ export function AlumniShell({
   user?: { name?: string; batch?: string; initials?: string } | undefined;
   children: ReactNode;
 }) {
-  return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col items-start gap-6 px-4 pt-6 pb-12 md:flex-row">
-      <AlumniSidebar user={user} />
+  const sessionRole = useSession();
 
-      <section className="w-full min-w-0 max-w-full flex-1">
-        <div className="flex w-full flex-col gap-3 border-l-4 border-brand pl-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
-            {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+  return (
+    <>
+      <div className="mx-auto flex w-full max-w-7xl flex-col items-start gap-6 px-4 pt-6 pb-12 md:flex-row">
+        <AlumniSidebar user={user} />
+
+        <section className="w-full min-w-0 max-w-full flex-1">
+          <div className="flex w-full flex-col gap-3 border-l-4 border-brand pl-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
+              {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+            </div>
           </div>
-        </div>
-        <div className="mt-6 w-full min-w-0 max-w-full px-3 sm:px-0">{children}</div>
-      </section>
-    </div>
+          <div className="mt-6 w-full min-w-0 max-w-full px-3 sm:px-0">{children}</div>
+        </section>
+      </div>
+      {sessionRole === "alumni" && <AlumniChatWidget />}
+    </>
   );
 }
 
