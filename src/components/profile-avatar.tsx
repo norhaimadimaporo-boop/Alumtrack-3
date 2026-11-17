@@ -1,8 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Camera, ImageUp, LoaderCircle, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { setClientAvatarUrl, useAvatarUrl } from "@/lib/avatar-store";
+import {
+  closeAvatarMenu,
+  setActiveAvatarMenu,
+  setClientAvatarUrl,
+  useActiveAvatarMenu,
+  useAvatarUrl,
+} from "@/lib/avatar-store";
 
 type AvatarImageProps = {
   userId: number;
@@ -24,7 +31,7 @@ export function AvatarImage({
   const avatarUrl = useAvatarUrl(userId, initialUrl);
   return (
     <span
-      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand font-bold text-brand-foreground ${sizeClassName} ${textClassName}`}
+      className={`flex aspect-square shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand font-bold text-brand-foreground ${sizeClassName} ${textClassName}`}
     >
       {avatarUrl ? (
         <img src={avatarUrl} alt={`${name}'s profile photo`} className="size-full object-cover" />
@@ -98,11 +105,66 @@ export function ProfileAvatar({
   editable = false,
 }: ProfileAvatarProps) {
   const avatarUrl = useAvatarUrl(userId, initialUrl);
+  const instanceId = useId();
+  const activeMenu = useActiveAvatarMenu();
+  const menuOpen = activeMenu?.instanceId === instanceId;
+  const cameraMenuOpen = menuOpen && activeMenu.kind === "camera";
+  const viewMenuOpen = menuOpen && activeMenu.kind === "view";
   const inputRef = useRef<HTMLInputElement>(null);
-  const [cameraMenuOpen, setCameraMenuOpen] = useState(false);
-  const [viewMenuOpen, setViewMenuOpen] = useState(false);
+  const avatarButtonRef = useRef<HTMLButtonElement>(null);
+  const cameraButtonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => () => closeAvatarMenu(instanceId), [instanceId]);
+
+  const toggleMenu = (kind: "camera" | "view", anchor: HTMLButtonElement | null) => {
+    if (activeMenu?.instanceId === instanceId && activeMenu.kind === kind) {
+      closeAvatarMenu(instanceId);
+      return;
+    }
+    if (!anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    const width = kind === "camera" ? 208 : 192;
+    const height = kind === "camera" ? (avatarUrl ? 92 : 48) : 44;
+    const rawLeft = kind === "camera" ? rect.right - width : rect.left;
+    const left = Math.max(8, Math.min(rawLeft, window.innerWidth - width - 8));
+    const below = rect.bottom + 8;
+    const top =
+      below + height <= window.innerHeight - 8 ? below : Math.max(8, rect.top - height - 8);
+    setMenuPosition({ top, left });
+    setActiveAvatarMenu({ instanceId, kind });
+  };
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (
+        avatarButtonRef.current?.contains(target) ||
+        cameraButtonRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
+        return;
+      }
+      closeAvatarMenu(instanceId);
+    };
+    const onScroll = () => closeAvatarMenu(instanceId);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeAvatarMenu(instanceId);
+    };
+    window.addEventListener("pointerdown", onPointerDown, true);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown, true);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [instanceId, menuOpen]);
 
   useEffect(() => {
     if (!lightboxOpen) return;
@@ -143,6 +205,7 @@ export function ProfileAvatar({
   };
 
   const removePhoto = async () => {
+    closeAvatarMenu(instanceId);
     setBusy(true);
     try {
       const response = await fetch("/api/alumni/avatar", { method: "DELETE" });
@@ -151,7 +214,6 @@ export function ProfileAvatar({
         throw new Error(result.message ?? "The profile photo could not be deleted.");
       }
       setClientAvatarUrl(userId, null);
-      setCameraMenuOpen(false);
       toast.success("Profile photo deleted successfully!");
     } catch (error) {
       toast.error(
@@ -163,21 +225,20 @@ export function ProfileAvatar({
   };
 
   const openLightbox = () => {
-    setViewMenuOpen(false);
-    setCameraMenuOpen(false);
+    closeAvatarMenu(instanceId);
     setLightboxOpen(true);
   };
 
   return (
     <span className="relative inline-flex shrink-0">
       <button
+        ref={avatarButtonRef}
         type="button"
+        aria-haspopup="menu"
+        aria-expanded={viewMenuOpen}
         aria-label={`Open ${name}'s profile picture options`}
-        onClick={() => {
-          setCameraMenuOpen(false);
-          setViewMenuOpen((open) => !open);
-        }}
-        className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand font-bold text-brand-foreground ring-offset-2 transition-shadow hover:ring-2 hover:ring-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${sizeClassName} ${textClassName}`}
+        onClick={() => toggleMenu("view", avatarButtonRef.current)}
+        className={`flex aspect-square shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand font-bold text-brand-foreground ring-offset-2 transition-shadow hover:ring-2 hover:ring-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${sizeClassName} ${textClassName}`}
       >
         {avatarUrl ? (
           <img src={avatarUrl} alt="" className="size-full object-cover" />
@@ -200,15 +261,15 @@ export function ProfileAvatar({
             }}
           />
           <button
+            ref={cameraButtonRef}
             type="button"
             aria-label="Profile photo options"
             title="Profile photo options"
+            aria-haspopup="menu"
+            aria-expanded={cameraMenuOpen}
             disabled={busy}
-            onClick={() => {
-              setViewMenuOpen(false);
-              setCameraMenuOpen((open) => !open);
-            }}
-            className="absolute bottom-0 right-0 z-10 flex size-8 items-center justify-center rounded-full border-2 border-background bg-white text-brand shadow-md transition-transform hover:scale-105 disabled:opacity-60"
+            onClick={() => toggleMenu("camera", cameraButtonRef.current)}
+            className="absolute bottom-0 right-0 z-10 flex aspect-square size-8 items-center justify-center overflow-hidden rounded-full border-2 border-background bg-white text-brand shadow-md transition-transform hover:scale-105 disabled:opacity-60"
           >
             {busy ? (
               <LoaderCircle className="size-4 animate-spin" />
@@ -219,85 +280,95 @@ export function ProfileAvatar({
         </>
       )}
 
-      {viewMenuOpen && (
-        <span className="absolute left-0 top-full z-40 mt-2 w-48 rounded-xl border border-border bg-card p-1.5 text-left shadow-xl">
-          <button
-            type="button"
-            onClick={openLightbox}
-            className="w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-foreground hover:bg-muted"
+      {menuOpen &&
+        menuPosition &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            className={`fixed z-[9999] ${cameraMenuOpen ? "w-52" : "w-48"} rounded-xl border border-border bg-card p-1.5 text-left shadow-xl`}
+            style={{ top: menuPosition.top, left: menuPosition.left }}
           >
-            View profile picture
-          </button>
-        </span>
-      )}
+            {viewMenuOpen ? (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={openLightbox}
+                className="w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-foreground hover:bg-muted"
+              >
+                View profile picture
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={busy}
+                  onClick={() => {
+                    closeAvatarMenu(instanceId);
+                    inputRef.current?.click();
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-50"
+                >
+                  <ImageUp className="size-4 text-brand" /> Upload Profile Photo
+                </button>
+                {avatarUrl && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={busy}
+                    onClick={() => void removePhoto()}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                  >
+                    <Trash2 className="size-4" /> Delete Profile Photo
+                  </button>
+                )}
+              </>
+            )}
+          </div>,
+          document.body,
+        )}
 
-      {cameraMenuOpen && editable && (
-        <span className="absolute right-0 top-full z-40 mt-2 w-52 rounded-xl border border-border bg-card p-1.5 text-left shadow-xl">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              setCameraMenuOpen(false);
-              inputRef.current?.click();
+      {lightboxOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            role="presentation"
+            onClick={(event) => {
+              if (event.target === event.currentTarget) setLightboxOpen(false);
             }}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-50"
+            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
           >
-            <ImageUp className="size-4 text-brand" /> Upload Profile Photo
-          </button>
-          {avatarUrl && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void removePhoto()}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Profile picture"
+              className="relative flex aspect-square h-[min(85vw,85vh,560px)] w-[min(85vw,85vh,560px)] items-center justify-center"
             >
-              <Trash2 className="size-4" /> Delete Profile Photo
-            </button>
-          )}
-        </span>
-      )}
-
-      {lightboxOpen && (
-        <div
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setLightboxOpen(false);
-          }}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
-        >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-label={`${name}'s profile picture`}
-            className="relative flex max-h-[92dvh] w-full max-w-xl flex-col items-center rounded-2xl border border-white/15 bg-card p-4 shadow-2xl sm:p-6"
-          >
-            <button
-              type="button"
-              aria-label="Close profile picture"
-              onClick={() => setLightboxOpen(false)}
-              className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full bg-muted text-foreground transition-colors hover:bg-brand hover:text-brand-foreground"
-            >
-              <X className="size-5" />
-            </button>
-            <h2 className="max-w-[calc(100%-3rem)] truncate pr-2 text-center text-base font-bold text-foreground">
-              {name}
-            </h2>
-            <div className="mt-4 flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden rounded-xl bg-muted/70 p-2">
+              <button
+                type="button"
+                aria-label="Close profile picture"
+                onClick={() => setLightboxOpen(false)}
+                className="absolute -right-1 -top-1 z-10 flex aspect-square size-10 items-center justify-center rounded-full border border-white/30 bg-black/70 text-white shadow-lg transition-colors hover:bg-black sm:-right-2 sm:-top-2"
+              >
+                <X className="size-5" />
+              </button>
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
                   alt={`${name}'s profile picture`}
-                  className="max-h-[72dvh] max-w-full rounded-lg object-contain"
+                  className="aspect-square size-full rounded-full object-cover"
                 />
               ) : (
-                <span className="flex size-[min(72vw,360px)] max-h-[72dvh] max-w-full items-center justify-center rounded-full bg-brand text-7xl font-bold text-brand-foreground sm:text-8xl">
+                <span className="flex aspect-square size-full items-center justify-center overflow-hidden rounded-full bg-brand text-7xl font-bold text-brand-foreground sm:text-8xl md:text-9xl">
                   {initials || "AL"}
                 </span>
               )}
             </div>
-          </section>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </span>
   );
 }

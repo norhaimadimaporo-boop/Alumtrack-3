@@ -1,8 +1,43 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 const EVENT_NAME = "alumtrack-avatar-updated";
 const STORAGE_PREFIX = "alumtrack-avatar:";
 const memory = new Map<number, string | null>();
+export type AvatarMenuKind = "camera" | "view";
+export type ActiveAvatarMenu = { instanceId: string; kind: AvatarMenuKind } | null;
+
+let activeAvatarMenu: ActiveAvatarMenu = null;
+const menuListeners = new Set<() => void>();
+
+function notifyMenuListeners() {
+  menuListeners.forEach((listener) => listener());
+}
+
+export function setActiveAvatarMenu(menu: ActiveAvatarMenu) {
+  if (activeAvatarMenu?.instanceId === menu?.instanceId && activeAvatarMenu?.kind === menu?.kind) {
+    return;
+  }
+  activeAvatarMenu = menu;
+  notifyMenuListeners();
+}
+
+export function closeAvatarMenu(instanceId?: string) {
+  if (instanceId && activeAvatarMenu?.instanceId !== instanceId) return;
+  if (activeAvatarMenu === null) return;
+  activeAvatarMenu = null;
+  notifyMenuListeners();
+}
+
+export function useActiveAvatarMenu(): ActiveAvatarMenu {
+  return useSyncExternalStore(
+    (listener) => {
+      menuListeners.add(listener);
+      return () => menuListeners.delete(listener);
+    },
+    () => activeAvatarMenu,
+    () => null,
+  );
+}
 
 type AvatarEvent = CustomEvent<{ userId: number; avatarUrl: string | null }>;
 
