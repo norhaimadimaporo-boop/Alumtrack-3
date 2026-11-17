@@ -59,10 +59,10 @@ export function AlumniChatWidget() {
   }, [open, thread]);
 
   useEffect(() => {
-    if (!open || thread?.mode !== "agent") return;
+    if (!open) return;
     const timer = window.setInterval(() => void refreshThread(), 3500);
     return () => window.clearInterval(timer);
-  }, [open, thread?.id, thread?.mode, refreshThread]);
+  }, [open, refreshThread]);
 
   useEffect(() => {
     if (!open) return;
@@ -119,13 +119,13 @@ export function AlumniChatWidget() {
           aria-label="OARCC support chat"
           className="flex h-[min(72vh,620px)] max-h-[calc(100dvh-6rem)] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-[#E6DFD5] bg-[#FAF6F0] shadow-2xl"
         >
-          <header className="flex shrink-0 items-center gap-3 bg-[#7A1315] px-4 py-3 text-white">
+          <header className="flex shrink-0 items-center gap-3 bg-[#7A1315] px-4 py-3 text-white transition-colors duration-300">
             {thread?.mode === "agent" ? (
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#FAF6F0] p-1">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#FAF6F0] p-1 transition-all duration-300">
                 <BrandMark className="size-full" />
               </span>
             ) : (
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/15">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/15 transition-all duration-300">
                 <Bot className="size-5" />
               </span>
             )}
@@ -162,7 +162,7 @@ export function AlumniChatWidget() {
                         : "rounded-bl-sm border border-[#E6DFD5] bg-white text-[#312B27]"
                     }`}
                   >
-                    {item.senderType === "bot" && item.id === thread.messages[0]?.id && (
+                    {item.senderType === "bot" && (
                       <p className="mb-1 text-[10px] font-semibold text-[#7A1315]/65">
                         Sent by chat bot
                       </p>
@@ -183,9 +183,9 @@ export function AlumniChatWidget() {
               );
             })}
             {thread?.mode === "bot" && (
-              <div className="space-y-2 pt-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#766C64]">
-                  Quick questions
+              <div className="space-y-2 rounded-xl border border-[#E6DFD5] bg-white/70 p-3">
+                <p className="text-[11px] font-semibold text-[#766C64]">
+                  How can I help you today?
                 </p>
                 {FAQS.map((question) => (
                   <button

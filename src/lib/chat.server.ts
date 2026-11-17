@@ -17,7 +17,9 @@ import type {
 
 const BOT_NAME = "OARCC Virtual Assistant";
 const INITIAL_GREETING = "Thank you for getting in touch with OARCC. How may I help you today?";
-const HANDOFF_NOTICE = "You are now connected with OARCC Admin Support. Type your message below.";
+const HANDOFF_NOTICE =
+  "Connecting you to an OARCC Admin agent... Please send a message to get started.";
+const ADMIN_REPLY_FOLLOW_UP = "Our OARCC agent has responded above. How else can I help you today?";
 const MAX_MESSAGE_LENGTH = 4000;
 let tablesPromise: Promise<void> | null = null;
 
@@ -285,19 +287,39 @@ export async function handoffAlumniChatToAgent(): Promise<AlumniChatResult> {
     await ensureChatTables();
     const session = await getOrCreateOpenSession(user.id);
     const pool = getPool();
-    if (session.mode !== "agent") {
-      await pool.execute(
-        `UPDATE chat_sessions
-            SET mode = 'agent', unread_admin_count = unread_admin_count + 1,
-                last_message_preview = ?
-          WHERE id = ?`,
-        [HANDOFF_NOTICE, session.id],
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [sessionRows] = await connection.execute<SessionRow[]>(
+        `SELECT id, alumni_user_id, mode, status, unread_admin_count, unread_alumni_count,
+                last_message_preview, updated_at
+           FROM chat_sessions WHERE id = ? FOR UPDATE`,
+        [session.id],
       );
-      await pool.execute(
-        `INSERT INTO chat_messages (session_id, sender_type, sender_name, message, is_read)
-         VALUES (?, 'bot', ?, ?, 1)`,
-        [session.id, BOT_NAME, HANDOFF_NOTICE],
-      );
+      const currentSession = sessionRows[0];
+      if (!currentSession) {
+        await connection.rollback();
+        return { ok: false, message: "That conversation could not be found." };
+      }
+      if (currentSession.mode !== "agent") {
+        await connection.execute(
+          `UPDATE chat_sessions
+              SET mode = 'agent', status = 'open', last_message_preview = ?
+            WHERE id = ?`,
+          [HANDOFF_NOTICE, session.id],
+        );
+        await connection.execute(
+          `INSERT INTO chat_messages (session_id, sender_type, sender_name, message, is_read)
+           VALUES (?, 'bot', ?, ?, 1)`,
+          [session.id, BOT_NAME, HANDOFF_NOTICE],
+        );
+      }
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
     }
     return getAlumniChatThread();
   } catch (error) {
@@ -422,25 +444,48 @@ export async function sendAdminChatMessage(
   try {
     await ensureChatTables();
     const pool = getPool();
-    const [sessionRows] = await pool.execute<SessionRow[]>(
-      `SELECT id, alumni_user_id, mode, status, unread_admin_count, unread_alumni_count,
-              last_message_preview, updated_at
-         FROM chat_sessions WHERE id = ? LIMIT 1`,
-      [sessionId],
-    );
-    if (!sessionRows[0]) return { ok: false, message: "That conversation could not be found." };
-    await pool.execute(
-      `INSERT INTO chat_messages (session_id, sender_type, sender_name, message, is_read)
-       VALUES (?, 'admin', ?, ?, 0)`,
-      [sessionId, access.admin.fullName ?? access.admin.email, message],
-    );
-    await pool.execute(
-      `UPDATE chat_sessions
-          SET mode = 'agent', status = 'open', unread_alumni_count = unread_alumni_count + 1,
-              last_message_preview = ?
-        WHERE id = ?`,
-      [message.slice(0, 255), sessionId],
-    );
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [sessionRows] = await connection.execute<SessionRow[]>(
+        `SELECT id, alumni_user_id, mode, status, unread_admin_count, unread_alumni_count,
+                last_message_preview, updated_at
+           FROM chat_sessions WHERE id = ? FOR UPDATE`,
+        [sessionId],
+      );
+      if (!sessionRows[0]) {
+        await connection.rollback();
+        return { ok: false, message: "That conversation could not be found." };
+      }
+
+      await connection.execute(
+        `INSERT INTO chat_messages (session_id, sender_type, sender_name, message, is_read)
+         VALUES (?, 'admin', ?, ?, 0)`,
+        [sessionId, access.admin.fullName ?? access.admin.email, message],
+      );
+      await connection.execute(
+        `UPDATE chat_sessions
+            SET mode = 'bot', status = 'open', unread_alumni_count = unread_alumni_count + 1,
+                last_message_preview = ?
+          WHERE id = ?`,
+        [message.slice(0, 255), sessionId],
+      );
+      await connection.execute(
+        `INSERT INTO chat_messages (session_id, sender_type, sender_name, message, is_read)
+         VALUES (?, 'bot', ?, ?, 1)`,
+        [sessionId, BOT_NAME, ADMIN_REPLY_FOLLOW_UP],
+      );
+      await connection.execute(`UPDATE chat_sessions SET last_message_preview = ? WHERE id = ?`, [
+        ADMIN_REPLY_FOLLOW_UP.slice(0, 255),
+        sessionId,
+      ]);
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
     return { ok: true, message: "Reply sent." };
   } catch (error) {
     console.error("[chat] Admin reply failed:", error);

@@ -185,8 +185,21 @@ function AdminMessagesPage() {
                             {conversation.updatedLabel}
                           </span>
                         </span>
-                        <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
-                          {conversation.course} · Batch {conversation.batch}
+                        <span className="mt-0.5 flex min-w-0 items-center gap-1.5">
+                          <span className="min-w-0 truncate text-[10px] text-muted-foreground">
+                            {conversation.course} · Batch {conversation.batch}
+                          </span>
+                          <span
+                            className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-semibold leading-none ${
+                              conversation.mode === "agent"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-emerald-100 text-emerald-800"
+                            }`}
+                          >
+                            {conversation.mode === "agent"
+                              ? "Agent Requested"
+                              : "Bot Active / Replied"}
+                          </span>
                         </span>
                         <span
                           className={`mt-1 block truncate text-[11px] ${unread ? "font-bold text-foreground" : "text-muted-foreground"}`}
@@ -223,8 +236,16 @@ function AdminMessagesPage() {
                       {activeConversation.course} · Batch {activeConversation.batch}
                     </span>
                   </span>
-                  <span className="shrink-0 rounded-full bg-highlight/25 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-highlight-foreground">
-                    {activeConversation.mode === "agent" ? "Agent" : "Bot"}
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-[9px] font-semibold ${
+                      activeConversation.mode === "agent"
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-emerald-100 text-emerald-800"
+                    }`}
+                  >
+                    {activeConversation.mode === "agent"
+                      ? "Agent Requested"
+                      : "Bot Active / Replied"}
                   </span>
                 </header>
 
