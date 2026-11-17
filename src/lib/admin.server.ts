@@ -7,6 +7,7 @@ import { formatAddress, formatDate, fullName, calculateAge, relativeTime } from 
 import { formatLocationLabel, savedLocation } from "./geo";
 import { isAdminRole, type AdminRole } from "./session";
 import { ensureSoftDeleteColumns, notDeleted } from "./soft-delete.server";
+import { avatarUrlForUser, ensureAvatarSchema } from "./avatar.server";
 import type {
   AdminAccount,
   AdminAccountInput,
@@ -24,10 +25,7 @@ import type {
   ProfileEmploymentStatus,
   VerificationStatus,
 } from "./admin.types";
-import {
-  primaryEducationRecord,
-  priorityBatchYear,
-} from "./registration.types";
+import { primaryEducationRecord, priorityBatchYear } from "./registration.types";
 
 const UNAUTHORIZED = "Sign in with an administrator account to open the admin dashboard.";
 
@@ -98,6 +96,8 @@ type AlumniRow = RowDataPacket & {
   bac_grad_year: number | string | null;
   grad_grad_year: number | string | null;
   postgrad_grad_year: number | string | null;
+  has_avatar: number | boolean;
+  avatar_updated_at: Date | string | null;
   employment_status: ProfileEmploymentStatus;
   current_position: string | null;
   current_company: string | null;
@@ -293,9 +293,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
     const visibleActivity = activityRows.filter(
       (row) =>
         isHead ||
-        (row.action !== "Login" &&
-          row.action !== "Logout" &&
-          row.entity_type !== "login"),
+        (row.action !== "Login" && row.action !== "Logout" && row.entity_type !== "login"),
     );
 
     return {
@@ -365,6 +363,7 @@ export async function listAdminAlumni(): Promise<AdminAlumniList> {
 
   try {
     await ensureSoftDeleteColumns();
+    await ensureAvatarSchema();
     const pool = getPool();
 
     const [rows] = await pool.query<AlumniRow[]>(
@@ -385,7 +384,8 @@ export async function listAdminAlumni(): Promise<AdminAlumniList> {
                   AND graduated_on IS NOT NULL
                 ORDER BY graduated_on DESC LIMIT 1) AS postgrad_grad_year,
               p.employment_status, p.current_position,
-              p.current_company, p.current_region, p.verification_status, p.created_at,
+               p.current_company, p.current_region, p.verification_status, p.created_at,
+               (p.avatar_data IS NOT NULL) AS has_avatar, p.avatar_updated_at,
               cur.building AS current_building, cur.house_no AS current_house_no,
               cur.block AS current_block, cur.street AS current_street,
               cur.subdivision AS current_subdivision, cur.city AS current_city,
@@ -500,6 +500,7 @@ export async function listAdminAlumni(): Promise<AdminAlumniList> {
       return {
         id: row.id,
         userId: row.user_id,
+        avatarUrl: avatarUrlForUser(row.user_id, row.has_avatar, row.avatar_updated_at),
         name: fullName(row.first_name, row.middle_name ?? "", row.last_name),
         firstName: row.first_name,
         middleName: row.middle_name ?? "",
@@ -665,8 +666,7 @@ export async function deleteAlumniRecord(profileId: number): Promise<AdminAction
 export async function recordAlumniExport(count: number): Promise<AdminActionResult> {
   const access = await requireAdmin("viewer");
   if (!access.ok) return { ok: false, message: access.message };
-  if (!Number.isInteger(count) || count < 0)
-    return { ok: false, message: "Invalid export count." };
+  if (!Number.isInteger(count) || count < 0) return { ok: false, message: "Invalid export count." };
   try {
     await getPool().execute(
       `INSERT INTO activity_log (actor_user_id, actor_name, action, entity_type, entity_id)
@@ -840,7 +840,11 @@ function profileFields(input: AdminAlumniSaveInput) {
     course: primary?.degree.trim() || input.course.trim(),
     college: primary?.college.trim() || input.college.trim(),
     employment,
-    region: input.region.trim() || input.currentAddress.province.trim() || input.currentAddress.city.trim() || null,
+    region:
+      input.region.trim() ||
+      input.currentAddress.province.trim() ||
+      input.currentAddress.city.trim() ||
+      null,
     location,
   };
 }
@@ -900,7 +904,8 @@ export async function updateAlumniRecord(
         input.birthPlace.trim(),
         input.religion.trim(),
         input.mobileNumber.trim(),
-        (input.contactEmail.trim() || `${fields.displayName.toLowerCase().replace(/\s+/g, ".")}@alumtrack.local`),
+        input.contactEmail.trim() ||
+          `${fields.displayName.toLowerCase().replace(/\s+/g, ".")}@alumtrack.local`,
         input.akanEmail.trim().toLowerCase() || null,
         input.facebook.trim() || null,
         fields.course || null,
@@ -947,9 +952,7 @@ export async function updateAlumniRecord(
 }
 
 /** Admin direct-create: inserts a verified alumni record (import-style). */
-export async function createAlumniRecord(
-  input: AdminAlumniSaveInput,
-): Promise<AdminActionResult> {
+export async function createAlumniRecord(input: AdminAlumniSaveInput): Promise<AdminActionResult> {
   const access = await requireAdmin("standard");
   if (!access.ok) return { ok: false, message: access.message };
   const admin = access.admin;
@@ -959,7 +962,10 @@ export async function createAlumniRecord(
   }
 
   const fields = profileFields(input);
-  const email = (input.contactEmail.trim() || `${fields.displayName.toLowerCase().replace(/[^a-z0-9]+/g, ".")}@alumtrack.local`).toLowerCase();
+  const email = (
+    input.contactEmail.trim() ||
+    `${fields.displayName.toLowerCase().replace(/[^a-z0-9]+/g, ".")}@alumtrack.local`
+  ).toLowerCase();
   const pool = getPool();
   const connection = await pool.getConnection();
   try {

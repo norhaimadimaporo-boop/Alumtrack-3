@@ -183,7 +183,13 @@ function EducationPage() {
     <AlumniShell
       title="Education Details"
       subtitle="The degrees you registered with OARCC. You may add or edit a degree anytime."
-      user={{ name: user.fullName, batch: user.batch, initials: user.initials }}
+      user={{
+        name: user.fullName,
+        batch: user.batch,
+        initials: user.initials,
+        userId: user.userId,
+        avatarUrl: user.avatarUrl,
+      }}
     >
       {canEdit ? (
         <div className="flex justify-end">

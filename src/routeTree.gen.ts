@@ -31,6 +31,7 @@ import { Route as AdminMessagesRouteImport } from './routes/admin.messages'
 import { Route as AdminPostsRouteImport } from './routes/admin.posts'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminUsageRouteImport } from './routes/admin.usage'
+import { Route as ApiAlumniAvatarRouteImport } from './routes/api.alumni.avatar'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -142,6 +143,11 @@ const AdminUsageRoute = AdminUsageRouteImport.update({
   path: '/admin/usage',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAlumniAvatarRoute = ApiAlumniAvatarRouteImport.update({
+  id: '/api/alumni/avatar',
+  path: '/api/alumni/avatar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -166,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/admin/reports': typeof AdminReportsRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin/': typeof AdminIndexRoute
+  '/api/alumni/avatar': typeof ApiAlumniAvatarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -190,6 +197,7 @@ export interface FileRoutesByTo {
   '/admin/reports': typeof AdminReportsRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin': typeof AdminIndexRoute
+  '/api/alumni/avatar': typeof ApiAlumniAvatarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -215,6 +223,7 @@ export interface FileRoutesById {
   '/admin/reports': typeof AdminReportsRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin/': typeof AdminIndexRoute
+  '/api/alumni/avatar': typeof ApiAlumniAvatarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -241,6 +250,7 @@ export interface FileRouteTypes {
     | '/admin/reports'
     | '/admin/usage'
     | '/admin/'
+    | '/api/alumni/avatar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -265,6 +275,7 @@ export interface FileRouteTypes {
     | '/admin/reports'
     | '/admin/usage'
     | '/admin'
+    | '/api/alumni/avatar'
   id:
     | '__root__'
     | '/'
@@ -289,6 +300,7 @@ export interface FileRouteTypes {
     | '/admin/reports'
     | '/admin/usage'
     | '/admin/'
+    | '/api/alumni/avatar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -314,6 +326,7 @@ export interface RootRouteChildren {
   AdminReportsRoute: typeof AdminReportsRoute
   AdminUsageRoute: typeof AdminUsageRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  ApiAlumniAvatarRoute: typeof ApiAlumniAvatarRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -472,6 +485,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsageRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/alumni/avatar': {
+      id: '/api/alumni/avatar'
+      path: '/api/alumni/avatar'
+      fullPath: '/api/alumni/avatar'
+      preLoaderRoute: typeof ApiAlumniAvatarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -498,6 +518,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminReportsRoute: AdminReportsRoute,
   AdminUsageRoute: AdminUsageRoute,
   AdminIndexRoute: AdminIndexRoute,
+  ApiAlumniAvatarRoute: ApiAlumniAvatarRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

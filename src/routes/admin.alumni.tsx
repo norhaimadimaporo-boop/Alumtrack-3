@@ -20,6 +20,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
+import { AvatarImage } from "@/components/profile-avatar";
 import { AddressFields } from "@/components/address-fields";
 import { Modal, LabeledInput, PrimaryButton } from "@/components/modal";
 import { useAdminRole } from "@/hooks/use-session";
@@ -477,7 +478,9 @@ function AdminAlumni() {
         facebook: wizardFacebook,
         education: [...degreeTypes]
           .sort(
-            (a, b) => DEGREE_TYPES.indexOf(a as (typeof DEGREE_TYPES)[number]) - DEGREE_TYPES.indexOf(b as (typeof DEGREE_TYPES)[number]),
+            (a, b) =>
+              DEGREE_TYPES.indexOf(a as (typeof DEGREE_TYPES)[number]) -
+              DEGREE_TYPES.indexOf(b as (typeof DEGREE_TYPES)[number]),
           )
           .map((level) => ({
             level,
@@ -695,8 +698,7 @@ function AdminAlumni() {
       return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
     };
     const fieldValue = (a: Alumnus, field: string) => {
-      const employmentAddress =
-        a.employment.find((entry) => entry.isCurrent)?.companyAddress ?? "";
+      const employmentAddress = a.employment.find((entry) => entry.isCurrent)?.companyAddress ?? "";
       const values: Record<string, string> = {
         "Last Name": a.lastName,
         "First Name": a.firstName,
@@ -872,9 +874,14 @@ function AdminAlumni() {
                 <tr key={a.id} className="align-top">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand text-[11px] font-bold text-brand-foreground">
-                        {initials(a.name)}
-                      </span>
+                      <AvatarImage
+                        userId={a.userId}
+                        name={a.name}
+                        initials={initials(a.name)}
+                        avatarUrl={a.avatarUrl}
+                        sizeClassName="size-9"
+                        textClassName="text-[11px]"
+                      />
                       <div className="min-w-0">
                         <p className="font-semibold text-foreground">{a.name}</p>
                         <p className="text-xs text-muted-foreground">ID No. {idNumber(a)}</p>
@@ -1006,8 +1013,7 @@ function AdminAlumni() {
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Showing{" "}
-              <span className="font-semibold text-foreground">{exportRows.length}</span> of{" "}
+              Showing <span className="font-semibold text-foreground">{exportRows.length}</span> of{" "}
               {alumni.length} alumni
             </p>
 
@@ -1020,9 +1026,14 @@ function AdminAlumni() {
                 <ul className="divide-y divide-border">
                   {exportRows.map((a) => (
                     <li key={a.id} className="flex items-center gap-3 px-3 py-2">
-                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-brand-foreground">
-                        {initials(a.name)}
-                      </span>
+                      <AvatarImage
+                        userId={a.userId}
+                        name={a.name}
+                        initials={initials(a.name)}
+                        avatarUrl={a.avatarUrl}
+                        sizeClassName="size-8"
+                        textClassName="text-[10px]"
+                      />
                       <div className="min-w-0">
                         <p className="truncate text-xs font-semibold text-foreground">{a.name}</p>
                         <p className="text-[11px] text-muted-foreground">
@@ -1141,13 +1152,14 @@ function AdminAlumni() {
                 </summary>
                 <div className="mt-2 max-h-40 overflow-y-auto rounded bg-muted/60 px-2 py-1.5">
                   {importHistory.length === 0 ? (
-                    <p className="text-[11px] text-muted-foreground">
-                      No imported CSV files yet.
-                    </p>
+                    <p className="text-[11px] text-muted-foreground">No imported CSV files yet.</p>
                   ) : (
                     <ul className="space-y-1.5">
                       {importHistory.map((item) => (
-                        <li key={item.id} className="text-[11px] leading-snug text-muted-foreground">
+                        <li
+                          key={item.id}
+                          className="text-[11px] leading-snug text-muted-foreground"
+                        >
                           <span className="font-semibold text-foreground">{item.filename}</span>
                           {" · "}
                           {item.importedAt}
@@ -1252,9 +1264,7 @@ function AdminAlumni() {
           role="alertdialog"
           aria-live="polite"
           aria-label={
-            importDone
-              ? "Import completed successfully"
-              : "Importing alumni records, please wait"
+            importDone ? "Import completed successfully" : "Importing alumni records, please wait"
           }
           className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground/60 p-4"
         >
@@ -1264,8 +1274,7 @@ function AdminAlumni() {
                 <Loader2 className="mx-auto size-10 animate-spin text-brand" />
                 <p className="mt-4 text-sm font-bold text-foreground">Importing...</p>
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                  Please do not close or refresh this tab. Importing alumni records, please
-                  wait...
+                  Please do not close or refresh this tab. Importing alumni records, please wait...
                 </p>
               </>
             ) : (
@@ -1308,7 +1317,6 @@ function AdminAlumni() {
               if (!saving) void handleSave();
             }}
           >
-
             <ol className="flex flex-wrap gap-1.5">
               {PHASE_STEPS.map((s, i) => (
                 <li key={s}>
@@ -1334,7 +1342,11 @@ function AdminAlumni() {
                 <p className="text-[11px] font-bold uppercase tracking-wide text-brand">
                   Phase 1 — Personal details
                 </p>
-                <LabeledInput label="Full name" value={wizardFullName} onChange={setWizardFullName} />
+                <LabeledInput
+                  label="Full name"
+                  value={wizardFullName}
+                  onChange={setWizardFullName}
+                />
                 <div className="grid grid-cols-2 gap-3">
                   <label className="block">
                     <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -1360,7 +1372,12 @@ function AdminAlumni() {
                     onChange={setWizardDob}
                   />
                   <LabeledInput label="Age" value={wizardAge} disabled />
-                  <LabeledInput label="Ethnicity / Tribe" value={wizardEthnicity} onChange={setWizardEthnicity} placeholder="e.g. Maranao" />
+                  <LabeledInput
+                    label="Ethnicity / Tribe"
+                    value={wizardEthnicity}
+                    onChange={setWizardEthnicity}
+                    placeholder="e.g. Maranao"
+                  />
                 </div>
                 <LabeledInput
                   label="Place of birth"
@@ -1368,7 +1385,11 @@ function AdminAlumni() {
                   onChange={setWizardBirthPlace}
                   placeholder="Barangay, City/Municipality, Province"
                 />
-                <LabeledInput label="Religious affiliation" value={wizardReligion} onChange={setWizardReligion} />
+                <LabeledInput
+                  label="Religious affiliation"
+                  value={wizardReligion}
+                  onChange={setWizardReligion}
+                />
               </div>
             )}
 
@@ -1399,9 +1420,7 @@ function AdminAlumni() {
                     />
                     Same as current address
                   </label>
-                  {!sameAddress && (
-                    <AddressFields value={homeAddress} onChange={setHomeAddress} />
-                  )}
+                  {!sameAddress && <AddressFields value={homeAddress} onChange={setHomeAddress} />}
                 </div>
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wide text-foreground">
@@ -1444,11 +1463,10 @@ function AdminAlumni() {
                   Phase 3 — Educational background
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Select every degree earned. Details are requested per degree.
-                  Baccalaureate Degree is the primary (default) degree; Graduate and
-                  Post Graduate are used only when Baccalaureate is not selected.
-                  School ID No. stays here in Phase 3 only — there is no separate
-                  ID Number field in Phase 1.
+                  Select every degree earned. Details are requested per degree. Baccalaureate Degree
+                  is the primary (default) degree; Graduate and Post Graduate are used only when
+                  Baccalaureate is not selected. School ID No. stays here in Phase 3 only — there is
+                  no separate ID Number field in Phase 1.
                 </p>
                 <div className="grid gap-2 sm:grid-cols-3">
                   {DEGREE_TYPES.map((d) => (
@@ -1523,10 +1541,9 @@ function AdminAlumni() {
                 ))}
 
                 <div className="rounded-md border-l-4 border-brand bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
-                  Course, College, and Batch Year below are auto-synced from the
-                  primary degree above — Baccalaureate first, then Graduate, then
-                  Post Graduate. Editing either side updates the other; Batch Year is
-                  the year of that Date Graduated (e.g. 2015).
+                  Course, College, and Batch Year below are auto-synced from the primary degree
+                  above — Baccalaureate first, then Graduate, then Post Graduate. Editing either
+                  side updates the other; Batch Year is the year of that Date Graduated (e.g. 2015).
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -1619,14 +1636,27 @@ function AdminAlumni() {
                 {employed === "employed" && (
                   <div className="mt-4 space-y-3 rounded-md border border-border p-4">
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <LabeledInput label="Present position / job" value={wizardPosition} onChange={setWizardPosition} />
+                      <LabeledInput
+                        label="Present position / job"
+                        value={wizardPosition}
+                        onChange={setWizardPosition}
+                      />
                       <LabeledInput
                         label="Present company / agency name"
                         value={wizardCompany}
                         onChange={setWizardCompany}
                       />
-                      <LabeledInput label="Company address" value={wizardCompanyAddress} onChange={setWizardCompanyAddress} />
-                      <LabeledInput label="Length of employment" value={wizardLength} onChange={setWizardLength} placeholder="e.g. 3 years" />
+                      <LabeledInput
+                        label="Company address"
+                        value={wizardCompanyAddress}
+                        onChange={setWizardCompanyAddress}
+                      />
+                      <LabeledInput
+                        label="Length of employment"
+                        value={wizardLength}
+                        onChange={setWizardLength}
+                        placeholder="e.g. 3 years"
+                      />
                       <LabeledInput
                         label="Years assumed in current office / agency"
                         value={wizardYears}
@@ -1686,12 +1716,38 @@ function AdminAlumni() {
                 {affiliated === "yes" && (
                   <div className="mt-4 rounded-md border border-border p-4">
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <LabeledInput label="Group / organization name" value={wizardOrgName} onChange={setWizardOrgName} />
-                      <LabeledInput label="Group / organization address" value={wizardOrgAddress} onChange={setWizardOrgAddress} />
-                      <LabeledInput label="Position" value={wizardOrgPosition} onChange={setWizardOrgPosition} />
-                      <LabeledInput label="Contact no." value={wizardOrgContact} onChange={setWizardOrgContact} />
-                      <LabeledInput label="Email address" type="email" value={wizardOrgEmail} onChange={setWizardOrgEmail} />
-                      <LabeledInput label="Membership since" type="date" value={wizardOrgSince} onChange={setWizardOrgSince} />
+                      <LabeledInput
+                        label="Group / organization name"
+                        value={wizardOrgName}
+                        onChange={setWizardOrgName}
+                      />
+                      <LabeledInput
+                        label="Group / organization address"
+                        value={wizardOrgAddress}
+                        onChange={setWizardOrgAddress}
+                      />
+                      <LabeledInput
+                        label="Position"
+                        value={wizardOrgPosition}
+                        onChange={setWizardOrgPosition}
+                      />
+                      <LabeledInput
+                        label="Contact no."
+                        value={wizardOrgContact}
+                        onChange={setWizardOrgContact}
+                      />
+                      <LabeledInput
+                        label="Email address"
+                        type="email"
+                        value={wizardOrgEmail}
+                        onChange={setWizardOrgEmail}
+                      />
+                      <LabeledInput
+                        label="Membership since"
+                        type="date"
+                        value={wizardOrgSince}
+                        onChange={setWizardOrgSince}
+                      />
                     </div>
                   </div>
                 )}
@@ -1729,9 +1785,14 @@ function AdminAlumni() {
         <Modal title="Alumni record" onClose={() => setViewing(null)}>
           <div className="space-y-4">
             <div className="flex items-center gap-3 rounded-lg border-t-4 border-brand bg-card p-4">
-              <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-bold text-brand-foreground">
-                {initials(viewing.name)}
-              </span>
+              <AvatarImage
+                userId={viewing.userId}
+                name={viewing.name}
+                initials={initials(viewing.name)}
+                avatarUrl={viewing.avatarUrl}
+                sizeClassName="size-14"
+                textClassName="text-sm"
+              />
               <div className="min-w-0">
                 <p className="text-sm font-bold text-foreground">{viewing.name}</p>
                 <p className="text-xs text-muted-foreground">ID No. {idNumber(viewing)}</p>
@@ -2028,7 +2089,19 @@ function Radio({
   );
 }
 
-function CheckRow({ label, name, options, value, onChange }: { label: string; name: string; options: string[]; value?: string; onChange?: (value: string) => void }) {
+function CheckRow({
+  label,
+  name,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  name: string;
+  options: string[];
+  value?: string;
+  onChange?: (value: string) => void;
+}) {
   return (
     <div>
       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">

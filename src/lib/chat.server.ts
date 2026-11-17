@@ -4,6 +4,7 @@ import { requireAdmin } from "./admin.server";
 import { getSessionUser } from "./auth.server";
 import { getPool } from "./db.server";
 import { relativeTime } from "./profile-format";
+import { avatarUrlForUser, ensureAvatarSchema } from "./avatar.server";
 import type {
   AdminChatConversation,
   AdminChatInboxResult,
@@ -96,6 +97,8 @@ type InboxRow = SessionRow & {
   course: string | null;
   batch_year: number | null;
   batch_grad_year: number | string | null;
+  has_avatar: number | boolean;
+  avatar_updated_at: Date | string | null;
 };
 
 function asDate(value: Date | string): Date {
@@ -123,6 +126,7 @@ function conversationFromRow(row: InboxRow): AdminChatConversation {
     id: Number(row.id),
     alumniUserId: Number(row.alumni_user_id),
     alumniName: row.alumni_name?.trim() || row.email,
+    avatarUrl: avatarUrlForUser(row.alumni_user_id, row.has_avatar, row.avatar_updated_at),
     course: row.course?.trim() || "Course not provided",
     batch: year,
     mode: row.mode,
@@ -334,12 +338,14 @@ export async function getAdminChatInbox(): Promise<AdminChatInboxResult> {
   if (!access.ok) return { ok: false, message: access.message };
   try {
     await ensureChatTables();
+    await ensureAvatarSchema();
     const [rows] = await getPool().query<InboxRow[]>(`
       SELECT s.id, s.alumni_user_id, s.mode, s.status,
              s.unread_admin_count, s.unread_alumni_count,
              s.last_message_preview, s.updated_at,
              u.email, u.full_name AS alumni_name,
-             p.course, p.batch_year,
+              p.course, p.batch_year,
+              (p.avatar_data IS NOT NULL) AS has_avatar, p.avatar_updated_at,
              (SELECT YEAR(edu.graduated_on)
                 FROM alumni_education edu
                WHERE edu.user_id = s.alumni_user_id

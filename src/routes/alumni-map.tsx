@@ -90,7 +90,17 @@ function AlumniMapPage() {
     <AlumniShell
       title="Alumni Map"
       subtitle="See where fellow graduates work — from Marawi and Metro Manila to Dubai, Riyadh, and Doha."
-      user={user ? { name: user.fullName, batch: user.batch, initials: user.initials } : undefined}
+      user={
+        user
+          ? {
+              name: user.fullName,
+              batch: user.batch,
+              initials: user.initials,
+              userId: user.userId,
+              avatarUrl: user.avatarUrl,
+            }
+          : undefined
+      }
     >
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2">
         <span className="px-2 text-xs font-semibold text-foreground">Workplace pins</span>

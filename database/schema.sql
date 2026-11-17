@@ -67,6 +67,8 @@ CREATE TABLE IF NOT EXISTS alumni_profiles (
   current_region VARCHAR(120) NULL,
   current_city VARCHAR(120) NULL,
   current_country VARCHAR(120) NULL,
+  avatar_data MEDIUMTEXT NULL,
+  avatar_updated_at DATETIME(3) NULL,
   latitude DECIMAL(10, 7) NULL,
   longitude DECIMAL(10, 7) NULL,
   verification_status ENUM('pending', 'verified', 'rejected') NOT NULL DEFAULT 'pending',

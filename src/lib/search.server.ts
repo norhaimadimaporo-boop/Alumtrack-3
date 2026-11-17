@@ -5,6 +5,7 @@ import { getPool } from "./db.server";
 import { ensureSoftDeleteColumns } from "./soft-delete.server";
 import { formatAddress, fullName } from "./profile-format";
 import { formatLocationLabel } from "./geo";
+import { avatarUrlForUser, ensureAvatarSchema } from "./avatar.server";
 import type { ProfileEmploymentStatus } from "./admin.types";
 import type { PublicAlumniResult, PublicAlumnus } from "./search.types";
 
@@ -44,6 +45,8 @@ type PublicAlumniRow = RowDataPacket & {
   directory_show_region: number | null;
   directory_show_mobile: number | null;
   directory_show_facebook: number | null;
+  has_avatar: number | boolean;
+  avatar_updated_at: Date | string | null;
 };
 
 function statusLabel(status: ProfileEmploymentStatus): PublicAlumnus["status"] {
@@ -69,6 +72,7 @@ function enabled(value: number | null, fallback: boolean): boolean {
 export async function listPublicAlumni(): Promise<PublicAlumniResult> {
   try {
     await ensureSoftDeleteColumns();
+    await ensureAvatarSchema();
     const viewer = await getSessionUser();
     const signedIn = viewer !== null;
     // Admins bypass ALL privacy gates and see full details everywhere.
@@ -98,7 +102,8 @@ export async function listPublicAlumni(): Promise<PublicAlumniResult> {
               ps.public_show_contact, ps.public_show_email, ps.public_show_employment,
               ps.public_include_region_stats, ps.gis_show_workplace, ps.gis_city_only,
               ps.directory_show_workplace, ps.directory_show_region,
-              ps.directory_show_mobile, ps.directory_show_facebook
+               ps.directory_show_mobile, ps.directory_show_facebook,
+               (p.avatar_data IS NOT NULL) AS has_avatar, p.avatar_updated_at
          FROM alumni_profiles p
          JOIN users u ON u.id = p.user_id AND u.is_active = 1 AND COALESCE(u.is_deleted, 0) = 0
     LEFT JOIN alumni_addresses cur ON cur.user_id = p.user_id AND cur.kind = 'current'
@@ -179,6 +184,8 @@ export async function listPublicAlumni(): Promise<PublicAlumniResult> {
 
       return {
         id: row.id,
+        userId: row.user_id,
+        avatarUrl: avatarUrlForUser(row.user_id, row.has_avatar, row.avatar_updated_at),
         name: fullName(row.first_name, row.middle_name ?? "", row.last_name),
         firstName: row.first_name,
         middleName: row.middle_name ?? "",
@@ -197,9 +204,7 @@ export async function listPublicAlumni(): Promise<PublicAlumniResult> {
         status: statusLabel(row.employment_status),
         mobile: showMobile ? row.mobile_number?.trim() || null : null,
         emails: showEmail
-          ? [row.contact_email, row.akan_email]
-              .map((value) => value?.trim() ?? "")
-              .filter(Boolean)
+          ? [row.contact_email, row.akan_email].map((value) => value?.trim() ?? "").filter(Boolean)
           : [],
         facebook: showFacebook ? row.facebook?.trim() || null : null,
       };

@@ -34,6 +34,7 @@ import type {
   WorkspaceOrganization,
 } from "./profile.types";
 import { priorityBatchYear } from "./registration.types";
+import { avatarUrlForUser, ensureAvatarSchema } from "./avatar.server";
 
 type ProfileRow = RowDataPacket & {
   id: number;
@@ -79,6 +80,8 @@ type ProfileRow = RowDataPacket & {
   home_zip_code: string | null;
   latitude: number | string | null;
   longitude: number | string | null;
+  has_avatar: number | boolean;
+  avatar_updated_at: Date | string | null;
 };
 
 type EducationRow = RowDataPacket & {
@@ -164,10 +167,7 @@ function addressFromRow(row: ProfileRow, prefix: "current" | "home"): string {
 }
 
 /** Batch Year priority from education rows: Baccalaureate → Graduate → Post Graduate. */
-function batchFromEducation(
-  row: ProfileRow,
-  education: EducationRow[],
-): string {
+function batchFromEducation(row: ProfileRow, education: EducationRow[]): string {
   const synced = priorityBatchYear(
     education.map((record) => ({
       level: record.level,
@@ -185,11 +185,13 @@ function buildSessionUser(row: ProfileRow, education: EducationRow[] = []): Alum
     firstName: row.first_name,
     batch: batchFromEducation(row, education),
     initials: initials(name),
+    avatarUrl: avatarUrlForUser(row.user_id, row.has_avatar, row.avatar_updated_at),
     verificationStatus: row.verification_status,
   };
 }
 
 async function loadProfileBundle(userId: number): Promise<ProfileBundle | null> {
+  await ensureAvatarSchema();
   const pool = getPool();
 
   const [rows] = await pool.execute<ProfileRow[]>(
@@ -207,7 +209,8 @@ async function loadProfileBundle(userId: number): Promise<ProfileBundle | null> 
             home.subdivision AS home_subdivision, home.city AS home_city,
             home.province AS home_province, home.country AS home_country,
             home.zip_code AS home_zip_code,
-            p.latitude, p.longitude
+            p.latitude, p.longitude,
+            (p.avatar_data IS NOT NULL) AS has_avatar, p.avatar_updated_at
        FROM alumni_profiles p
   LEFT JOIN alumni_addresses cur ON cur.user_id = p.user_id AND cur.kind = 'current'
   LEFT JOIN alumni_addresses home ON home.user_id = p.user_id AND home.kind = 'home'
@@ -404,6 +407,7 @@ export async function getMyWorkspace(): Promise<MyWorkspace> {
           firstName: (user.fullName ?? "Alumni").split(" ")[0] || "Alumni",
           batch: "—",
           initials: initials(user.fullName ?? "Alumni"),
+          avatarUrl: null,
           verificationStatus: null,
         },
         canEdit: false,
@@ -507,6 +511,7 @@ export async function getAlumniSession(): Promise<AlumniSessionResult> {
         firstName: (user.fullName ?? "Administrator").split(" ")[0] || "Administrator",
         batch: "—",
         initials: initials(user.fullName ?? "Administrator"),
+        avatarUrl: null,
         verificationStatus: null,
       },
     };
@@ -525,6 +530,7 @@ export async function getAlumniSession(): Promise<AlumniSessionResult> {
         firstName: name.split(" ")[0] || name,
         batch: "—",
         initials: initials(name),
+        avatarUrl: null,
         verificationStatus: null,
       },
     };

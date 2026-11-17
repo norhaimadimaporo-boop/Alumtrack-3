@@ -4,6 +4,7 @@ import { GraduationCap, Briefcase, Users, Pencil } from "lucide-react";
 
 import { AlumniShell } from "@/components/alumni-shell";
 import { ProfileEditModal } from "@/components/profile-edit-modal";
+import { ProfileAvatar } from "@/components/profile-avatar";
 import { getMyWorkspaceData } from "@/lib/profile.functions";
 import { initials } from "@/lib/profile-format";
 import type { MyProfile } from "@/lib/admin.types";
@@ -40,7 +41,8 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-type TextAddressKey = "country" | "province" | "city" | "subdivision" | "street" | "block" | "houseNo" | "zipCode";
+type TextAddressKey =
+  "country" | "province" | "city" | "subdivision" | "street" | "block" | "houseNo" | "zipCode";
 
 const ADDRESS_LABELS: Array<[TextAddressKey, string]> = [
   ["country", "Country"],
@@ -152,13 +154,21 @@ function ProfilePage() {
         name: data.user.fullName,
         batch: data.user.batch,
         initials: data.user.initials,
+        userId: data.user.userId,
+        avatarUrl: data.user.avatarUrl,
       }}
     >
       <div className="rounded-lg border border-border bg-card p-6">
         <div className="flex flex-wrap items-center gap-5">
-          <span className="flex size-20 shrink-0 items-center justify-center rounded-full bg-brand text-xl font-bold text-brand-foreground">
-            {initials(profile.fullName) || "AL"}
-          </span>
+          <ProfileAvatar
+            userId={data.user.userId}
+            name={profile.fullName}
+            initials={initials(profile.fullName) || "AL"}
+            avatarUrl={data.user.avatarUrl}
+            sizeClassName="size-20"
+            textClassName="text-xl"
+            editable
+          />
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-bold text-foreground">{profile.fullName}</h2>
             <p className="text-sm text-muted-foreground">

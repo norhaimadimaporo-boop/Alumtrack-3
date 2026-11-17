@@ -11,6 +11,7 @@ import {
   Settings,
 } from "lucide-react";
 import { AlumniChatWidget } from "@/components/alumni-chat-widget";
+import { AvatarImage } from "@/components/profile-avatar";
 import { useSession } from "@/hooks/use-session";
 
 const links = [
@@ -32,7 +33,15 @@ export function AlumniShell({
 }: {
   title: string;
   subtitle?: string;
-  user?: { name?: string; batch?: string; initials?: string } | undefined;
+  user?:
+    | {
+        name?: string;
+        batch?: string;
+        initials?: string;
+        userId?: number;
+        avatarUrl?: string | null;
+      }
+    | undefined;
   children: ReactNode;
 }) {
   const sessionRole = useSession();
@@ -61,7 +70,15 @@ export function AlumniShell({
 export function AlumniSidebar({
   user,
 }: {
-  user?: { name?: string; batch?: string; initials?: string } | undefined;
+  user?:
+    | {
+        name?: string;
+        batch?: string;
+        initials?: string;
+        userId?: number;
+        avatarUrl?: string | null;
+      }
+    | undefined;
 }) {
   const displayName = user?.name || "Alumni";
   const displayBatch = user?.batch && user.batch !== "" ? user.batch : "—";
@@ -71,7 +88,18 @@ export function AlumniSidebar({
     <aside className="w-full shrink-0 md:sticky md:top-[73px] md:w-64 md:self-start">
       <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-[#5A0012]/85 p-3 text-white shadow-sm backdrop-blur-sm">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-highlight text-sm font-bold text-highlight-foreground">
-          {displayInitials}
+          {user?.userId ? (
+            <AvatarImage
+              userId={user.userId}
+              name={displayName}
+              initials={displayInitials}
+              avatarUrl={user.avatarUrl ?? null}
+              sizeClassName="size-10"
+              textClassName="text-sm"
+            />
+          ) : (
+            displayInitials
+          )}
         </span>
         <span className="min-w-0">
           <span className="block truncate text-sm font-semibold text-white">{displayName}</span>

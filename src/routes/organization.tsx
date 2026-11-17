@@ -160,7 +160,13 @@ function OrganizationPage() {
     <AlumniShell
       title="Organization"
       subtitle="Groups and organizations you are involved in, as registered with OARCC."
-      user={{ name: user.fullName, batch: user.batch, initials: user.initials }}
+      user={{
+        name: user.fullName,
+        batch: user.batch,
+        initials: user.initials,
+        userId: user.userId,
+        avatarUrl: user.avatarUrl,
+      }}
     >
       {canEdit ? (
         <div className="flex justify-end">

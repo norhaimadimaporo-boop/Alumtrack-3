@@ -23,6 +23,7 @@ export type AdminChatConversation = {
   id: number;
   alumniUserId: number;
   alumniName: string;
+  avatarUrl: string | null;
   course: string;
   batch: string;
   mode: ChatMode;

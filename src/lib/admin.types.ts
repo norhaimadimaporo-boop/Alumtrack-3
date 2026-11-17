@@ -116,6 +116,7 @@ export type AdminOrganizationRecord = {
 export type AdminAlumnus = {
   id: number;
   userId: number;
+  avatarUrl: string | null;
   name: string;
   firstName: string;
   middleName: string;
@@ -228,8 +229,7 @@ export type AdminImportHistoryItem = {
 };
 
 export type AdminImportHistoryResult =
-  | { ok: true; history: AdminImportHistoryItem[] }
-  | { ok: false; message: string; history: [] };
+  { ok: true; history: AdminImportHistoryItem[] } | { ok: false; message: string; history: [] };
 
 export type MyProfile = {
   userId: number;

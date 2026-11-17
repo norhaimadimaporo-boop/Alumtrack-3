@@ -174,7 +174,17 @@ function JobsPage() {
     <AlumniShell
       title="Job Offerings"
       subtitle="Click a job to view the full details, then apply."
-      user={user ? { name: user.fullName, batch: user.batch, initials: user.initials } : undefined}
+      user={
+        user
+          ? {
+              name: user.fullName,
+              batch: user.batch,
+              initials: user.initials,
+              userId: user.userId,
+              avatarUrl: user.avatarUrl,
+            }
+          : undefined
+      }
     >
       <ul className="grid max-h-[520px] overflow-y-auto gap-3 pr-2 md:grid-cols-2">
         {jobs.map((j) => (

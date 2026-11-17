@@ -1,19 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import {
-  Shield,
-  Bell,
-  KeyRound,
-  MapPinned,
-  Users,
-  CheckCircle2,
-  AlertCircle,
-} from "lucide-react";
+import { Shield, Bell, KeyRound, MapPinned, Users, CheckCircle2, AlertCircle } from "lucide-react";
 import { AlumniShell } from "@/components/alumni-shell";
 import { Modal, LabeledInput, PrimaryButton } from "@/components/modal";
 import { Toggle } from "@/components/toggle";
 import { getMyWorkspaceData } from "@/lib/profile.functions";
-import { changeMyPasswordRecord, getMyPrivacy, saveMyPrivacySettingsRecord } from "@/lib/settings.functions";
+import {
+  changeMyPasswordRecord,
+  getMyPrivacy,
+  saveMyPrivacySettingsRecord,
+} from "@/lib/settings.functions";
 import type { PrivacySettings } from "@/lib/settings.types";
 
 export const Route = createFileRoute("/settings")({
@@ -227,7 +223,17 @@ function SettingsPage() {
     <AlumniShell
       title="Privacy & Settings"
       subtitle="Choose what other alumni and public visitors can see."
-      user={user ? { name: user.fullName, batch: user.batch, initials: user.initials } : undefined}
+      user={
+        user
+          ? {
+              name: user.fullName,
+              batch: user.batch,
+              initials: user.initials,
+              userId: user.userId,
+              avatarUrl: user.avatarUrl,
+            }
+          : undefined
+      }
     >
       {!data.privacy.ok && (
         <div className="mb-4 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
@@ -268,7 +274,8 @@ function SettingsPage() {
             <Users className="size-4 text-brand" /> Verified alumni directory
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Choose which details fellow registered alumni can see. Public switches above still apply.
+            Choose which details fellow registered alumni can see. Public switches above still
+            apply.
           </p>
           <div className="mt-2 divide-y divide-border">{renderRows(directoryRows)}</div>
         </section>

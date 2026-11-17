@@ -98,6 +98,7 @@ function DashboardPage() {
         name: fullName,
         batch: batch,
         initials: userInitials,
+        ...(data.ok ? { userId: data.user.userId, avatarUrl: data.user.avatarUrl } : {}),
       }}
     >
       <div className="grid w-full min-w-0 max-w-full gap-3 overflow-x-hidden sm:grid-cols-2 lg:grid-cols-4">

@@ -8,6 +8,7 @@ export type AlumniSessionUser = {
   firstName: string;
   batch: string;
   initials: string;
+  avatarUrl: string | null;
   verificationStatus: VerificationStatus | null;
 };
 

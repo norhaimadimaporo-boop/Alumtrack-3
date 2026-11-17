@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import { Loader2, MessageCircle, Send } from "lucide-react";
 
 import { AdminShell } from "@/components/admin-shell";
+import { AvatarImage } from "@/components/profile-avatar";
 import {
   getAdminChatConversations,
   getAdminChatMessages,
@@ -171,9 +172,14 @@ function AdminMessagesPage() {
                       onClick={() => setActiveId(conversation.id)}
                       className={`flex w-full min-w-0 items-center gap-3 border-b border-border px-3 py-3 text-left transition-colors hover:bg-muted/60 ${selected ? "bg-brand/5" : ""}`}
                     >
-                      <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-bold text-brand-foreground ring-2 ring-highlight/60">
-                        {initials(conversation.alumniName)}
-                      </span>
+                      <AvatarImage
+                        userId={conversation.alumniUserId}
+                        name={conversation.alumniName}
+                        initials={initials(conversation.alumniName)}
+                        avatarUrl={conversation.avatarUrl}
+                        sizeClassName="size-11 ring-2 ring-highlight/60"
+                        textClassName="text-xs"
+                      />
                       <span className="min-w-0 flex-1">
                         <span className="flex min-w-0 items-center justify-between gap-2">
                           <span
@@ -225,9 +231,14 @@ function AdminMessagesPage() {
             {activeConversation ? (
               <>
                 <header className="flex shrink-0 items-center gap-3 border-b border-border bg-card px-4 py-3">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-bold text-brand-foreground ring-2 ring-highlight/60">
-                    {initials(activeConversation.alumniName)}
-                  </span>
+                  <AvatarImage
+                    userId={activeConversation.alumniUserId}
+                    name={activeConversation.alumniName}
+                    initials={initials(activeConversation.alumniName)}
+                    avatarUrl={activeConversation.avatarUrl}
+                    sizeClassName="size-10 ring-2 ring-highlight/60"
+                    textClassName="text-xs"
+                  />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-bold text-foreground">
                       {activeConversation.alumniName}

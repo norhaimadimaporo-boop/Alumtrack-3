@@ -17,6 +17,8 @@
  */
 export type PublicAlumnus = {
   id: number;
+  userId: number;
+  avatarUrl: string | null;
   name: string;
   /** Name parts, kept separate so /search can filter on each one (e.g. "abdul"). */
   firstName: string;
@@ -36,5 +38,4 @@ export type PublicAlumnus = {
 };
 
 export type PublicAlumniResult =
-  | { ok: true; alumni: PublicAlumnus[]; signedIn: boolean }
-  | { ok: false; message: string };
+  { ok: true; alumni: PublicAlumnus[]; signedIn: boolean } | { ok: false; message: string };

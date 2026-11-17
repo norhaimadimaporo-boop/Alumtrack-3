@@ -249,7 +249,13 @@ function EmploymentPage() {
     <AlumniShell
       title="Employment History"
       subtitle="Keep your current and previous jobs up to date for the OARCC tracer study."
-      user={{ name: user.fullName, batch: user.batch, initials: user.initials }}
+      user={{
+        name: user.fullName,
+        batch: user.batch,
+        initials: user.initials,
+        userId: user.userId,
+        avatarUrl: user.avatarUrl,
+      }}
     >
       <div className="w-full min-w-0 max-w-full rounded-lg border-l-4 border-highlight bg-card p-4">
         <p className="text-xs leading-relaxed text-muted-foreground">

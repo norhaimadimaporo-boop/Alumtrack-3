@@ -17,6 +17,7 @@ import {
 import { getPublicAlumni } from "@/lib/search.functions";
 import { initials } from "@/lib/profile-format";
 import type { PublicAlumnus } from "@/lib/search.types";
+import { ProfileAvatar } from "@/components/profile-avatar";
 
 export const Route = createFileRoute("/search")({
   head: () => ({
@@ -97,15 +98,10 @@ function SearchPage() {
     const tokens = q ? q.split(/\s+/).filter(Boolean) : [];
     return alumni.filter((a) => {
       if (tokens.length > 0) {
-        const nameParts = [
-          a.firstName ?? "",
-          a.middleName ?? "",
-          a.lastName ?? "",
-        ].map((part) => part.toLowerCase());
-        const nameWords = a.name
-          .toLowerCase()
-          .split(/\s+/)
-          .filter(Boolean);
+        const nameParts = [a.firstName ?? "", a.middleName ?? "", a.lastName ?? ""].map((part) =>
+          part.toLowerCase(),
+        );
+        const nameWords = a.name.toLowerCase().split(/\s+/).filter(Boolean);
         const nameText = `${nameParts.join(" ")} ${nameWords.join(" ")}`.trim();
         const matches = tokens.every((token) => {
           if (nameParts.some((part) => part.includes(token))) return true;
@@ -321,13 +317,7 @@ function FilterSelect({
  * always render (with a private placeholder when hidden) so cards line up;
  * contact rows render only when the owner allows them.
  */
-function AlumniCard({
-  alumnus,
-  signedIn,
-}: {
-  alumnus: PublicAlumnus;
-  signedIn: boolean;
-}) {
+function AlumniCard({ alumnus, signedIn }: { alumnus: PublicAlumnus; signedIn: boolean }) {
   const statusColor =
     alumnus.status === "Employed"
       ? "bg-success/12 text-success"
@@ -338,9 +328,14 @@ function AlumniCard({
   return (
     <article className="group rounded-sm border border-border bg-card p-4 transition-colors hover:border-brand">
       <div className="flex items-center gap-3">
-        <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-brand text-lg font-bold text-brand-foreground">
-          {initials(alumnus.name)}
-        </span>
+        <ProfileAvatar
+          userId={alumnus.userId}
+          name={alumnus.name}
+          initials={initials(alumnus.name)}
+          avatarUrl={alumnus.avatarUrl}
+          sizeClassName="size-14"
+          textClassName="text-lg"
+        />
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-bold leading-snug text-foreground group-hover:text-brand">
             {alumnus.name}
