@@ -42,9 +42,7 @@ export function SiteHeader() {
         <Link to="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
           <BrandMark className="h-10 w-auto shrink-0 sm:h-12" />
           <span className="leading-tight">
-            <span className="block text-base font-bold tracking-tight text-white">
-              AlumTrack
-            </span>
+            <span className="block text-base font-bold tracking-tight text-white">AlumTrack</span>
             <span className="block text-[10px] uppercase tracking-[0.18em] text-white/70">
               MSU Main Campus
             </span>

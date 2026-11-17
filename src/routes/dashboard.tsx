@@ -1,20 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  Briefcase,
-  GraduationCap,
-  MapPinned,
-  ShieldCheck,
-  UserRound,
-} from "lucide-react";
+import { ArrowRight, Briefcase, GraduationCap, ShieldCheck, UserRound } from "lucide-react";
 import { AlumniShell } from "@/components/alumni-shell";
-import { BarList } from "@/components/cluster-map";
-import { RealAlumniMap } from "@/components/real-alumni-map";
 import { POSTS, findPostPhoto } from "@/data/news";
-import { getAlumniMapPinsData } from "@/lib/gis.functions";
 import { getPublishedPosts } from "@/lib/posts.functions";
 import { getMyWorkspaceData } from "@/lib/profile.functions";
-import { getPublicStatsData } from "@/lib/public-stats.functions";
 import { initials } from "@/lib/profile-format";
 
 export const Route = createFileRoute("/dashboard")({
@@ -34,31 +23,18 @@ export const Route = createFileRoute("/dashboard")({
     ],
   }),
   loader: async () => {
-    const [workspace, map, published, publicStats] = await Promise.all([
-      getMyWorkspaceData(),
-      getAlumniMapPinsData(),
-      getPublishedPosts(),
-      getPublicStatsData(),
-    ]);
+    const [workspace, published] = await Promise.all([getMyWorkspaceData(), getPublishedPosts()]);
     return {
       workspace,
-      pins: map.ok ? map.pins : [],
       posts: published.ok ? published.posts : [],
-      publicStats,
     };
   },
   component: DashboardPage,
 });
 
 function DashboardPage() {
-  const {
-    workspace: data,
-    pins,
-    posts: storedPosts,
-    publicStats: publicStatsResult,
-  } = Route.useLoaderData();
+  const { workspace: data, posts: storedPosts } = Route.useLoaderData();
   const profile = data.ok ? data.profile : null;
-  const publicStats = publicStatsResult.ok ? publicStatsResult.stats : null;
 
   const firstName = profile?.firstName || "Alumni";
   const fullName = profile?.fullName || "Alumni User";
@@ -114,15 +90,6 @@ function DashboardPage() {
           photo: post.photo,
         }));
 
-  // Tracer snapshot now mirrors the home page: same DB-backed sector mix
-  // from `getPublicStats()` instead of the old hardcoded split.
-  const sectorItems = publicStats
-    ? publicStats.industries.map((industry) => ({
-        label: industry.label,
-        value: industry.value,
-      }))
-    : [];
-
   return (
     <AlumniShell
       title={`Welcome back, ${firstName}`}
@@ -165,55 +132,7 @@ function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-4 grid w-full min-w-0 max-w-full gap-4 overflow-x-hidden lg:grid-cols-[1.5fr_1fr]">
-        <div className="min-w-0 rounded-lg border border-border bg-card p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <MapPinned className="size-4 text-brand" /> GIS Alumni Map
-            </h2>
-            <Link
-              to="/alumni-map"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline"
-            >
-              Open interactive map <ArrowRight className="size-3.5" />
-            </Link>
-          </div>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            Batchmates at home and overseas — green pins are employed, yellow pins are unemployed.
-          </p>
-          <div className="mt-4 w-full">
-            <RealAlumniMap
-              pins={pins}
-              heightClassName="h-[400px] md:h-[480px] w-full"
-              compact
-            />
-          </div>
-        </div>
-        <div className="min-w-0 rounded-lg border-t-4 border-brand bg-card p-5">
-          <h2 className="text-sm font-semibold text-foreground">Tracer study snapshot</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Where batchmates are employed, by sector.
-          </p>
-          <div className="mt-4">
-            {sectorItems.length > 0 ? (
-              <BarList items={sectorItems} tone="success" />
-            ) : (
-              <p className="rounded-lg bg-muted px-3 py-4 text-xs text-muted-foreground">
-                No employment sector records yet. Sector data appears here once employed alumni
-                save their current job.
-              </p>
-            )}
-          </div>
-          <Link
-            to="/employment"
-            className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline"
-          >
-            Update my employment details <ArrowRight className="size-3.5" />
-          </Link>
-        </div>
-      </div>
-
-      <div className="mt-4 grid w-full min-w-0 max-w-full gap-4 overflow-x-hidden lg:grid-cols-[1.4fr_1fr]">
+      <div className="mt-6 grid w-full min-w-0 max-w-full gap-6 overflow-x-hidden lg:grid-cols-[1.4fr_1fr]">
         <div className="min-w-0 rounded-lg border border-border bg-card p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-foreground">Latest posts</h2>
