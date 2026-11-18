@@ -22,6 +22,8 @@ function SearchableSelect({
   allowEmpty = false,
   emptyLabel,
   disabled = false,
+  hideLabel = false,
+  compact = false,
 }: {
   options: SelectOption[];
   value: string;
@@ -31,6 +33,8 @@ function SearchableSelect({
   allowEmpty?: boolean;
   emptyLabel?: string;
   disabled?: boolean;
+  hideLabel?: boolean;
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -121,9 +125,11 @@ function SearchableSelect({
 
   return (
     <label className="block min-w-0">
-      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </span>
+      {!hideLabel && (
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </span>
+      )}
       <button
         ref={buttonRef}
         type="button"
@@ -133,7 +139,11 @@ function SearchableSelect({
         aria-label={label}
         disabled={disabled}
         onClick={toggle}
-        className="mt-1 flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-sm text-foreground outline-none transition-colors hover:border-brand focus:border-brand disabled:opacity-60"
+        className={
+          compact
+            ? "flex h-11 w-full items-center justify-between gap-2 rounded-xl border border-border bg-background px-3 text-left text-xs text-muted-foreground outline-none transition-colors hover:border-brand focus:border-brand disabled:opacity-60"
+            : "mt-1 flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-sm text-foreground outline-none transition-colors hover:border-brand focus:border-brand disabled:opacity-60"
+        }
       >
         <span className={`min-w-0 truncate ${selectedLabel ? "" : "text-muted-foreground"}`}>
           {selectedLabel || placeholder}
@@ -214,6 +224,33 @@ function SearchableSelect({
   );
 }
 
+/** Searchable filter control matching the uniform filter-grid styling. */
+export function SearchableFilterSelect({
+  options,
+  value,
+  onChange,
+  placeholder,
+}: {
+  options: string[];
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <SearchableSelect
+      label={placeholder}
+      options={options.map((option) => ({ value: option, label: option, searchText: option }))}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      allowEmpty
+      emptyLabel={placeholder}
+      hideLabel
+      compact
+    />
+  );
+}
+
 export type CollegeCourseValues = { college: string; course: string };
 
 /** Paired, bidirectional cascading college + course selector. */
@@ -224,6 +261,7 @@ export function CollegeCourseSelect({
   collegeLabel = "Name of College",
   courseLabel = "Degree / Course",
   allowEmpty = false,
+  filterStyle = false,
   className = "",
 }: {
   college: string;
@@ -232,6 +270,7 @@ export function CollegeCourseSelect({
   collegeLabel?: string;
   courseLabel?: string;
   allowEmpty?: boolean;
+  filterStyle?: boolean;
   className?: string;
 }) {
   const collegeOptions = useMemo<SelectOption[]>(
@@ -282,6 +321,8 @@ export function CollegeCourseSelect({
         placeholder={allowEmpty ? "All colleges" : "Search college…"}
         allowEmpty={allowEmpty}
         emptyLabel="All colleges"
+        hideLabel={filterStyle}
+        compact={filterStyle}
       />
       <SearchableSelect
         label={courseLabel}
@@ -291,6 +332,8 @@ export function CollegeCourseSelect({
         placeholder={allowEmpty ? "All courses" : "Search degree / course…"}
         allowEmpty={allowEmpty}
         emptyLabel="All courses"
+        hideLabel={filterStyle}
+        compact={filterStyle}
       />
     </div>
   );

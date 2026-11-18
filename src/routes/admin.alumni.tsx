@@ -396,6 +396,22 @@ function AdminAlumni() {
     syncFromEducation(wizardDegreeDetails, nextSelected);
   };
 
+  const updateWizardDegreeCollegeCourse = (level: string, college: string, degree: string) => {
+    const nextDetails = {
+      ...wizardDegreeDetails,
+      [level]: {
+        ...(wizardDegreeDetails[level] ?? emptyDegreeDetail()),
+        college,
+        degree,
+      },
+    };
+    setWizardDegreeDetails(nextDetails);
+    if (primaryLevel(wizardDegreeDetails, degreeTypes) === level) {
+      setWizardCollege(college);
+      setWizardCourse(degree);
+    }
+  };
+
   const handleWizardCollegeCourse = ({
     college: nextCollege,
     course: nextCourse,
@@ -1510,20 +1526,20 @@ function AdminAlumni() {
                         onChange={(value) => updateWizardDegree(d, "schoolIdNo", value)}
                         placeholder="e.g. 2020-30124"
                       />
-                      <LabeledInput
-                        label="Degree"
-                        value={wizardDegreeDetails[d]?.degree ?? ""}
-                        onChange={(value) => updateWizardDegree(d, "degree", value)}
+                      <CollegeCourseSelect
+                        className="sm:col-span-2"
+                        college={wizardDegreeDetails[d]?.college ?? ""}
+                        course={wizardDegreeDetails[d]?.degree ?? ""}
+                        onChange={({ college, course }) =>
+                          updateWizardDegreeCollegeCourse(d, college, course)
+                        }
+                        collegeLabel="Name of College"
+                        courseLabel="Degree"
                       />
                       <LabeledInput
                         label="Major"
                         value={wizardDegreeDetails[d]?.major ?? ""}
                         onChange={(value) => updateWizardDegree(d, "major", value)}
-                      />
-                      <LabeledInput
-                        label="Name of college"
-                        value={wizardDegreeDetails[d]?.college ?? ""}
-                        onChange={(value) => updateWizardDegree(d, "college", value)}
                       />
                       <LabeledInput
                         label="University / school attended"

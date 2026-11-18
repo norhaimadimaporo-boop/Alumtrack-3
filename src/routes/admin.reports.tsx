@@ -1,10 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BarChart3, MapPinned, Search } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
-import { CollegeCourseSelect } from "@/components/college-course-select";
+import { CollegeCourseSelect, SearchableFilterSelect } from "@/components/college-course-select";
 import { BarList, DonutChart, ColumnChart } from "@/components/cluster-map";
 import { RealAlumniMap } from "@/components/real-alumni-map";
+import {
+  findCountryByName,
+  loadGeoCountries,
+  loadGeoCountry,
+  type GeoCountry,
+  type GeoCountryData,
+} from "@/lib/geo-data";
 import { sameCollege, sameCourse } from "@/lib/msu-colleges";
 import { getReportRecords } from "@/lib/reports.functions";
 import type { ReportRecord } from "@/lib/reports.types";
@@ -39,7 +46,6 @@ type Filters = {
   gender: string;
   affiliation: string;
   employment: string;
-  region: string;
   country: string;
 };
 
@@ -53,7 +59,6 @@ const emptyFilters: Filters = {
   gender: "",
   affiliation: "",
   employment: "",
-  region: "",
   country: "",
 };
 
@@ -77,6 +82,47 @@ function AdminReports() {
   const all = useMemo<ReportRecord[]>(() => (data.ok ? data.records : []), [data]);
   const set = (key: keyof Filters, value: string) => setFilters((f) => ({ ...f, [key]: value }));
 
+  // Same country/state dataset used by the Alumni Registration address fields.
+  const [countries, setCountries] = useState<GeoCountry[]>([]);
+  const [countryData, setCountryData] = useState<GeoCountryData | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    loadGeoCountries()
+      .then((list) => {
+        if (active) setCountries(list);
+      })
+      .catch(() => {
+        if (active) setCountries([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const countryCode = useMemo(
+    () => findCountryByName(countries, filters.country)?.code ?? "",
+    [countries, filters.country],
+  );
+
+  useEffect(() => {
+    if (!countryCode) {
+      setCountryData(null);
+      return;
+    }
+    let active = true;
+    loadGeoCountry(countryCode)
+      .then((data) => {
+        if (active) setCountryData(data);
+      })
+      .catch(() => {
+        if (active) setCountryData(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [countryCode]);
+
   const options = useMemo(
     () => ({
       batches: [...new Set(all.map((r) => r.batch).filter((b) => /^\d{4}$/.test(b)))].sort(
@@ -86,7 +132,6 @@ function AdminReports() {
       courses: uniqueSorted(all.map((r) => r.course)),
       tribes: uniqueSorted(all.map((r) => r.ethnicity)),
       religions: uniqueSorted(all.map((r) => r.religion)),
-      provinces: uniqueSorted(all.map((r) => r.province)),
       genders: uniqueSorted(all.map((r) => r.gender)),
       affiliations: ["Secular", "Non-secular", "No affiliation"].filter((label) =>
         all.some((r) => r.affiliation === label),
@@ -98,11 +143,23 @@ function AdminReports() {
             (label === "Unemployed" && r.employmentStatus === "unemployed"),
         ),
       ),
-      regions: uniqueSorted(all.map((r) => r.region)),
-      countries: uniqueSorted(all.map((r) => r.country)),
     }),
     [all],
   );
+
+  // Full country list from the registration dataset; provinces cascade from it.
+  const countryOptions = useMemo(
+    () => uniqueSorted([...countries.map((country) => country.name), ...all.map((r) => r.country)]),
+    [countries, all],
+  );
+
+  const provinceOptions = useMemo(() => {
+    const fromGeo = (countryData?.states ?? []).map((state) => state.name);
+    const fromRecords = all
+      .filter((r) => !filters.country || sameValue(r.country, filters.country))
+      .map((r) => r.province);
+    return uniqueSorted([...fromGeo, ...fromRecords]);
+  }, [countryData, all, filters.country]);
 
   const filtered = useMemo(
     () =>
@@ -120,7 +177,6 @@ function AdminReports() {
           if (filters.employment === "Employed" && !employed) return false;
           if (filters.employment === "Unemployed" && employed) return false;
         }
-        if (!sameValue(r.region, filters.region)) return false;
         if (!sameValue(r.country, filters.country)) return false;
         return true;
       }),
@@ -239,7 +295,7 @@ function AdminReports() {
           )}
         </div>
         {!data.ok && <p className="mt-2 text-xs text-red-600">{data.message}</p>}
-        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <FilterSelect
             label="Batch year"
             options={options.batches}
@@ -247,15 +303,14 @@ function AdminReports() {
             onChange={(v) => set("batch", v)}
           />
           <CollegeCourseSelect
-            className="lg:col-span-2"
+            className="sm:col-span-2"
             college={filters.college}
             course={filters.course}
             onChange={({ college, course }) =>
               setFilters((current) => ({ ...current, college, course }))
             }
-            collegeLabel="College"
-            courseLabel="Course"
             allowEmpty
+            filterStyle
           />
           <FilterSelect
             label="Tribe"
@@ -268,12 +323,6 @@ function AdminReports() {
             options={options.religions}
             value={filters.religion}
             onChange={(v) => set("religion", v)}
-          />
-          <FilterSelect
-            label="Province"
-            options={options.provinces}
-            value={filters.province}
-            onChange={(v) => set("province", v)}
           />
           <FilterSelect
             label="Gender"
@@ -295,18 +344,17 @@ function AdminReports() {
             onChange={(v) => set("employment", v)}
             allLabel="All employment statuses"
           />
-          <FilterSelect
-            label="Region"
-            options={options.regions}
-            value={filters.region}
-            onChange={(v) => set("region", v)}
-          />
-          <FilterSelect
-            label="Country"
-            options={options.countries}
+          <SearchableFilterSelect
+            placeholder="All countries"
+            options={countryOptions}
             value={filters.country}
-            onChange={(v) => set("country", v)}
-            allLabel="All countries"
+            onChange={(v) => setFilters((current) => ({ ...current, country: v, province: "" }))}
+          />
+          <SearchableFilterSelect
+            placeholder="All provinces"
+            options={provinceOptions}
+            value={filters.province}
+            onChange={(v) => set("province", v)}
           />
         </div>
       </section>
@@ -479,7 +527,7 @@ function FilterSelect({
       aria-label={label}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-muted-foreground outline-none focus:border-brand"
+      className="h-11 w-full rounded-xl border border-border bg-background px-3 text-xs text-muted-foreground outline-none focus:border-brand"
     >
       <option value="">{allLabel ?? `All ${label.toLowerCase()}s`}</option>
       {options.map((o) => (
