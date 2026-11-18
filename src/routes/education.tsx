@@ -4,6 +4,7 @@ import { Plus, Pencil, GraduationCap, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AlumniShell } from "@/components/alumni-shell";
+import { CollegeCourseSelect } from "@/components/college-course-select";
 import { Modal, LabeledInput, PrimaryButton } from "@/components/modal";
 import {
   deleteMyEducationData,
@@ -98,11 +99,14 @@ function EducationFormModal({
             ))}
           </select>
         </div>
-        <LabeledInput
-          label="Degree"
-          value={form.degree}
-          onChange={(value) => set("degree", value)}
-          required
+        <CollegeCourseSelect
+          college={form.college}
+          course={form.degree}
+          onChange={({ college, course }) =>
+            setForm((current) => ({ ...current, college, degree: course }))
+          }
+          collegeLabel="Name of College"
+          courseLabel="Degree / Course"
         />
         <LabeledInput
           label="ID Number"
@@ -110,11 +114,6 @@ function EducationFormModal({
           onChange={(value) => set("schoolIdNo", value)}
         />
         <LabeledInput label="Major" value={form.major} onChange={(value) => set("major", value)} />
-        <LabeledInput
-          label="Name of College"
-          value={form.college}
-          onChange={(value) => set("college", value)}
-        />
         <LabeledInput
           label="University / School Attended"
           value={form.school}

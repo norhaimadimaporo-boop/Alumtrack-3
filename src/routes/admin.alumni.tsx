@@ -20,11 +20,13 @@ import {
   UserRound,
 } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
+import { CollegeCourseSelect } from "@/components/college-course-select";
 import { AvatarImage } from "@/components/profile-avatar";
 import { AddressFields } from "@/components/address-fields";
 import { Modal, LabeledInput, PrimaryButton } from "@/components/modal";
 import { useAdminRole } from "@/hooks/use-session";
-import { COURSES, COLLEGES, REGIONS, BATCHES, initials } from "@/data/alumni";
+import { REGIONS, BATCHES, initials } from "@/data/alumni";
+import { COLLEGE_OPTIONS, COURSE_OPTIONS, sameCollege, sameCourse } from "@/lib/msu-colleges";
 import { toast } from "sonner";
 
 import {
@@ -193,6 +195,7 @@ function AdminAlumni() {
   const canManage = adminRole === "head" || adminRole === "standard";
   const [query, setQuery] = useState("");
   const [course, setCourse] = useState("");
+  const [college, setCollege] = useState("");
   const [batch, setBatch] = useState("");
   const [verification, setVerification] = useState("");
   const [viewing, setViewing] = useState<Alumnus | null>(null);
@@ -301,8 +304,10 @@ function AdminAlumni() {
     }));
     const primaryEducation = primaryEducationRecord(educationForSync);
     const syncedBatch = priorityBatchYear(educationForSync);
-    setWizardCourse(primaryEducation?.degree.trim() || record?.course || COURSES[0]);
-    setWizardCollege(primaryEducation?.college.trim() || record?.college || COLLEGES[0]);
+    setWizardCourse(primaryEducation?.degree.trim() || record?.course || COURSE_OPTIONS[0] || "");
+    setWizardCollege(
+      primaryEducation?.college.trim() || record?.college || COLLEGE_OPTIONS[0] || "",
+    );
     setWizardBatch(syncedBatch || record?.batch || BATCHES[0]);
     setWizardRegion(record?.region ?? REGIONS[0]);
     const currentEmployment =
@@ -391,30 +396,27 @@ function AdminAlumni() {
     syncFromEducation(wizardDegreeDetails, nextSelected);
   };
 
-  const handleCourseChange = (value: string) => {
-    setWizardCourse(value);
+  const handleWizardCollegeCourse = ({
+    college: nextCollege,
+    course: nextCourse,
+  }: {
+    college: string;
+    course: string;
+  }) => {
+    setWizardCollege(nextCollege);
+    setWizardCourse(nextCourse);
     const level = primaryLevel(wizardDegreeDetails, degreeTypes);
     if (level) {
       setWizardDegreeDetails((prev) => ({
         ...prev,
-        [level]: { ...(prev[level] ?? emptyDegreeDetail()), degree: value },
+        [level]: {
+          ...(prev[level] ?? emptyDegreeDetail()),
+          college: nextCollege,
+          degree: nextCourse,
+        },
       }));
     }
   };
-
-  const handleCollegeChange = (value: string) => {
-    setWizardCollege(value);
-    const level = primaryLevel(wizardDegreeDetails, degreeTypes);
-    if (level) {
-      setWizardDegreeDetails((prev) => ({
-        ...prev,
-        [level]: { ...(prev[level] ?? emptyDegreeDetail()), college: value },
-      }));
-    }
-  };
-
-  const wizardCourseOptions = Array.from(new Set([wizardCourse, ...COURSES])).filter(Boolean);
-  const wizardCollegeOptions = Array.from(new Set([wizardCollege, ...COLLEGES])).filter(Boolean);
   const wizardBatchOptions = Array.from(new Set([wizardBatch, ...BATCHES]))
     .filter((value) => /^\d{4}$/.test(value))
     .sort((a, b) => Number(b) - Number(a));
@@ -677,7 +679,8 @@ function AdminAlumni() {
   const rows = alumni.filter((a) => {
     return (
       a.name.toLowerCase().includes(query.toLowerCase()) &&
-      (course ? a.course === course : true) &&
+      (course ? sameCourse(a.course, course) : true) &&
+      (college ? sameCollege(a.college, college) : true) &&
       (batch ? a.batch === batch : true) &&
       (verification === "" ? true : verification === "Verified" ? a.verified : !a.verified)
     );
@@ -784,7 +787,7 @@ function AdminAlumni() {
         </div>
       }
     >
-      <div className="grid gap-3 rounded-lg border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
+      <div className="grid gap-3 rounded-lg border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -794,16 +797,18 @@ function AdminAlumni() {
             className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-sm outline-none focus:border-brand"
           />
         </div>
-        <select
-          value={course}
-          onChange={(e) => setCourse(e.target.value)}
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
-        >
-          <option value="">All courses</option>
-          {courseOptions.map((c) => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
+        <CollegeCourseSelect
+          className="lg:col-span-2"
+          college={college}
+          course={course}
+          onChange={({ college: nextCollege, course: nextCourse }) => {
+            setCollege(nextCollege);
+            setCourse(nextCourse);
+          }}
+          collegeLabel="College"
+          courseLabel="Course"
+          allowEmpty
+        />
         <select
           value={batch}
           onChange={(e) => setBatch(e.target.value)}
@@ -1547,34 +1552,14 @@ function AdminAlumni() {
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      Course
-                    </label>
-                    <select
-                      value={wizardCourse}
-                      onChange={(e) => handleCourseChange(e.target.value)}
-                      className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
-                    >
-                      {wizardCourseOptions.map((c) => (
-                        <option key={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      College
-                    </label>
-                    <select
-                      value={wizardCollege}
-                      onChange={(e) => handleCollegeChange(e.target.value)}
-                      className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
-                    >
-                      {wizardCollegeOptions.map((c) => (
-                        <option key={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <CollegeCourseSelect
+                    className="sm:col-span-2"
+                    college={wizardCollege}
+                    course={wizardCourse}
+                    onChange={handleWizardCollegeCourse}
+                    collegeLabel="Name of College"
+                    courseLabel="Degree / Course"
+                  />
                   <div>
                     <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                       Batch year

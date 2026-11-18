@@ -2,7 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Filter, Globe2, MapPinned, RotateCcw } from "lucide-react";
 import { AlumniShell } from "@/components/alumni-shell";
+import { CollegeCourseSelect } from "@/components/college-course-select";
 import { RealAlumniMap } from "@/components/real-alumni-map";
+import { collegeForCourse, sameCollege } from "@/lib/msu-colleges";
 import { getAlumniMapPinsData } from "@/lib/gis.functions";
 import { getMyWorkspaceData } from "@/lib/profile.functions";
 
@@ -46,13 +48,9 @@ function AlumniMapPage() {
   const { workspace: data, pins: allPins, mapError } = Route.useLoaderData();
   const user = data.ok ? data.user : null;
   const [course, setCourse] = useState("");
+  const [college, setCollege] = useState("");
   const [batch, setBatch] = useState("");
   const [country, setCountry] = useState("");
-
-  const courseOptions = useMemo(
-    () => Array.from(new Set(allPins.map((pin) => pin.course))).sort((a, b) => a.localeCompare(b)),
-    [allPins],
-  );
 
   const batchOptions = useMemo(
     () =>
@@ -74,17 +72,20 @@ function AlumniMapPage() {
 
   const pins = useMemo(
     () =>
-      allPins.filter(
-        (pin) =>
+      allPins.filter((pin) => {
+        const pinCollege = collegeForCourse(pin.course) ?? "";
+        return (
           (!course || pin.course === course) &&
+          (!college || (pinCollege && sameCollege(pinCollege, college))) &&
           (!batch || pin.batch === batch) &&
-          (!country || pin.country === country),
-      ),
-    [allPins, course, batch, country],
+          (!country || pin.country === country)
+        );
+      }),
+    [allPins, course, college, batch, country],
   );
 
   const employed = pins.filter((p) => p.status === "Employed").length;
-  const hasFilters = Boolean(course || batch || country);
+  const hasFilters = Boolean(course || college || batch || country);
 
   return (
     <AlumniShell
@@ -135,8 +136,19 @@ function AlumniMapPage() {
             </div>
           </div>
 
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            <MapSelect label="Course" options={courseOptions} value={course} onChange={setCourse} />
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <CollegeCourseSelect
+              className="sm:col-span-2"
+              college={college}
+              course={course}
+              onChange={({ college: nextCollege, course: nextCourse }) => {
+                setCollege(nextCollege);
+                setCourse(nextCourse);
+              }}
+              collegeLabel="College"
+              courseLabel="Course"
+              allowEmpty
+            />
             <MapSelect
               label="Batch year"
               options={batchOptions}
@@ -157,6 +169,7 @@ function AlumniMapPage() {
               type="button"
               onClick={() => {
                 setCourse("");
+                setCollege("");
                 setBatch("");
                 setCountry("");
               }}

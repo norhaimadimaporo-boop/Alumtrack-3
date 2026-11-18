@@ -14,6 +14,8 @@ import {
   Mail,
   Globe,
 } from "lucide-react";
+import { CollegeCourseSelect } from "@/components/college-course-select";
+import { sameCollege, sameCourse } from "@/lib/msu-colleges";
 import { getPublicAlumni } from "@/lib/search.functions";
 import { initials } from "@/lib/profile-format";
 import type { PublicAlumnus } from "@/lib/search.types";
@@ -110,8 +112,8 @@ function SearchPage() {
         });
         if (!matches) return false;
       }
-      if (!sameValue(a.course, filters.course)) return false;
-      if (!sameValue(a.college, filters.college)) return false;
+      if (filters.course && !sameCourse(a.course, filters.course)) return false;
+      if (filters.college && !sameCollege(a.college, filters.college)) return false;
       if (filters.batch && a.batch !== filters.batch) return false;
       return true;
     });
@@ -180,17 +182,15 @@ function SearchPage() {
               </button>
             )}
           </div>
-          <FilterSelect
-            label="Course"
-            options={options.courses}
-            value={filters.course}
-            onChange={(v) => set("course", v)}
-          />
-          <FilterSelect
-            label="College"
-            options={options.colleges}
-            value={filters.college}
-            onChange={(v) => set("college", v)}
+          <CollegeCourseSelect
+            college={filters.college}
+            course={filters.course}
+            onChange={({ college, course }) =>
+              setFilters((current) => ({ ...current, college, course }))
+            }
+            collegeLabel="College"
+            courseLabel="Course"
+            allowEmpty
           />
           <FilterSelect
             label="Batch Year"

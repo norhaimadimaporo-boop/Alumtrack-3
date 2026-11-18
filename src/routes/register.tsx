@@ -4,6 +4,7 @@ import { Check, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 
 import { AddressFields } from "@/components/address-fields";
+import { CollegeCourseSelect } from "@/components/college-course-select";
 import { calculateAge } from "@/lib/profile-format";
 import { registerAlumni } from "@/lib/registration.functions";
 import {
@@ -368,6 +369,19 @@ function RegisterPage() {
       },
     }));
 
+  const updateDegreeCollegeCourse = (level: EducationLevel, college: string, course: string) =>
+    setForm((previous) => ({
+      ...previous,
+      degreeDetails: {
+        ...previous.degreeDetails,
+        [level]: {
+          ...(previous.degreeDetails[level] ?? emptyDegree()),
+          college,
+          degree: course,
+        },
+      },
+    }));
+
   const last = step === PHASES.length - 1;
   const computedAge = form.birthDate ? calculateAge(form.birthDate) : "";
 
@@ -457,7 +471,8 @@ function RegisterPage() {
           verification before logging in.
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Registered email: <span className="font-semibold text-foreground">{form.accountEmail}</span>
+          Registered email:{" "}
+          <span className="font-semibold text-foreground">{form.accountEmail}</span>
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
@@ -484,7 +499,8 @@ function RegisterPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Alumni Registration</h1>
           <p className="text-sm text-muted-foreground">
-            Complete all five phases - from personal details and contacts to education, employment, and organization affiliation - to create your verified AlumTrack profile.
+            Complete all five phases - from personal details and contacts to education, employment,
+            and organization affiliation - to create your verified AlumTrack profile.
           </p>
         </div>
       </div>
@@ -696,11 +712,10 @@ function RegisterPage() {
         {step === 2 && (
           <Section title="Phase 3 - Educational Background">
             <p className="mb-3 text-sm text-muted-foreground">
-              Select every degree you have earned. Details are requested per degree.
-              Baccalaureate Degree is the primary (default) degree; Graduate and Post
-              Graduate are only used when Baccalaureate is not selected. School ID No.
-              lives here in Phase 3 only — there is no separate ID Number field in
-              Phase 1.
+              Select every degree you have earned. Details are requested per degree. Baccalaureate
+              Degree is the primary (default) degree; Graduate and Post Graduate are only used when
+              Baccalaureate is not selected. School ID No. lives here in Phase 3 only — there is no
+              separate ID Number field in Phase 1.
             </p>
             <div className="grid gap-2 sm:grid-cols-3">
               {DEGREES.map((degree) => (
@@ -743,22 +758,20 @@ function RegisterPage() {
                       onChange={(value) => updateDegree(degree, "schoolIdNo", value)}
                       placeholder="e.g. 2020-30124"
                     />
-                    <Field
-                      label="Degree"
-                      value={detail.degree}
-                      onChange={(value) => updateDegree(degree, "degree", value)}
-                      required
+                    <CollegeCourseSelect
+                      className="sm:col-span-2"
+                      college={detail.college}
+                      course={detail.degree}
+                      onChange={({ college, course }) =>
+                        updateDegreeCollegeCourse(degree, college, course)
+                      }
+                      collegeLabel="Name of College"
+                      courseLabel="Degree / Course"
                     />
                     <Field
                       label="Major"
                       value={detail.major}
                       onChange={(value) => updateDegree(degree, "major", value)}
-                      required
-                    />
-                    <Field
-                      label="Name of College"
-                      value={detail.college}
-                      onChange={(value) => updateDegree(degree, "college", value)}
                       required
                     />
                     <Field
@@ -790,10 +803,9 @@ function RegisterPage() {
                 Auto-synced directory details
               </h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                Course, College, and Batch Year are copied automatically from your
-                primary degree — Baccalaureate first, then Graduate, then Post
-                Graduate. Batch Year is the year of that Date Graduated (e.g. 2015).
-                You do not need to enter them again.
+                Course, College, and Batch Year are copied automatically from your primary degree —
+                Baccalaureate first, then Graduate, then Post Graduate. Batch Year is the year of
+                that Date Graduated (e.g. 2015). You do not need to enter them again.
               </p>
               <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
                 <div>
@@ -812,9 +824,7 @@ function RegisterPage() {
                   <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     Batch Year (auto-synced)
                   </dt>
-                  <dd className="mt-0.5 font-semibold text-foreground">
-                    {syncedBatchYear || "—"}
-                  </dd>
+                  <dd className="mt-0.5 font-semibold text-foreground">{syncedBatchYear || "—"}</dd>
                 </div>
               </dl>
             </div>

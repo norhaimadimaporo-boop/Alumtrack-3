@@ -2,8 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { BarChart3, MapPinned, Search } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
+import { CollegeCourseSelect } from "@/components/college-course-select";
 import { BarList, DonutChart, ColumnChart } from "@/components/cluster-map";
 import { RealAlumniMap } from "@/components/real-alumni-map";
+import { sameCollege, sameCourse } from "@/lib/msu-colleges";
 import { getReportRecords } from "@/lib/reports.functions";
 import type { ReportRecord } from "@/lib/reports.types";
 
@@ -106,8 +108,8 @@ function AdminReports() {
     () =>
       all.filter((r) => {
         if (filters.batch && r.batch !== filters.batch) return false;
-        if (!sameValue(r.college, filters.college)) return false;
-        if (!sameValue(r.course, filters.course)) return false;
+        if (filters.college && !sameCollege(r.college, filters.college)) return false;
+        if (filters.course && !sameCourse(r.course, filters.course)) return false;
         if (!sameValue(r.ethnicity, filters.tribe)) return false;
         if (!sameValue(r.religion, filters.religion)) return false;
         if (!sameValue(r.province, filters.province)) return false;
@@ -244,17 +246,16 @@ function AdminReports() {
             value={filters.batch}
             onChange={(v) => set("batch", v)}
           />
-          <FilterSelect
-            label="College"
-            options={options.colleges}
-            value={filters.college}
-            onChange={(v) => set("college", v)}
-          />
-          <FilterSelect
-            label="Course"
-            options={options.courses}
-            value={filters.course}
-            onChange={(v) => set("course", v)}
+          <CollegeCourseSelect
+            className="lg:col-span-2"
+            college={filters.college}
+            course={filters.course}
+            onChange={({ college, course }) =>
+              setFilters((current) => ({ ...current, college, course }))
+            }
+            collegeLabel="College"
+            courseLabel="Course"
+            allowEmpty
           />
           <FilterSelect
             label="Tribe"
@@ -423,20 +424,20 @@ function ResponsiveColumnChart({
   tone?: "brand" | "success" | "highlight";
 }) {
   return (
-      <div className="w-full min-w-0 max-w-full">
-        <div className="block w-full overflow-x-auto md:hidden">
-          <div className="min-w-[560px]">
+    <div className="w-full min-w-0 max-w-full">
+      <div className="block w-full overflow-x-auto md:hidden">
+        <div className="min-w-[560px]">
+          <ColumnChart items={items} {...(tone ? { tone } : {})} />
+        </div>
+      </div>
+      <div className="hidden w-full min-w-0 md:block">
+        <div className="overflow-x-auto md:max-h-[350px] md:overflow-y-auto md:scrollbar-thin md:scrollbar-thumb-gray-400">
+          <div className="min-w-[720px]">
             <ColumnChart items={items} {...(tone ? { tone } : {})} />
           </div>
         </div>
-        <div className="hidden w-full min-w-0 md:block">
-          <div className="overflow-x-auto md:max-h-[350px] md:overflow-y-auto md:scrollbar-thin md:scrollbar-thumb-gray-400">
-            <div className="min-w-[720px]">
-              <ColumnChart items={items} {...(tone ? { tone } : {})} />
-            </div>
-          </div>
-        </div>
       </div>
+    </div>
   );
 }
 

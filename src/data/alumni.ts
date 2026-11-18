@@ -10,22 +10,8 @@ export type Alumnus = {
   status: "Employed" | "Self-employed" | "Further Studies";
 };
 
-export const COLLEGES = [
-  "College of Information and Computing Sciences",
-  "College of Engineering",
-  "College of Business Administration and Accountancy",
-  "College of Health Sciences",
-  "College of Education",
-] as const;
-
-export const COURSES = [
-  "BS Information Technology",
-  "BS Computer Science",
-  "BS Civil Engineering",
-  "BS Accountancy",
-  "BS Nursing",
-  "BS Education",
-] as const;
+// Backwards-compatible aliases; the canonical list lives in `msu-colleges.ts`.
+export { COLLEGE_OPTIONS as COLLEGES, COURSE_OPTIONS as COURSES } from "@/lib/msu-colleges";
 
 export const REGIONS = [
   "BARMM",
