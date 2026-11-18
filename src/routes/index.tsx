@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Search,
   MapPinned,
@@ -6,7 +6,11 @@ import {
   UserRoundPen,
   ArrowRight,
   CalendarDays,
+  MessageCircle,
 } from "lucide-react";
+import { AlumniChatWidget } from "@/components/alumni-chat-widget";
+import { useSession } from "@/hooks/use-session";
+import { openAlumniChat } from "@/lib/chat-widget";
 const heroImage = "/assets/hero-bg.jpg";
 import { POSTS, findPostPhoto } from "@/data/news";
 import { getPublishedPosts } from "@/lib/posts.functions";
@@ -69,6 +73,16 @@ const FEATURES = [
 
 function Index() {
   const { posts: storedPosts } = Route.useLoaderData();
+  const navigate = useNavigate();
+  const role = useSession();
+
+  const startChat = () => {
+    if (role === "alumni") {
+      openAlumniChat();
+      return;
+    }
+    void navigate({ to: "/login" });
+  };
 
   const latest =
     storedPosts.length > 0
@@ -127,12 +141,12 @@ function Index() {
         <h2 className="border-l-4 border-brand pl-4 text-2xl font-bold text-foreground">
           What you can do here
         </h2>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {FEATURES.map((f) => (
             <Link
               key={f.title}
               to={f.to}
-              className="group flex flex-col rounded-2xl border border-[#E6DFD5] bg-gradient-to-br from-card to-background p-6 shadow-sm transition-colors hover:border-brand"
+              className="group flex h-full flex-col justify-between rounded-2xl border border-[#E6DFD5] bg-gradient-to-br from-card to-background p-6 shadow-sm transition-colors hover:border-brand"
             >
               <span className="flex size-10 items-center justify-center rounded-sm bg-brand/8 text-brand transition-colors group-hover:bg-brand group-hover:text-brand-foreground">
                 <f.icon className="size-5" />
@@ -144,6 +158,24 @@ function Index() {
               </span>
             </Link>
           ))}
+
+          <button
+            type="button"
+            onClick={startChat}
+            className="group flex h-full flex-col justify-between rounded-2xl border border-[#E6DFD5] bg-gradient-to-br from-card to-background p-6 text-left shadow-sm transition-colors hover:border-brand"
+          >
+            <span className="flex size-10 items-center justify-center rounded-sm bg-brand/8 text-brand transition-colors group-hover:bg-brand group-hover:text-brand-foreground">
+              <MessageCircle className="size-5" />
+            </span>
+            <h3 className="mt-4 text-base font-bold text-foreground">AI Chatbox</h3>
+            <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+              Ask questions anytime and get instant replies from our AI assistant, or connect
+              directly with an OARCC admin for further concerns.
+            </p>
+            <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-brand">
+              Start chatting <ArrowRight className="size-3.5" />
+            </span>
+          </button>
         </div>
       </section>
 
@@ -215,6 +247,8 @@ function Index() {
           ))}
         </ul>
       </section>
+
+      {role === "alumni" && <AlumniChatWidget />}
     </div>
   );
 }

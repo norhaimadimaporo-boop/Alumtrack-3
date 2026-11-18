@@ -5,6 +5,7 @@ import { ChatMessageItem } from "@/components/chat-message-item";
 import { deleteMessage, editMessage } from "@/lib/chat-message-client";
 import { getAlumniChat, handoffAlumniChat, sendAlumniChat } from "@/lib/chat.functions";
 import type { AlumniChatSession } from "@/lib/chat.types";
+import { OPEN_ALUMNI_CHAT_EVENT } from "@/lib/chat-widget";
 
 const FAQS = [
   "How do I get my alumni profile verified?",
@@ -59,6 +60,12 @@ export function AlumniChatWidget() {
       active = false;
     };
   }, [open, thread]);
+
+  useEffect(() => {
+    const onOpenRequest = () => setOpen(true);
+    window.addEventListener(OPEN_ALUMNI_CHAT_EVENT, onOpenRequest);
+    return () => window.removeEventListener(OPEN_ALUMNI_CHAT_EVENT, onOpenRequest);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
