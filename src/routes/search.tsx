@@ -14,7 +14,7 @@ import {
   Mail,
   Globe,
 } from "lucide-react";
-import { CollegeCourseSelect } from "@/components/college-course-select";
+import { CollegeCourseSelect, SearchableFilterSelect } from "@/components/college-course-select";
 import { sameCollege, sameCourse } from "@/lib/msu-colleges";
 import { getPublicAlumni } from "@/lib/search.functions";
 import { initials } from "@/lib/profile-format";
@@ -188,12 +188,12 @@ function SearchPage() {
             onChange={({ college, course }) =>
               setFilters((current) => ({ ...current, college, course }))
             }
-            collegeLabel="College"
-            courseLabel="Course"
             allowEmpty
+            filterStyle
+            stacked
           />
-          <FilterSelect
-            label="Batch Year"
+          <SearchableFilterSelect
+            placeholder="All batch years"
             options={options.batches}
             value={filters.batch}
             onChange={(v) => set("batch", v)}
@@ -275,38 +275,6 @@ function ViewButton({
     >
       {children}
     </button>
-  );
-}
-
-function FilterSelect({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string;
-  options: string[];
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-semibold text-foreground">{label}</label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={`w-full rounded-lg border bg-card px-3 py-2 text-sm outline-none focus:border-brand ${
-          value ? "border-brand text-foreground" : "border-border text-muted-foreground"
-        }`}
-      >
-        <option value="">All {label.toLowerCase()}s</option>
-        {options.map((opt) => (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
-        ))}
-      </select>
-    </div>
   );
 }
 

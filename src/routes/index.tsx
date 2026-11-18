@@ -8,7 +8,6 @@ import {
   CalendarDays,
   MessageCircle,
 } from "lucide-react";
-import { AlumniChatWidget } from "@/components/alumni-chat-widget";
 import { useSession } from "@/hooks/use-session";
 import { openAlumniChat } from "@/lib/chat-widget";
 const heroImage = "/assets/hero-bg.jpg";
@@ -78,7 +77,10 @@ function Index() {
 
   const startChat = () => {
     if (role === "alumni") {
+      // The launcher only lives inside the Alumni portal, so open the chat
+      // there after navigation (the flag is consumed by the widget on mount).
       openAlumniChat();
+      void navigate({ to: "/dashboard" });
       return;
     }
     void navigate({ to: "/login" });
@@ -247,8 +249,6 @@ function Index() {
           ))}
         </ul>
       </section>
-
-      {role === "alumni" && <AlumniChatWidget />}
     </div>
   );
 }

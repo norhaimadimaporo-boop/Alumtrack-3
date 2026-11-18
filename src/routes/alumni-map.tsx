@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Filter, Globe2, MapPinned, RotateCcw } from "lucide-react";
 import { AlumniShell } from "@/components/alumni-shell";
-import { CollegeCourseSelect } from "@/components/college-course-select";
+import { CollegeCourseSelect, SearchableFilterSelect } from "@/components/college-course-select";
 import { RealAlumniMap } from "@/components/real-alumni-map";
 import { collegeForCourse, sameCollege } from "@/lib/msu-colleges";
 import { getAlumniMapPinsData } from "@/lib/gis.functions";
@@ -136,7 +136,7 @@ function AlumniMapPage() {
             </div>
           </div>
 
-          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <CollegeCourseSelect
               className="sm:col-span-2"
               college={college}
@@ -145,22 +145,20 @@ function AlumniMapPage() {
                 setCollege(nextCollege);
                 setCourse(nextCourse);
               }}
-              collegeLabel="College"
-              courseLabel="Course"
               allowEmpty
+              filterStyle
             />
-            <MapSelect
-              label="Batch year"
+            <SearchableFilterSelect
+              placeholder="All batch years"
               options={batchOptions}
               value={batch}
               onChange={setBatch}
             />
-            <MapSelect
-              label="Country"
+            <SearchableFilterSelect
+              placeholder="All countries"
               options={countries}
               value={country}
               onChange={setCountry}
-              allLabel="All countries"
             />
           </div>
 
@@ -195,37 +193,5 @@ function AlumniMapPage() {
         </div>
       </div>
     </AlumniShell>
-  );
-}
-
-function MapSelect({
-  label,
-  options,
-  value,
-  onChange,
-  allLabel,
-}: {
-  label: string;
-  options: string[];
-  value: string;
-  onChange: (v: string) => void;
-  allLabel?: string;
-}) {
-  return (
-    <select
-      aria-label={label}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={`w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-brand ${
-        value ? "border-brand text-foreground" : "border-border text-muted-foreground"
-      }`}
-    >
-      <option value="">{allLabel ?? `All ${label.toLowerCase()}s`}</option>
-      {options.map((o) => (
-        <option key={o} value={o}>
-          {o}
-        </option>
-      ))}
-    </select>
   );
 }

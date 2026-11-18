@@ -64,6 +64,14 @@ export function AlumniChatWidget() {
   useEffect(() => {
     const onOpenRequest = () => setOpen(true);
     window.addEventListener(OPEN_ALUMNI_CHAT_EVENT, onOpenRequest);
+    try {
+      if (window.sessionStorage.getItem(OPEN_ALUMNI_CHAT_EVENT) === "1") {
+        window.sessionStorage.removeItem(OPEN_ALUMNI_CHAT_EVENT);
+        setOpen(true);
+      }
+    } catch {
+      // Storage may be unavailable; in-page events still work.
+    }
     return () => window.removeEventListener(OPEN_ALUMNI_CHAT_EVENT, onOpenRequest);
   }, []);
 

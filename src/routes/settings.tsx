@@ -362,7 +362,7 @@ function SettingsPage() {
       {toast && (
         <div
           role="status"
-          className="fixed left-6 top-20 z-[9999] flex max-w-[calc(100vw-3rem)] items-center gap-2 rounded-md bg-success px-4 py-3 text-sm font-semibold text-success-foreground shadow-lg"
+          className="fixed bottom-6 right-20 z-[9999] flex max-w-[calc(100vw-8rem)] items-center gap-2 rounded-md bg-success px-4 py-3 text-sm font-semibold text-success-foreground shadow-lg sm:right-24"
         >
           <CheckCircle2 className="size-4" /> {toast}
         </div>

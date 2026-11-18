@@ -266,6 +266,7 @@ export function CollegeCourseSelect({
   collegePlaceholder,
   coursePlaceholder,
   controlClassName,
+  stacked = false,
   className = "",
 }: {
   college: string;
@@ -278,6 +279,7 @@ export function CollegeCourseSelect({
   collegePlaceholder?: string;
   coursePlaceholder?: string;
   controlClassName?: string;
+  stacked?: boolean;
   className?: string;
 }) {
   const collegeOptions = useMemo<SelectOption[]>(
@@ -319,7 +321,13 @@ export function CollegeCourseSelect({
   };
 
   return (
-    <div className={`grid min-w-0 gap-3 sm:grid-cols-2 ${className}`}>
+    <div
+      className={
+        stacked
+          ? "grid min-w-0 grid-cols-1 gap-3"
+          : `grid min-w-0 gap-3 sm:grid-cols-2 ${className}`
+      }
+    >
       <SearchableSelect
         label={collegeLabel}
         options={collegeOptions}
