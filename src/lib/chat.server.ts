@@ -1,4 +1,4 @@
-import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
+import type { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
 import { requireAdmin } from "./admin.server";
 import { getSessionUser } from "./auth.server";
@@ -10,7 +10,9 @@ import type {
   AdminChatInboxResult,
   AlumniChatResult,
   ChatActionResult,
+  ChatEditVersion,
   ChatMessage,
+  ChatMutationResult,
   ChatMode,
   ChatSender,
   ChatStatus,
@@ -55,6 +57,9 @@ export function ensureChatTables(): Promise<void> {
           sender_name VARCHAR(100) NULL,
           message TEXT NOT NULL,
           is_read TINYINT(1) NOT NULL DEFAULT 0,
+          is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+          is_edited TINYINT(1) NOT NULL DEFAULT 0,
+          edit_history JSON NULL,
           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
           PRIMARY KEY (id),
           KEY idx_chat_messages_session (session_id, id),
@@ -63,6 +68,27 @@ export function ensureChatTables(): Promise<void> {
             REFERENCES chat_sessions (id) ON DELETE CASCADE
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci
       `);
+      const [columns] = await pool.query<Array<RowDataPacket & { COLUMN_NAME: string }>>(
+        `SELECT COLUMN_NAME
+           FROM INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'chat_messages'
+            AND COLUMN_NAME IN ('is_deleted', 'is_edited', 'edit_history')`,
+      );
+      const existingColumns = new Set(columns.map((column) => column.COLUMN_NAME));
+      const editColumns = [
+        ["is_deleted", "TINYINT(1) NOT NULL DEFAULT 0"],
+        ["is_edited", "TINYINT(1) NOT NULL DEFAULT 0"],
+        ["edit_history", "JSON NULL"],
+      ] as const;
+      for (const [name, definition] of editColumns) {
+        if (existingColumns.has(name)) continue;
+        try {
+          await pool.query(`ALTER TABLE chat_messages ADD COLUMN ${name} ${definition}`);
+        } catch (error) {
+          if ((error as { code?: string }).code !== "ER_DUP_FIELDNAME") throw error;
+        }
+      }
     })().catch((error) => {
       tablesPromise = null;
       throw error;
@@ -88,7 +114,15 @@ type MessageRow = RowDataPacket & {
   sender_name: string | null;
   message: string;
   is_read: number | boolean;
+  is_deleted: number | boolean;
+  is_edited: number | boolean;
+  edit_history: string | ChatEditVersion[] | null;
   created_at: Date | string;
+};
+
+type EditableMessageRow = MessageRow & {
+  session_id: number;
+  alumni_user_id: number;
 };
 
 type InboxRow = SessionRow & {
@@ -105,6 +139,36 @@ function asDate(value: Date | string): Date {
   return value instanceof Date ? value : new Date(value);
 }
 
+function parseEditHistory(value: MessageRow["edit_history"]): ChatEditVersion[] {
+  if (!value) return [];
+  let history: unknown = value;
+  if (typeof value === "string") {
+    try {
+      history = JSON.parse(value) as unknown;
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(history)) return [];
+  return history.flatMap((entry): ChatEditVersion[] => {
+    if (typeof entry === "string") return [{ message: entry, editedAt: "" }];
+    if (
+      entry &&
+      typeof entry === "object" &&
+      "message" in entry &&
+      typeof entry.message === "string"
+    ) {
+      return [
+        {
+          message: entry.message,
+          editedAt: "editedAt" in entry && typeof entry.editedAt === "string" ? entry.editedAt : "",
+        },
+      ];
+    }
+    return [];
+  });
+}
+
 function toMessage(row: MessageRow): ChatMessage {
   const date = asDate(row.created_at);
   return {
@@ -113,6 +177,9 @@ function toMessage(row: MessageRow): ChatMessage {
     senderName: row.sender_name,
     message: row.message,
     isRead: row.is_read === 1 || row.is_read === true,
+    isEdited: row.is_edited === 1 || row.is_edited === true,
+    isDeleted: row.is_deleted === 1 || row.is_deleted === true,
+    editHistory: parseEditHistory(row.edit_history),
     createdAt: Number.isNaN(date.getTime()) ? "" : date.toISOString(),
     timeLabel: relativeTime(date),
   };
@@ -140,7 +207,8 @@ function conversationFromRow(row: InboxRow): AdminChatConversation {
 
 async function listMessages(sessionId: number): Promise<ChatMessage[]> {
   const [rows] = await getPool().execute<MessageRow[]>(
-    `SELECT id, sender_type, sender_name, message, is_read, created_at
+    `SELECT id, sender_type, sender_name, message, is_read,
+            is_deleted, is_edited, edit_history, created_at
        FROM chat_messages
       WHERE session_id = ?
       ORDER BY id ASC
@@ -497,4 +565,130 @@ export async function sendAdminChatMessage(
     console.error("[chat] Admin reply failed:", error);
     return { ok: false, message: "Your reply could not be sent. Please try again." };
   }
+}
+
+type ChatMessageActor = { senderType: "alumni"; alumniUserId: number } | { senderType: "admin" };
+
+async function getChatMessageActor(): Promise<
+  { ok: true; actor: ChatMessageActor } | { ok: false; message: string; status: 401 | 403 }
+> {
+  const user = await getSessionUser();
+  if (!user) {
+    return { ok: false, status: 401, message: "Sign in to manage your chat messages." };
+  }
+  if (user.role === "alumni") {
+    return { ok: true, actor: { senderType: "alumni", alumniUserId: user.id } };
+  }
+  const access = await requireAdmin("standard");
+  if (!access.ok) return { ok: false, status: 403, message: access.message };
+  return { ok: true, actor: { senderType: "admin" } };
+}
+
+async function mutateChatMessage(
+  messageId: number,
+  action: "edit" | "delete",
+  messageInput?: string,
+): Promise<ChatMutationResult> {
+  const authorization = await getChatMessageActor();
+  if (!authorization.ok) return authorization;
+  if (!Number.isSafeInteger(messageId) || messageId <= 0) {
+    return { ok: false, status: 400, message: "Invalid chat message." };
+  }
+
+  const message = (messageInput ?? "").trim().slice(0, MAX_MESSAGE_LENGTH);
+  if (action === "edit" && !message) {
+    return { ok: false, status: 400, message: "A message cannot be empty." };
+  }
+
+  let connection: PoolConnection | null = null;
+  try {
+    await ensureChatTables();
+    connection = await getPool().getConnection();
+    await connection.beginTransaction();
+    const [rows] = await connection.execute<EditableMessageRow[]>(
+      `SELECT m.id, m.session_id, m.sender_type, m.sender_name, m.message,
+              m.is_read, m.is_deleted, m.is_edited, m.edit_history, m.created_at,
+              s.alumni_user_id
+         FROM chat_messages m
+         JOIN chat_sessions s ON s.id = m.session_id
+        WHERE m.id = ?
+        LIMIT 1
+        FOR UPDATE`,
+      [messageId],
+    );
+    const row = rows[0];
+    if (!row || row.is_deleted === 1 || row.is_deleted === true) {
+      await connection.rollback();
+      return { ok: false, status: 404, message: "That message could not be found." };
+    }
+    const actor = authorization.actor;
+    const isOwner =
+      row.sender_type === actor.senderType &&
+      (actor.senderType !== "alumni" || Number(row.alumni_user_id) === actor.alumniUserId);
+    if (!isOwner || row.sender_type === "bot") {
+      await connection.rollback();
+      return { ok: false, status: 404, message: "That message could not be found." };
+    }
+
+    if (action === "edit") {
+      const history = parseEditHistory(row.edit_history);
+      history.push({ message: row.message, editedAt: new Date().toISOString() });
+      await connection.execute(
+        `UPDATE chat_messages
+            SET message = ?, is_edited = 1, edit_history = ?
+          WHERE id = ?`,
+        [message, JSON.stringify(history), messageId],
+      );
+    } else {
+      await connection.execute(
+        `UPDATE chat_messages
+            SET message = '', is_deleted = 1, is_edited = 0, edit_history = NULL
+          WHERE id = ?`,
+        [messageId],
+      );
+    }
+
+    const [[latest]] = await connection.execute<
+      Array<RowDataPacket & { latest_id: number | null }>
+    >(`SELECT MAX(id) AS latest_id FROM chat_messages WHERE session_id = ?`, [row.session_id]);
+    if (Number(latest?.latest_id) === Number(row.id)) {
+      await connection.execute(
+        `UPDATE chat_sessions
+            SET last_message_preview = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?`,
+        [action === "delete" ? "Message deleted" : message.slice(0, 255), row.session_id],
+      );
+    } else {
+      await connection.execute(
+        `UPDATE chat_sessions SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [row.session_id],
+      );
+    }
+    await connection.commit();
+    return {
+      ok: true,
+      message: action === "edit" ? "Message edited." : "Message deleted.",
+    };
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error(`[chat] Message ${action} failed:`, error);
+    return {
+      ok: false,
+      status: 500,
+      message:
+        action === "edit"
+          ? "The message could not be updated."
+          : "The message could not be deleted.",
+    };
+  } finally {
+    connection?.release();
+  }
+}
+
+export function editChatMessage(messageId: number, message: string): Promise<ChatMutationResult> {
+  return mutateChatMessage(messageId, "edit", message);
+}
+
+export function deleteChatMessage(messageId: number): Promise<ChatMutationResult> {
+  return mutateChatMessage(messageId, "delete");
 }

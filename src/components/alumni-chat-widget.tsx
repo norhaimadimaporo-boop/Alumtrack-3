@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Bot, MessageCircle, Send, X } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
+import { ChatMessageItem } from "@/components/chat-message-item";
+import { deleteMessage, editMessage } from "@/lib/chat-message-client";
 import { getAlumniChat, handoffAlumniChat, sendAlumniChat } from "@/lib/chat.functions";
 import type { AlumniChatSession } from "@/lib/chat.types";
 
@@ -151,37 +153,24 @@ export function AlumniChatWidget() {
             {loading && !thread && (
               <p className="text-center text-xs text-[#6B625B]">Loading OARCC chat…</p>
             )}
-            {thread?.messages.map((item) => {
-              const isAlumni = item.senderType === "alumni";
-              return (
-                <div key={item.id} className={`flex ${isAlumni ? "justify-end" : "justify-start"}`}>
-                  <div
-                    className={`max-w-[88%] rounded-2xl px-3 py-2 text-xs leading-relaxed shadow-sm ${
-                      isAlumni
-                        ? "rounded-br-sm bg-[#7A1315] text-white"
-                        : "rounded-bl-sm border border-[#E6DFD5] bg-white text-[#312B27]"
-                    }`}
-                  >
-                    {item.senderType === "bot" && (
-                      <p className="mb-1 text-[10px] font-semibold text-[#7A1315]/65">
-                        Sent by chat bot
-                      </p>
-                    )}
-                    {item.senderType === "admin" && item.senderName && (
-                      <p className="mb-1 text-[10px] font-semibold text-[#7A1315]">
-                        {item.senderName}
-                      </p>
-                    )}
-                    <p className="whitespace-pre-wrap break-words">{item.message}</p>
-                    <p
-                      className={`mt-1 text-right text-[9px] ${isAlumni ? "text-white/65" : "text-[#6B625B]/65"}`}
-                    >
-                      {item.timeLabel}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+            {thread?.messages.map((item) => (
+              <ChatMessageItem
+                key={item.id}
+                message={item}
+                own={item.senderType === "alumni"}
+                theme="alumni"
+                onEdit={async (id, text) => {
+                  const ok = await editMessage(id, text);
+                  if (ok) await refreshThread();
+                  return ok;
+                }}
+                onDelete={async (id) => {
+                  const ok = await deleteMessage(id);
+                  if (ok) await refreshThread();
+                  return ok;
+                }}
+              />
+            ))}
             {thread?.mode === "bot" && (
               <div className="space-y-2 rounded-xl border border-[#E6DFD5] bg-white/70 p-3">
                 <p className="text-[11px] font-semibold text-[#766C64]">

@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import { Loader2, MessageCircle, Send } from "lucide-react";
 
 import { AdminShell } from "@/components/admin-shell";
+import { ChatMessageItem } from "@/components/chat-message-item";
+import { deleteMessage, editMessage } from "@/lib/chat-message-client";
 import { AvatarImage } from "@/components/profile-avatar";
 import {
   getAdminChatConversations,
@@ -266,33 +268,24 @@ function AdminMessagesPage() {
                       <Loader2 className="mr-2 size-4 animate-spin" /> Loading conversation…
                     </div>
                   )}
-                  {messages.map((item) => {
-                    const fromAdmin = item.senderType === "admin";
-                    return (
-                      <div
-                        key={item.id}
-                        className={`flex ${fromAdmin ? "justify-end" : "justify-start"}`}
-                      >
-                        <div
-                          className={`max-w-[88%] rounded-2xl px-3 py-2 text-xs leading-relaxed shadow-sm ${fromAdmin ? "rounded-br-sm bg-brand text-brand-foreground" : "rounded-bl-sm border border-border bg-card text-foreground"}`}
-                        >
-                          {item.senderName && item.senderType !== "alumni" && (
-                            <p
-                              className={`mb-1 text-[10px] font-semibold ${fromAdmin ? "text-white/75" : "text-brand"}`}
-                            >
-                              {item.senderName}
-                            </p>
-                          )}
-                          <p className="whitespace-pre-wrap break-words">{item.message}</p>
-                          <p
-                            className={`mt-1 text-right text-[9px] ${fromAdmin ? "text-white/65" : "text-muted-foreground"}`}
-                          >
-                            {item.timeLabel}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {messages.map((item) => (
+                    <ChatMessageItem
+                      key={item.id}
+                      message={item}
+                      own={item.senderType === "admin"}
+                      theme="admin"
+                      onEdit={async (id, text) => {
+                        const ok = await editMessage(id, text);
+                        if (ok && activeId !== null) await refreshThread(activeId);
+                        return ok;
+                      }}
+                      onDelete={async (id) => {
+                        const ok = await deleteMessage(id);
+                        if (ok && activeId !== null) await refreshThread(activeId);
+                        return ok;
+                      }}
+                    />
+                  ))}
                 </div>
 
                 {error && (

@@ -60,6 +60,9 @@ try {
       sender_name VARCHAR(100) NULL,
       message TEXT NOT NULL,
       is_read TINYINT(1) NOT NULL DEFAULT 0,
+      is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+      is_edited TINYINT(1) NOT NULL DEFAULT 0,
+      edit_history JSON NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (id),
       KEY idx_chat_messages_session (session_id, id),
@@ -68,6 +71,26 @@ try {
         REFERENCES chat_sessions (id) ON DELETE CASCADE
     ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci
   `);
+  const [columns] = await connection.query(`
+    SELECT COLUMN_NAME
+      FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'chat_messages'
+       AND COLUMN_NAME IN ('is_deleted', 'is_edited', 'edit_history')
+  `);
+  const existing = new Set(columns.map((row) => row.COLUMN_NAME));
+  for (const [name, definition] of [
+    ["is_deleted", "TINYINT(1) NOT NULL DEFAULT 0"],
+    ["is_edited", "TINYINT(1) NOT NULL DEFAULT 0"],
+    ["edit_history", "JSON NULL"],
+  ]) {
+    if (existing.has(name)) continue;
+    try {
+      await connection.query(`ALTER TABLE chat_messages ADD COLUMN ${name} ${definition}`);
+    } catch (error) {
+      if (error.code !== "ER_DUP_FIELDNAME") throw error;
+    }
+  }
   console.log("Chat tables are ready on the configured MySQL database.");
 } finally {
   await connection.end();

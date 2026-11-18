@@ -32,6 +32,7 @@ import { Route as AdminPostsRouteImport } from './routes/admin.posts'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminUsageRouteImport } from './routes/admin.usage'
 import { Route as ApiAlumniAvatarRouteImport } from './routes/api.alumni.avatar'
+import { Route as ApiChatMessagesIdRouteImport } from './routes/api.chat.messages.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -148,6 +149,11 @@ const ApiAlumniAvatarRoute = ApiAlumniAvatarRouteImport.update({
   path: '/api/alumni/avatar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiChatMessagesIdRoute = ApiChatMessagesIdRouteImport.update({
+  id: '/api/chat/messages/$id',
+  path: '/api/chat/messages/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/admin/usage': typeof AdminUsageRoute
   '/admin/': typeof AdminIndexRoute
   '/api/alumni/avatar': typeof ApiAlumniAvatarRoute
+  '/api/chat/messages/$id': typeof ApiChatMessagesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByTo {
   '/admin/usage': typeof AdminUsageRoute
   '/admin': typeof AdminIndexRoute
   '/api/alumni/avatar': typeof ApiAlumniAvatarRoute
+  '/api/chat/messages/$id': typeof ApiChatMessagesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -224,6 +232,7 @@ export interface FileRoutesById {
   '/admin/usage': typeof AdminUsageRoute
   '/admin/': typeof AdminIndexRoute
   '/api/alumni/avatar': typeof ApiAlumniAvatarRoute
+  '/api/chat/messages/$id': typeof ApiChatMessagesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -251,6 +260,7 @@ export interface FileRouteTypes {
     | '/admin/usage'
     | '/admin/'
     | '/api/alumni/avatar'
+    | '/api/chat/messages/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -276,6 +286,7 @@ export interface FileRouteTypes {
     | '/admin/usage'
     | '/admin'
     | '/api/alumni/avatar'
+    | '/api/chat/messages/$id'
   id:
     | '__root__'
     | '/'
@@ -301,6 +312,7 @@ export interface FileRouteTypes {
     | '/admin/usage'
     | '/admin/'
     | '/api/alumni/avatar'
+    | '/api/chat/messages/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -327,6 +339,7 @@ export interface RootRouteChildren {
   AdminUsageRoute: typeof AdminUsageRoute
   AdminIndexRoute: typeof AdminIndexRoute
   ApiAlumniAvatarRoute: typeof ApiAlumniAvatarRoute
+  ApiChatMessagesIdRoute: typeof ApiChatMessagesIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -492,6 +505,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAlumniAvatarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/chat/messages/$id': {
+      id: '/api/chat/messages/$id'
+      path: '/api/chat/messages/$id'
+      fullPath: '/api/chat/messages/$id'
+      preLoaderRoute: typeof ApiChatMessagesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -519,6 +539,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminUsageRoute: AdminUsageRoute,
   AdminIndexRoute: AdminIndexRoute,
   ApiAlumniAvatarRoute: ApiAlumniAvatarRoute,
+  ApiChatMessagesIdRoute: ApiChatMessagesIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
