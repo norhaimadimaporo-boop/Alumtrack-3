@@ -83,11 +83,9 @@ function SearchableSelect({
     }
     const rect = buttonRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const width = Math.max(rect.width, 240);
-    const maxHeight = 280;
-    const below = rect.bottom + 6;
-    const top =
-      below + maxHeight <= window.innerHeight - 8 ? below : Math.max(8, rect.top - maxHeight - 6);
+    // Always open directly below the trigger — never flip above the input.
+    const width = Math.max(rect.width, 220);
+    const top = rect.bottom + 8;
     const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
     setPosition({ top, left, width });
     setOpen(true);
@@ -144,16 +142,16 @@ function SearchableSelect({
         className={
           compact
             ? (controlClassName ??
-              "flex h-11 w-full items-center justify-between gap-2 rounded-xl border border-border bg-background px-3 text-left text-xs text-muted-foreground outline-none transition-colors hover:border-brand focus:border-brand disabled:opacity-60")
+              "flex h-11 w-full items-center justify-between gap-2 rounded-full border border-[#E5DDD3] bg-white/75 px-4 text-sm text-[#3D2E2E] shadow-sm backdrop-blur-md transition-all hover:border-[#7A1315]/50 focus:border-[#7A1315] disabled:opacity-60")
             : "mt-1 flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-sm text-foreground outline-none transition-colors hover:border-brand focus:border-brand disabled:opacity-60"
         }
       >
-        <span className={`min-w-0 truncate ${selectedLabel ? "" : "text-muted-foreground"}`}>
+        <span
+          className={`min-w-0 flex-1 truncate text-left ${selectedLabel ? "" : "text-[#6B5B5B]"}`}
+        >
           {selectedLabel || placeholder}
         </span>
-        <ChevronDown
-          className={`size-4 shrink-0 text-brand transition-transform ${open ? "rotate-180" : ""}`}
-        />
+        <ChevronDown className="size-4 shrink-0 text-[#7A1315]" />
       </button>
 
       {open &&
@@ -164,11 +162,11 @@ function SearchableSelect({
             ref={panelRef}
             role="listbox"
             aria-label={label}
-            className="fixed z-[9999] overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
+            className="fixed z-[9999] overflow-hidden rounded-2xl border border-[#E5DDD3] bg-white/90 shadow-xl backdrop-blur-xl"
             style={{ top: position.top, left: position.left, width: position.width }}
           >
             <div className="flex items-center gap-2 border-b border-border px-3 py-2">
-              <Search className="size-4 shrink-0 text-brand" />
+              <Search className="size-4 shrink-0 text-[#7A1315]" />
               <input
                 ref={searchRef}
                 value={query}
@@ -188,7 +186,7 @@ function SearchableSelect({
                     choose(filtered[activeIndex]);
                   }
                 }}
-                placeholder={`Search ${label.toLowerCase()}…`}
+                placeholder="Search..."
                 aria-label={`Search ${label}`}
                 className="w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
               />
@@ -209,11 +207,11 @@ function SearchableSelect({
                       role="option"
                       aria-selected={isSelected}
                       onClick={() => choose(option)}
-                      className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-muted ${
-                        index === activeIndex ? "bg-muted/70" : ""
-                      } ${isSelected ? "font-semibold text-brand" : "text-foreground"}`}
+                      className={`flex w-full items-center gap-2 px-4 py-2 text-left text-xs text-[#3D2E2E] transition-colors hover:bg-[#7A1315]/5 ${
+                        index === activeIndex ? "bg-[#7A1315]/5" : ""
+                      } ${isSelected ? "font-semibold text-[#7A1315]" : ""}`}
                     >
-                      {isSelected && <Check className="size-3.5 shrink-0 text-brand" />}
+                      {isSelected && <Check className="size-3.5 shrink-0 text-[#7A1315]" />}
                       <span className="min-w-0 break-words">{option.label}</span>
                     </button>
                   );

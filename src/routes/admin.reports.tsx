@@ -295,9 +295,9 @@ function AdminReports() {
           )}
         </div>
         {!data.ok && <p className="mt-2 text-xs text-red-600">{data.message}</p>}
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <FilterSelect
-            label="Batch year"
+        <div className="mt-3 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+          <SearchableFilterSelect
+            placeholder="All batch years"
             options={options.batches}
             value={filters.batch}
             onChange={(v) => set("batch", v)}
@@ -312,37 +312,35 @@ function AdminReports() {
             allowEmpty
             filterStyle
           />
-          <FilterSelect
-            label="Tribe"
+          <SearchableFilterSelect
+            placeholder="All tribes"
             options={options.tribes}
             value={filters.tribe}
             onChange={(v) => set("tribe", v)}
           />
-          <FilterSelect
-            label="Religion"
+          <SearchableFilterSelect
+            placeholder="All religions"
             options={options.religions}
             value={filters.religion}
             onChange={(v) => set("religion", v)}
           />
-          <FilterSelect
-            label="Gender"
+          <SearchableFilterSelect
+            placeholder="All genders"
             options={options.genders}
             value={filters.gender}
             onChange={(v) => set("gender", v)}
           />
-          <FilterSelect
-            label="Group affiliation"
+          <SearchableFilterSelect
+            placeholder="All group affiliations"
             options={options.affiliations}
             value={filters.affiliation}
             onChange={(v) => set("affiliation", v)}
-            allLabel="All group affiliations"
           />
-          <FilterSelect
-            label="Employment status"
+          <SearchableFilterSelect
+            placeholder="All employment statuses"
             options={options.employments}
             value={filters.employment}
             onChange={(v) => set("employment", v)}
-            allLabel="All employment statuses"
           />
           <SearchableFilterSelect
             placeholder="All countries"
@@ -506,35 +504,5 @@ function Panel({
       </h2>
       <div className="mt-4 w-full min-w-0 max-w-full">{children}</div>
     </div>
-  );
-}
-
-function FilterSelect({
-  label,
-  options,
-  allLabel,
-  value,
-  onChange,
-}: {
-  label: string;
-  options: string[];
-  allLabel?: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <select
-      aria-label={label}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="h-11 w-full rounded-xl border border-border bg-background px-3 text-xs text-muted-foreground outline-none focus:border-brand"
-    >
-      <option value="">{allLabel ?? `All ${label.toLowerCase()}s`}</option>
-      {options.map((o) => (
-        <option key={o} value={o}>
-          {o}
-        </option>
-      ))}
-    </select>
   );
 }

@@ -20,7 +20,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
-import { CollegeCourseSelect } from "@/components/college-course-select";
+import { CollegeCourseSelect, SearchableFilterSelect } from "@/components/college-course-select";
 import { AvatarImage } from "@/components/profile-avatar";
 import { AddressFields } from "@/components/address-fields";
 import { Modal, LabeledInput, PrimaryButton } from "@/components/modal";
@@ -153,9 +153,6 @@ const CSV_INSTRUCTIONS = [
 ] as const;
 
 const IMPORT_TEMPLATE_FILENAME = "alumtrack-alumni-import-template.csv";
-
-const FILTER_CONTROL_CLASS =
-  "h-11 w-full rounded-xl border border-[#E5DDD3] bg-[#FAF6F0] px-3.5 text-sm text-foreground outline-none focus:border-brand";
 
 const PHASE_STEPS = [
   "Personal details",
@@ -808,12 +805,12 @@ function AdminAlumni() {
     >
       <div className="grid grid-cols-1 items-center gap-3 rounded-lg border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#7A1315]" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search alumni by name, ID, email..."
-            className="h-11 w-full rounded-xl border border-[#E5DDD3] bg-[#FAF6F0] pl-9 pr-3.5 text-sm text-foreground outline-none focus:border-brand"
+            className="h-11 w-full rounded-full border border-[#E5DDD3] bg-white/75 pl-10 pr-4 text-sm text-[#3D2E2E] shadow-sm backdrop-blur-md outline-none transition-all hover:border-[#7A1315]/50 focus:border-[#7A1315]"
           />
         </div>
         <CollegeCourseSelect
@@ -826,27 +823,19 @@ function AdminAlumni() {
           }}
           allowEmpty
           filterStyle
-          controlClassName={FILTER_CONTROL_CLASS}
         />
-        <select
+        <SearchableFilterSelect
+          placeholder="All batches"
+          options={batchOptions}
           value={batch}
-          onChange={(e) => setBatch(e.target.value)}
-          className={FILTER_CONTROL_CLASS}
-        >
-          <option value="">All batches</option>
-          {batchOptions.map((b) => (
-            <option key={b}>{b}</option>
-          ))}
-        </select>
-        <select
+          onChange={setBatch}
+        />
+        <SearchableFilterSelect
+          placeholder="All statuses"
+          options={["Verified", "For Verification"]}
           value={verification}
-          onChange={(e) => setVerification(e.target.value)}
-          className={FILTER_CONTROL_CLASS}
-        >
-          <option value="">All statuses</option>
-          <option value="Verified">Verified</option>
-          <option value="For Verification">For Verification</option>
-        </select>
+          onChange={setVerification}
+        />
       </div>
 
       {actionMessage && (
