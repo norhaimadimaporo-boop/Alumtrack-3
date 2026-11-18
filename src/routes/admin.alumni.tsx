@@ -25,8 +25,8 @@ import { AvatarImage } from "@/components/profile-avatar";
 import { AddressFields } from "@/components/address-fields";
 import { Modal, LabeledInput, PrimaryButton } from "@/components/modal";
 import { useAdminRole } from "@/hooks/use-session";
-import { REGIONS, BATCHES, initials } from "@/data/alumni";
-import { COLLEGE_OPTIONS, COURSE_OPTIONS, sameCollege, sameCourse } from "@/lib/msu-colleges";
+import { BATCHES, initials } from "@/data/alumni";
+import { sameCollege, sameCourse } from "@/lib/msu-colleges";
 import { toast } from "sonner";
 
 import {
@@ -153,6 +153,9 @@ const CSV_INSTRUCTIONS = [
 ] as const;
 
 const IMPORT_TEMPLATE_FILENAME = "alumtrack-alumni-import-template.csv";
+
+const FILTER_CONTROL_CLASS =
+  "h-11 w-full rounded-xl border border-[#E5DDD3] bg-[#FAF6F0] px-3.5 text-sm text-foreground outline-none focus:border-brand";
 
 const PHASE_STEPS = [
   "Personal details",
@@ -304,12 +307,12 @@ function AdminAlumni() {
     }));
     const primaryEducation = primaryEducationRecord(educationForSync);
     const syncedBatch = priorityBatchYear(educationForSync);
-    setWizardCourse(primaryEducation?.degree.trim() || record?.course || COURSE_OPTIONS[0] || "");
-    setWizardCollege(
-      primaryEducation?.college.trim() || record?.college || COLLEGE_OPTIONS[0] || "",
-    );
-    setWizardBatch(syncedBatch || record?.batch || BATCHES[0]);
-    setWizardRegion(record?.region ?? REGIONS[0]);
+    // New records start completely blank; existing records keep their saved
+    // values. Nothing is pre-filled until the admin actually enters data.
+    setWizardCourse(primaryEducation?.degree.trim() || record?.course || "");
+    setWizardCollege(primaryEducation?.college.trim() || record?.college || "");
+    setWizardBatch(syncedBatch || record?.batch || "");
+    setWizardRegion(record?.region ?? "");
     const currentEmployment =
       record?.employment.find((entry) => entry.isCurrent) ?? record?.employment[0];
     setEmployed(
@@ -803,32 +806,32 @@ function AdminAlumni() {
         </div>
       }
     >
-      <div className="grid gap-3 rounded-lg border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 items-center gap-3 rounded-lg border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search alumni by name…"
-            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-sm outline-none focus:border-brand"
+            placeholder="Search alumni by name, ID, email..."
+            className="h-11 w-full rounded-xl border border-[#E5DDD3] bg-[#FAF6F0] pl-9 pr-3.5 text-sm text-foreground outline-none focus:border-brand"
           />
         </div>
         <CollegeCourseSelect
-          className="lg:col-span-2"
+          className="sm:col-span-2"
           college={college}
           course={course}
           onChange={({ college: nextCollege, course: nextCourse }) => {
             setCollege(nextCollege);
             setCourse(nextCourse);
           }}
-          collegeLabel="College"
-          courseLabel="Course"
           allowEmpty
+          filterStyle
+          controlClassName={FILTER_CONTROL_CLASS}
         />
         <select
           value={batch}
           onChange={(e) => setBatch(e.target.value)}
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+          className={FILTER_CONTROL_CLASS}
         >
           <option value="">All batches</option>
           {batchOptions.map((b) => (
@@ -838,7 +841,7 @@ function AdminAlumni() {
         <select
           value={verification}
           onChange={(e) => setVerification(e.target.value)}
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+          className={FILTER_CONTROL_CLASS}
         >
           <option value="">All statuses</option>
           <option value="Verified">Verified</option>
@@ -1535,6 +1538,8 @@ function AdminAlumni() {
                         }
                         collegeLabel="Name of College"
                         courseLabel="Degree"
+                        collegePlaceholder="Select college..."
+                        coursePlaceholder="Select degree / course..."
                       />
                       <LabeledInput
                         label="Major"
@@ -1575,6 +1580,8 @@ function AdminAlumni() {
                     onChange={handleWizardCollegeCourse}
                     collegeLabel="Name of College"
                     courseLabel="Degree / Course"
+                    collegePlaceholder="Select college..."
+                    coursePlaceholder="Select degree / course..."
                   />
                   <div>
                     <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -1585,22 +1592,9 @@ function AdminAlumni() {
                       onChange={(e) => setWizardBatch(e.target.value)}
                       className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
                     >
+                      <option value="">Select batch year...</option>
                       {wizardBatchOptions.map((b) => (
                         <option key={b}>{b}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      Region
-                    </label>
-                    <select
-                      value={wizardRegion}
-                      onChange={(e) => setWizardRegion(e.target.value)}
-                      className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
-                    >
-                      {REGIONS.map((r) => (
-                        <option key={r}>{r}</option>
                       ))}
                     </select>
                   </div>

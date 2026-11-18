@@ -24,6 +24,7 @@ function SearchableSelect({
   disabled = false,
   hideLabel = false,
   compact = false,
+  controlClassName,
 }: {
   options: SelectOption[];
   value: string;
@@ -35,6 +36,7 @@ function SearchableSelect({
   disabled?: boolean;
   hideLabel?: boolean;
   compact?: boolean;
+  controlClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -141,7 +143,8 @@ function SearchableSelect({
         onClick={toggle}
         className={
           compact
-            ? "flex h-11 w-full items-center justify-between gap-2 rounded-xl border border-border bg-background px-3 text-left text-xs text-muted-foreground outline-none transition-colors hover:border-brand focus:border-brand disabled:opacity-60"
+            ? (controlClassName ??
+              "flex h-11 w-full items-center justify-between gap-2 rounded-xl border border-border bg-background px-3 text-left text-xs text-muted-foreground outline-none transition-colors hover:border-brand focus:border-brand disabled:opacity-60")
             : "mt-1 flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-sm text-foreground outline-none transition-colors hover:border-brand focus:border-brand disabled:opacity-60"
         }
       >
@@ -262,6 +265,9 @@ export function CollegeCourseSelect({
   courseLabel = "Degree / Course",
   allowEmpty = false,
   filterStyle = false,
+  collegePlaceholder,
+  coursePlaceholder,
+  controlClassName,
   className = "",
 }: {
   college: string;
@@ -271,6 +277,9 @@ export function CollegeCourseSelect({
   courseLabel?: string;
   allowEmpty?: boolean;
   filterStyle?: boolean;
+  collegePlaceholder?: string;
+  coursePlaceholder?: string;
+  controlClassName?: string;
   className?: string;
 }) {
   const collegeOptions = useMemo<SelectOption[]>(
@@ -318,22 +327,24 @@ export function CollegeCourseSelect({
         options={collegeOptions}
         value={college}
         onChange={handleCollege}
-        placeholder={allowEmpty ? "All colleges" : "Search college…"}
+        placeholder={allowEmpty ? "All colleges" : (collegePlaceholder ?? "Search college…")}
         allowEmpty={allowEmpty}
         emptyLabel="All colleges"
         hideLabel={filterStyle}
         compact={filterStyle}
+        {...(controlClassName ? { controlClassName } : {})}
       />
       <SearchableSelect
         label={courseLabel}
         options={courseOptions}
         value={course}
         onChange={handleCourse}
-        placeholder={allowEmpty ? "All courses" : "Search degree / course…"}
+        placeholder={allowEmpty ? "All courses" : (coursePlaceholder ?? "Search degree / course…")}
         allowEmpty={allowEmpty}
         emptyLabel="All courses"
         hideLabel={filterStyle}
         compact={filterStyle}
+        {...(controlClassName ? { controlClassName } : {})}
       />
     </div>
   );
