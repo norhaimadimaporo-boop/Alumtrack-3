@@ -137,6 +137,29 @@ type FieldKey =
   | "orgContact"
   | "orgEmail"
   | "orgMemberSince"
+  | "fullName"
+  | "age"
+  | "akanEmail"
+  | "major"
+  | "schoolAddress"
+  | "batchYear"
+  | "orgInvolvement"
+  | "presentCountry"
+  | "presentProvince"
+  | "presentCity"
+  | "presentBarangay"
+  | "presentStreet"
+  | "presentBlock"
+  | "presentHouseNo"
+  | "presentZip"
+  | "homeCountry"
+  | "homeProvince"
+  | "homeCity"
+  | "homeBarangay"
+  | "homeStreet"
+  | "homeBlock"
+  | "homeHouseNo"
+  | "homeZip"
   | "latitude"
   | "longitude";
 
@@ -146,46 +169,168 @@ type FieldKey =
  * label; every alias is matched.
  */
 const HEADER_ALIASES: Record<FieldKey, string[]> = {
-  lastName: ["Last Name", "Surname", "Family Name"],
-  firstName: ["First Name", "Given Name"],
-  middleName: ["Middle Name", "Middle Initial", "MI"],
-  gender: ["Gender", "Sex"],
-  birthDate: ["Birth Date", "Birthdate", "Birthday", "Date of Birth", "DOB"],
-  ethnicity: ["Ethnicity", "Tribe", "Ethnicity / Tribe", "Ethnic Group"],
-  religion: ["Religion", "Religious Affiliation", "Faith"],
-  birthPlace: ["Birth Place", "Birthplace", "Place of Birth"],
+  lastName: ["Last Name", "last_name", "Surname", "Family Name"],
+  firstName: ["First Name", "first_name", "Given Name"],
+  middleName: ["Middle Name", "middle_name", "Middle Initial", "MI"],
+  fullName: ["Full Name", "full_name", "Name"],
+  gender: ["Gender", "gender", "Sex"],
+  birthDate: [
+    "Birth Date",
+    "date_of_birth",
+    "birthday",
+    "Birthdate",
+    "Birthday",
+    "Date of Birth",
+    "DOB",
+  ],
+  age: ["Age", "age"],
+  ethnicity: ["Ethnicity", "ethnicity", "tribe", "Tribe", "Ethnicity / Tribe", "Ethnic Group"],
+  religion: ["Religion", "religious_affiliation", "religion", "Religious Affiliation", "Faith"],
+  birthPlace: ["Birth Place", "place_of_birth", "Birthplace", "Place of Birth"],
   homeAddress: ["Home Address", "Permanent Address", "Permanent Home Address"],
   presentAddress: ["Present Address", "Current Address", "Address"],
-  phone: ["Contact Number", "Phone", "Phone Number", "Mobile Number", "Mobile", "Contact No"],
-  email: ["Email Address", "Email", "E-mail", "Account Email"],
-  facebook: ["Facebook Link", "Facebook", "FB Link", "Facebook URL", "Facebook Account"],
-  college: ["College", "College / School", "College Graduated"],
-  degree: ["Degree/Course taken", "Degree / Course", "Course", "Degree", "Program", "Course Taken"],
-  degreeLevel: ["Degree Level", "Education Level", "Level of Education"],
+  phone: [
+    "Contact Number",
+    "mobile_number",
+    "phone",
+    "contact_number",
+    "Active Mobile Number",
+    "Phone",
+    "Phone Number",
+    "Mobile Number",
+    "Mobile",
+    "Contact No",
+  ],
+  email: [
+    "Email Address",
+    "email",
+    "active_email",
+    "Active Email Address",
+    "Email",
+    "E-mail",
+    "Account Email",
+  ],
+  akanEmail: ["akan_email", "Akan Email Address", "Akan Email"],
+  facebook: [
+    "Facebook Link",
+    "facebook",
+    "facebook_account",
+    "Facebook Account",
+    "FB Link",
+    "Facebook URL",
+  ],
+  college: [
+    "College",
+    "college",
+    "name_of_college",
+    "Name of College",
+    "College / School",
+    "College Graduated",
+  ],
+  degree: [
+    "Degree/Course taken",
+    "course",
+    "degree",
+    "Degree",
+    "Course",
+    "Degree / Course",
+    "Program",
+    "Course Taken",
+  ],
+  degreeLevel: ["degree_level", "Degree Level", "Education Level", "Level of Education"],
+  major: ["major", "Major", "Field of Study"],
   dateGraduated: [
+    "date_graduated",
     "Date Graduated",
     "Graduation Date",
     "Year Graduated",
     "Graduated On",
     "Date of Graduation",
   ],
-  campus: ["Campus Graduated", "Campus", "Campus Address", "School", "School Address"],
-  msuId: ["MSU ID No.", "MSU ID", "MSU ID Number", "School ID No.", "Student ID", "ID Number"],
-  employmentStatus: ["Employment Status", "Job Status", "Employment"],
-  employer: ["Employer", "Company", "Employer / Company", "Employer Name", "Company Name"],
-  sector: ["Sector", "Industry", "Employment Sector", "Type of Employer"],
-  position: ["Position", "Job Title", "Designation", "Work Position"],
+  batchYear: ["batch_year", "Batch Year", "Batch"],
+  campus: [
+    "university",
+    "school_attended",
+    "University / School Attended",
+    "Campus Graduated",
+    "Campus",
+    "Campus Address",
+    "School",
+  ],
+  schoolAddress: [
+    "university_address",
+    "school_address",
+    "University / School Address",
+    "School Address",
+  ],
+  msuId: [
+    "school_id",
+    "student_id",
+    "MSU ID No.",
+    "MSU ID",
+    "MSU ID Number",
+    "School ID No.",
+    "Student ID",
+    "ID Number",
+  ],
+  employmentStatus: ["employment_status", "Employment Status", "Job Status", "Employment"],
+  employer: [
+    "present_company",
+    "company_name",
+    "Present Company / Agency Name",
+    "Employer",
+    "Company",
+    "Employer / Company",
+    "Employer Name",
+    "Company Name",
+  ],
+  sector: [
+    "employment_sector",
+    "present_employment_sector",
+    "Present Employment Sector",
+    "Sector",
+    "Industry",
+    "Employment Sector",
+    "Type of Employer",
+  ],
+  position: [
+    "present_position",
+    "job_title",
+    "Present Position / Job",
+    "Position",
+    "Job Title",
+    "Designation",
+    "Work Position",
+  ],
   workplaceAddress: [
+    "company_address",
+    "Company Address",
     "Workplace Address",
     "Employment and Business Address",
-    "Company Address",
     "Business Address",
     "Office Address",
   ],
-  workLocation: ["Work Location", "Local / Abroad", "Location of Work"],
-  lengthOfEmployment: ["Length of Employment", "Employment Length"],
-  yearsInOffice: ["Years in Office", "Years in Position", "Years of Service"],
+  workLocation: [
+    "location_of_employment",
+    "employment_location",
+    "Location of Employment",
+    "Work Location",
+    "Local / Abroad",
+    "Location of Work",
+  ],
+  lengthOfEmployment: ["length_of_employment", "Length of Employment", "Employment Length"],
+  yearsInOffice: [
+    "years_assumed",
+    "Years Assumed in Current Office / Agency",
+    "Years in Office",
+    "Years in Position",
+    "Years of Service",
+  ],
+  orgInvolvement: ["organization_involvement", "Organization Involvement"],
   orgName: [
+    "organization_name",
+    "group_organization_name",
+    "Group / Organization Name",
     "Organization",
     "Organization Name",
     "Organization Affiliation",
@@ -193,21 +338,71 @@ const HEADER_ALIASES: Record<FieldKey, string[]> = {
     "Org Name",
   ],
   orgPosition: [
+    "organization_position",
     "Organization Position",
     "Position in Organization",
     "Org Position",
     "Organization Role",
   ],
-  orgAddress: ["Organization Address", "Org Address"],
+  orgAddress: [
+    "group_organization_address",
+    "Group / Organization Address",
+    "Organization Address",
+    "Org Address",
+  ],
   orgContact: [
+    "organization_contact",
     "Organization Contact",
     "Organization Contact No.",
     "Org Contact",
     "Org Contact No.",
     "Organization Phone",
   ],
-  orgEmail: ["Organization Email", "Org Email"],
-  orgMemberSince: ["Member Since", "Organization Member Since", "Date Joined", "Membership Date"],
+  orgEmail: ["organization_email", "Organization Email", "Organization Email Address", "Org Email"],
+  orgMemberSince: [
+    "membership_since",
+    "Membership Since",
+    "Member Since",
+    "Organization Member Since",
+    "Date Joined",
+    "Membership Date",
+  ],
+  presentCountry: ["present_country", "current_country", "Current Country", "Present Country"],
+  presentProvince: [
+    "present_province",
+    "current_province",
+    "Current Province / State / Region",
+    "Present Province / State / Region",
+  ],
+  presentCity: [
+    "present_city",
+    "current_city",
+    "Current City / Municipality",
+    "Present City / Municipality",
+  ],
+  presentBarangay: [
+    "present_barangay",
+    "current_barangay",
+    "Current Subdivision / Barangay",
+    "Present Subdivision / Barangay",
+  ],
+  presentStreet: ["present_street", "current_street", "Current Street", "Present Street"],
+  presentBlock: ["present_block", "current_block", "Current Block", "Present Block"],
+  presentHouseNo: [
+    "present_house_no",
+    "current_house_no",
+    "Current House No.",
+    "Present House No.",
+  ],
+  presentZip: ["present_zip_code", "current_zip_code", "Current Zip Code", "Present Zip Code"],
+  homeCountry: ["home_country", "Home Country"],
+  homeProvince: ["home_province", "Home Province / State / Region"],
+  homeCity: ["home_city", "Home City / Municipality"],
+  homeBarangay: ["home_barangay", "Home Subdivision / Barangay"],
+  homeStreet: ["home_street", "Home Street"],
+  homeBlock: ["home_block", "Home Block"],
+  homeHouseNo: ["home_house_no", "Home House No."],
+  homeZip: ["home_zip_code", "Home Zip Code"],
   latitude: ["Latitude", "Lat"],
   longitude: ["Longitude", "Lng", "Long"],
 };
@@ -226,6 +421,7 @@ type ParsedAddress = {
   subdivision: string;
   city: string;
   province: string;
+  country: string;
   zipCode: string;
 };
 
@@ -237,12 +433,30 @@ const EMPTY_ADDRESS: ParsedAddress = {
   subdivision: "",
   city: "",
   province: "",
+  country: "",
   zipCode: "",
 };
+
+/** Restore the leading zero on 10-digit PH mobile numbers (9722410867 -> 09722410867). */
+function normalizeMobile(raw: string | null | undefined): string {
+  const digits = (raw ?? "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.length === 10 && digits.startsWith("9")) return `0${digits}`;
+  if (digits.length === 12 && digits.startsWith("63")) return `0${digits.slice(2)}`;
+  return digits;
+}
+
+/** Fallback for files that only provide a Full Name column. */
+function splitFullName(raw: string): { firstName: string; lastName: string } {
+  const parts = (raw ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { firstName: "", lastName: "" };
+  return { firstName: parts[0] ?? "", lastName: parts[parts.length - 1] ?? "" };
+}
 
 type ExistingUserRow = RowDataPacket & {
   id: number;
   role: "alumni" | "admin";
+  email: string;
 };
 
 export function normalizeKey(value: string | null | undefined): string {
@@ -638,8 +852,8 @@ async function upsertAddress(
 ): Promise<void> {
   await connection.execute(
     `INSERT INTO alumni_addresses
-       (user_id, kind, building, house_no, block, street, subdivision, city, province, zip_code)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       (user_id, kind, building, house_no, block, street, subdivision, city, province, country, zip_code)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE
        building = VALUES(building),
        house_no = VALUES(house_no),
@@ -648,6 +862,7 @@ async function upsertAddress(
        subdivision = VALUES(subdivision),
        city = VALUES(city),
        province = VALUES(province),
+       country = VALUES(country),
        zip_code = VALUES(zip_code)`,
     [
       userId,
@@ -659,9 +874,67 @@ async function upsertAddress(
       optional(address.subdivision, 150),
       optional(address.city, 120),
       optional(address.province, 120),
+      optional(address.country, 120),
       optional(address.zipCode, 20),
     ],
   );
+}
+
+type AddressKeys = {
+  country: FieldKey;
+  province: FieldKey;
+  city: FieldKey;
+  barangay: FieldKey;
+  street: FieldKey;
+  block: FieldKey;
+  houseNo: FieldKey;
+  zip: FieldKey;
+};
+
+const PRESENT_ADDRESS_KEYS: AddressKeys = {
+  country: "presentCountry",
+  province: "presentProvince",
+  city: "presentCity",
+  barangay: "presentBarangay",
+  street: "presentStreet",
+  block: "presentBlock",
+  houseNo: "presentHouseNo",
+  zip: "presentZip",
+};
+
+const HOME_ADDRESS_KEYS: AddressKeys = {
+  country: "homeCountry",
+  province: "homeProvince",
+  city: "homeCity",
+  barangay: "homeBarangay",
+  street: "homeStreet",
+  block: "homeBlock",
+  houseNo: "homeHouseNo",
+  zip: "homeZip",
+};
+
+/** Structured columns win; the composite free-text column is the fallback. */
+function structuredAddress(
+  get: (key: FieldKey) => string,
+  keys: AddressKeys,
+  raw: string,
+): { address: ParsedAddress; populated: boolean } {
+  const base = splitAddress(raw);
+  const pick = (key: FieldKey, fallback: string, max: number) => clamp(get(key) || fallback, max);
+  return {
+    address: {
+      ...base,
+      houseNo: pick(keys.houseNo, base.houseNo, 50),
+      block: pick(keys.block, base.block, 50),
+      street: pick(keys.street, base.street, 150),
+      subdivision: pick(keys.barangay, base.subdivision, 150),
+      city: pick(keys.city, base.city, 120),
+      province: pick(keys.province, base.province, 120),
+      country: pick(keys.country, base.country, 120),
+      zipCode: pick(keys.zip, base.zipCode, 20),
+    },
+    populated: Object.values(keys).some((key) => get(key).trim() !== ""),
+  };
 }
 
 async function importRow(
@@ -671,44 +944,84 @@ async function importRow(
   passwordHash: string,
   usedEmails: Set<string>,
 ): Promise<"created" | "updated"> {
-  const firstName = clamp(get("firstName"), 100);
-  const lastName = clamp(get("lastName"), 100);
+  const fromFullName = splitFullName(get("fullName"));
+  const firstName = clamp(get("firstName") || fromFullName.firstName, 100);
+  const lastName = clamp(get("lastName") || fromFullName.lastName, 100);
   if (!firstName || !lastName) {
     throw new Error("First name and last name are required.");
   }
 
   const middleName = clamp(get("middleName"), 100);
   const displayName = clamp(fullName(firstName, middleName, lastName), 150);
-  const email = resolveEmail(get("email"), firstName, lastName, usedEmails);
+
+  // Re-import matching: prefer the account email, then the School ID No. so a
+  // repeated file updates the same alumnus instead of creating duplicates.
+  const schoolId = clamp(get("msuId"), 50);
+  const rawEmail = get("email").trim().toLowerCase();
+  let existingUser: ExistingUserRow | undefined;
+  if (EMAIL_PATTERN.test(rawEmail)) {
+    const [rows] = await connection.execute<ExistingUserRow[]>(
+      "SELECT id, role, email FROM users WHERE email = ? LIMIT 1",
+      [rawEmail],
+    );
+    existingUser = rows[0];
+  }
+  if (!existingUser && schoolId) {
+    const [rows] = await connection.execute<ExistingUserRow[]>(
+      `SELECT u.id, u.role, u.email
+         FROM users u
+         JOIN alumni_education e ON e.user_id = u.id
+        WHERE e.school_id_no = ? LIMIT 1`,
+      [schoolId],
+    );
+    existingUser = rows[0];
+  }
+  const email = resolveEmail(
+    rawEmail || existingUser?.email || "",
+    firstName,
+    lastName,
+    usedEmails,
+  );
 
   // Phase 1 - personal details.
   const birthIso = parseCsvDate(get("birthDate"));
   const birthDate = birthIso ?? "1900-01-01";
-  const ageValue = birthIso ? Number(calculateAge(birthIso)) : Number.NaN;
+  const providedAge = Number.parseInt(get("age"), 10);
+  const ageValue =
+    Number.isFinite(providedAge) && providedAge > 0
+      ? providedAge
+      : birthIso
+        ? Number(calculateAge(birthIso))
+        : Number.NaN;
   const gender = normalizeGender(get("gender"));
   const ethnicity = clamp(get("ethnicity") || "Not provided", 120);
   const birthPlace = clamp(get("birthPlace") || "Not provided", 200);
   const religion = clamp(get("religion") || "Not provided", 120);
 
-  // Phase 2 - address & contact.
+  // Phase 2 - address & contact. Structured Present/Home columns take
+  // precedence; the composite free-text columns remain a fallback.
   const presentRaw = get("presentAddress");
   const homeRaw = get("homeAddress");
-  const present = splitAddress(presentRaw);
-  const home = splitAddress(homeRaw || presentRaw);
+  const presentInfo = structuredAddress(get, PRESENT_ADDRESS_KEYS, presentRaw);
+  const homeInfo = structuredAddress(get, HOME_ADDRESS_KEYS, homeRaw || presentRaw);
+  const present = presentInfo.address;
+  const home = homeInfo.address;
   // STRICT present-address-only geocoding: never fall back to Home Address
-  // or workplace. The CSV "Present Address" free text is resolved on its own
-  // (city/province/country segments); subdivision only matters for PH rows.
-  const location = resolveAddressLocation(presentRaw);
+  // or workplace.
+  const location = resolveAddressLocation(
+    presentRaw || [present.city, present.province, present.country].filter(Boolean).join(", "),
+  );
 
-  const providedEmail = get("email").trim().toLowerCase();
+  const providedEmail = rawEmail;
   const contactEmail = (EMAIL_PATTERN.test(providedEmail) ? providedEmail : email).slice(0, 255);
-  const mobileNumber = clamp(get("phone") || "Not provided", 30);
+  const mobileNumber = normalizeMobile(get("phone")) || "Not provided";
   const facebook = clamp(get("facebook"), 255);
+  const akanEmail = clamp(get("akanEmail").toLowerCase(), 255);
 
   const currentCity = clamp(location?.city || present.city, 120);
   const currentProvince = clamp(present.province, 120);
   const currentRegion = clamp(currentProvince || currentCity || location?.region || "", 120);
-  const currentCountry = clamp(location?.country ?? "", 120);
+  const currentCountry = clamp(present.country || location?.country || "", 120);
 
   const latitude = normalizeCoordinate(get("latitude"), 90) ?? location?.lat ?? null;
   const longitude = normalizeCoordinate(get("longitude"), 180) ?? location?.lng ?? null;
@@ -717,43 +1030,63 @@ async function importRow(
   const degree = clamp(get("degree"), 200);
   const college = clamp(get("college"), 200);
   const campus = clamp(get("campus"), 200);
+  const major = clamp(get("major"), 200);
+  const schoolAddress = clamp(get("schoolAddress"), 255);
+  const batchYear = clamp(get("batchYear"), 20);
   const msuId = clamp(get("msuId"), 50);
   const degreeLevel = normalizeEducationLevel(get("degreeLevel"));
   const graduatedOn = parseCsvDate(get("dateGraduated"));
   const hasEducation = Boolean(
-    degree || college || campus || msuId || graduatedOn || get("degreeLevel").trim(),
+    degree ||
+    college ||
+    campus ||
+    major ||
+    schoolAddress ||
+    batchYear ||
+    msuId ||
+    graduatedOn ||
+    get("degreeLevel").trim(),
   );
 
-  // Phase 4 - employment.
-  const position = clamp(get("position"), 200);
-  const employer = clamp(get("employer"), 200);
-  const workplaceAddress = clamp(get("workplaceAddress"), 255);
-  const sector = normalizeSector(get("sector"));
-  const workLocation = normalizeWorkLocation(get("workLocation"));
-  const lengthOfEmployment = clamp(get("lengthOfEmployment"), 100);
-  const yearsInOffice = clamp(get("yearsInOffice"), 50);
+  // Phase 4 - employment. Blank status is inferred from the job columns;
+  // "Currently unemployed" never produces an empty employment row.
   const rawStatus = clamp(get("employmentStatus"), 40);
   const statusKey = normalizeKey(rawStatus);
-  const hasEmploymentData = Boolean(
-    position ||
-    employer ||
-    workplaceAddress ||
-    sector ||
-    workLocation ||
-    lengthOfEmployment ||
-    yearsInOffice,
-  );
   const explicitlyUnemployed =
     statusKey.includes("unemploy") || statusKey === "no" || statusKey === "none";
+  const rawPosition = clamp(get("position"), 200);
+  const rawEmployer = clamp(get("employer"), 200);
+  const rawWorkplace = clamp(get("workplaceAddress"), 255);
+  const rawSector = normalizeSector(get("sector"));
+  const rawWorkLocation = normalizeWorkLocation(get("workLocation"));
+  const rawLength = clamp(get("lengthOfEmployment"), 100);
+  const rawYears = clamp(get("yearsInOffice"), 50);
+  const hasEmploymentData = Boolean(
+    rawPosition ||
+    rawEmployer ||
+    rawWorkplace ||
+    rawSector ||
+    rawWorkLocation ||
+    rawLength ||
+    rawYears,
+  );
   const employmentStatus = explicitlyUnemployed
     ? "unemployed"
     : statusKey.includes("employ") || statusKey === "yes" || hasEmploymentData
       ? "employed"
       : "unemployed";
-  const wantsEmployment = employmentStatus === "employed" || hasEmploymentData;
+  const position = explicitlyUnemployed ? "" : rawPosition;
+  const employer = explicitlyUnemployed ? "" : rawEmployer;
+  const workplaceAddress = explicitlyUnemployed ? "" : rawWorkplace;
+  const sector = explicitlyUnemployed ? "" : rawSector;
+  const workLocation = explicitlyUnemployed ? "" : rawWorkLocation;
+  const lengthOfEmployment = explicitlyUnemployed ? "" : rawLength;
+  const yearsInOffice = explicitlyUnemployed ? "" : rawYears;
+  const wantsEmployment = employmentStatus === "employed" && hasEmploymentData;
 
   // Phase 5 - organization affiliation.
-  const orgName = clamp(get("orgName"), 200);
+  const orgInvolvement = clamp(get("orgInvolvement"), 200);
+  const orgName = clamp(get("orgName") || orgInvolvement, 200);
   const orgPosition = clamp(get("orgPosition"), 200);
   const orgAddress = clamp(get("orgAddress"), 255);
   const orgContact = clamp(get("orgContact"), 50);
@@ -761,11 +1094,6 @@ async function importRow(
   const orgMemberSince = parseCsvDate(get("orgMemberSince"));
 
   // Account upsert. Admin accounts are never overwritten by an import.
-  const [existingUsers] = await connection.execute<ExistingUserRow[]>(
-    "SELECT id, role FROM users WHERE email = ? LIMIT 1",
-    [email],
-  );
-  const existingUser = existingUsers[0];
   let userId: number;
   let created = false;
 
@@ -796,7 +1124,7 @@ async function importRow(
         college, batch_year, employment_status, current_position, current_company,
         current_region, current_city, current_country, latitude, longitude,
         verification_status, verified_at, verified_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
              'verified', UTC_TIMESTAMP(), ?)
      ON DUPLICATE KEY UPDATE
        last_name = VALUES(last_name),
@@ -810,6 +1138,7 @@ async function importRow(
        religion = VALUES(religion),
        mobile_number = VALUES(mobile_number),
        contact_email = VALUES(contact_email),
+       akan_email = VALUES(akan_email),
        facebook = COALESCE(VALUES(facebook), facebook),
        course = VALUES(course),
        college = VALUES(college),
@@ -838,11 +1167,12 @@ async function importRow(
       religion,
       mobileNumber,
       contactEmail,
+      optional(akanEmail, 255),
       optional(facebook, 255),
       optional(degree, 200),
       optional(college, 200),
-      // Batch Year auto-sync: year of Date Graduated (priority degree in CSV).
-      graduatedOn ? Number(graduatedOn.slice(0, 4)) : null,
+      // Batch Year from its own column, else the year of Date Graduated.
+      batchYear ? Number(batchYear) : graduatedOn ? Number(graduatedOn.slice(0, 4)) : null,
       employmentStatus,
       optional(position, 200),
       optional(employer, 200),
@@ -855,8 +1185,12 @@ async function importRow(
     ],
   );
 
-  if (presentRaw) await upsertAddress(connection, userId, "current", present);
-  if (homeRaw) await upsertAddress(connection, userId, "home", home);
+  if (presentRaw || presentInfo.populated) {
+    await upsertAddress(connection, userId, "current", present);
+  }
+  if (homeRaw || homeInfo.populated) {
+    await upsertAddress(connection, userId, "home", home);
+  }
 
   // Replace the phase records with the CSV values so re-importing the same
   // file is idempotent instead of creating duplicates.
@@ -865,14 +1199,16 @@ async function importRow(
     await connection.execute(
       `INSERT INTO alumni_education
          (user_id, level, school_id_no, degree, major, college, school, school_address, graduated_on)
-       VALUES (?, ?, ?, ?, NULL, ?, ?, NULL, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         userId,
         degreeLevel,
         optional(msuId, 50),
         clamp(degree || "Not provided", 200),
+        optional(major, 200),
         optional(college, 200),
         clamp(campus || "Mindanao State University", 200),
+        optional(schoolAddress, 255),
         graduatedOn,
       ],
     );
