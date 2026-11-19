@@ -5,7 +5,7 @@ import { BrandMark } from "@/components/brand-mark";
 export function SiteFooter() {
   return (
     <footer className="mt-24 border-t-4 border-highlight bg-[#F5EFE6] text-[#5A0012]">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 py-14 md:grid-cols-2 lg:grid-cols-4">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 py-14 md:grid-cols-2 lg:grid-cols-[1.1fr_1.15fr_0.75fr_1.45fr] lg:gap-6">
         <div className="self-start">
           <div className="flex items-center gap-3">
             <img
@@ -138,7 +138,7 @@ export function SiteFooter() {
               <Mail className="size-4 shrink-0 text-brand" />
               <a
                 href="mailto:officeofalumnirelations01@gmail.com"
-                className="break-all hover:underline"
+                className="whitespace-nowrap hover:underline"
               >
                 officeofalumnirelations01@gmail.com
               </a>
