@@ -295,6 +295,24 @@ function botAnswer(message: string): string {
   ) {
     return "Sign in and update your Employment History and Present Address. To manage whether your pin is visible, visit Privacy & Settings and save your GIS preferences.";
   }
+  if (
+    normalized.includes("job") ||
+    normalized.includes("career") ||
+    normalized.includes("hiring") ||
+    normalized.includes("opportunit") ||
+    normalized.includes("vacanc") ||
+    normalized.includes("work")
+  ) {
+    return "You can browse verified career opportunities and hiring announcements from OARCC partner employers in the **Job Offerings** tab on your Alumni Dashboard or under **Latest Posts**. To get notified when roles match your degree, go to **Privacy & Settings** and turn on *'New job offerings matching my course'*.";
+  }
+  if (
+    normalized.includes("organization") ||
+    normalized.includes("chapter") ||
+    normalized.includes("affiliation") ||
+    normalized.includes("group")
+  ) {
+    return "To add or update your alumni chapter, batch group, or professional affiliation, open the **Organization** tab in your Alumni Dashboard sidebar. Enter your organization name, role/position, and chapter details, then click **Save** so your profile stays connected with fellow MSU graduates.";
+  }
   if (normalized.includes("id") || normalized.includes("certificate")) {
     return "For an Alumni ID or certificate request, please contact the OARCC office with your full name, course, and graduation year. An OARCC agent can help with the current requirements.";
   }
@@ -305,7 +323,7 @@ function botAnswer(message: string): string {
   ) {
     return "The Office of Alumni Relations and Career Center (OARCC) is on the MSU Main Campus in Marawi City. Please contact the office directly to confirm current office hours.";
   }
-  return "I can help with profile verification, employment and map updates, Alumni ID or certificates, and OARCC office information. Choose a quick question or chat with an OARCC agent for more help.";
+  return "I can help with job postings and career opportunities, alumni organizations and chapters, Alumni ID or certificates, and OARCC office information. Choose a quick question or chat with an OARCC agent for more help.";
 }
 
 export async function sendAlumniChatMessage(messageInput: string): Promise<AlumniChatResult> {

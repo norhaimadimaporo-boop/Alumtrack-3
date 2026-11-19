@@ -8,8 +8,8 @@ import type { AlumniChatSession } from "@/lib/chat.types";
 import { OPEN_ALUMNI_CHAT_EVENT } from "@/lib/chat-widget";
 
 const FAQS = [
-  "How do I get my alumni profile verified?",
-  "How do I update my employment & map pin?",
+  "How can I view job postings or career opportunities?",
+  "How do I join or update my alumni organization & chapter?",
   "How do I request an Alumni ID or certificate?",
   "What are OARCC office hours & location?",
 ];

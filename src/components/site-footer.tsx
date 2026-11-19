@@ -19,7 +19,7 @@ export function SiteFooter() {
               Mindanao State University
             </p>
           </div>
-          <div className="mt-4 space-y-1 text-sm leading-relaxed text-[#5A0012]/80">
+          <div className="mt-4 space-y-1 text-sm leading-snug text-[#5A0012]/80">
             <p className="font-bold text-[#7A1315]">Main Campus</p>
             <p>Marawi City</p>
             <p>9700 Lanao del Sur</p>
@@ -27,7 +27,7 @@ export function SiteFooter() {
           </div>
           <a
             href="mailto:oipp@msumain.edu.ph"
-            className="mt-4 inline-flex max-w-full items-center gap-2 border-b-2 border-[#D4AF37] pb-1 text-sm font-semibold text-[#7A1315] transition-colors hover:text-brand"
+            className="mt-2.5 inline-flex max-w-full items-center gap-2 border-b-2 border-[#D4AF37] pb-1 text-sm font-semibold text-[#7A1315] transition-colors hover:text-brand"
           >
             <Mail className="size-4 shrink-0 text-[#D4AF37]" />
             <span className="break-all">oipp@msumain.edu.ph</span>
@@ -43,7 +43,7 @@ export function SiteFooter() {
             Alumni Tracing System and Online Platform for Mindanao State University — Main Campus,
             Marawi City.
           </p>
-          <div className="mt-5 flex gap-2">
+          <div className="mt-4 flex gap-2">
             <span className="inline-flex size-9 items-center justify-center rounded-xl border border-[#5A0012]/25 text-[#5A0012] transition-colors hover:bg-brand hover:text-white">
               <Facebook className="size-4" />
             </span>
@@ -57,7 +57,7 @@ export function SiteFooter() {
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">
             Quick Links
           </p>
-          <ul className="mt-4 space-y-2 text-sm text-[#5A0012]">
+          <ul className="mt-4 space-y-1.5 text-sm text-[#5A0012]">
             <li>
               <Link to="/" className="hover:text-brand">
                 Home
@@ -95,8 +95,8 @@ export function SiteFooter() {
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">
             Office of Alumni Relations and Career Center
           </p>
-          <ul className="mt-4 space-y-3 text-sm text-[#5A0012]">
-            <li className="flex gap-2">
+          <ul className="mt-4 space-y-2 text-sm text-[#5A0012]">
+            <li className="flex gap-2 leading-snug">
               <MapPin className="mt-0.5 size-4 shrink-0 text-brand" />
               Ground Floor, Isidro Hall Building, 2nd Street, MSU, Marawi City, Lanao del Sur
             </li>
