@@ -215,6 +215,7 @@ function AdminAlumni() {
   const [exporting, setExporting] = useState(false);
   const [confirmingExport, setConfirmingExport] = useState(false);
   const [exportBatch, setExportBatch] = useState("");
+  const [exportCollege, setExportCollege] = useState("");
   const [exportCourse, setExportCourse] = useState("");
   const [exportGender, setExportGender] = useState("");
   const [step, setStep] = useState(0);
@@ -687,10 +688,12 @@ function AdminAlumni() {
   }
 
   const alumni = data.alumni;
-  const courseOptions = [...new Set(alumni.map((record) => record.course))].sort();
   const batchOptions = [...new Set(alumni.map((record) => record.batch))]
     .filter((value) => value && value !== "—")
     .sort((a, b) => Number(b) - Number(a));
+  const exportGenderOptions = [
+    ...new Set(["Male", "Female", ...alumni.map((record) => record.gender.trim()).filter(Boolean)]),
+  ].sort();
 
   const rows = alumni.filter((a) => {
     return (
@@ -703,10 +706,13 @@ function AdminAlumni() {
   });
 
   // Cascading export filters — independent of the directory search filters above.
+  // College/course matching is normalized so legacy values with or without
+  // trailing acronyms (e.g. "(CICS)") still match the standardized MSU labels.
   const exportRows = alumni.filter(
     (a) =>
       (exportBatch ? a.batch === exportBatch : true) &&
-      (exportCourse ? a.course === exportCourse : true) &&
+      (exportCollege ? sameCollege(a.college, exportCollege) : true) &&
+      (exportCourse ? sameCourse(a.course, exportCourse) : true) &&
       (exportGender ? a.gender.trim() === exportGender : true),
   );
 
@@ -755,6 +761,7 @@ function AdminAlumni() {
     setConfirmingExport(false);
     setExporting(false);
     setExportBatch("");
+    setExportCollege("");
     setExportCourse("");
     setExportGender("");
     // Reset/clear the active directory filters after a successful export.
@@ -973,56 +980,29 @@ function AdminAlumni() {
             </p>
 
             <div className="grid gap-3">
-              <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Batch Year
-                </label>
-                <select
-                  value={exportBatch}
-                  onChange={(e) => setExportBatch(e.target.value)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
-                >
-                  <option value="">All batch years</option>
-                  {batchOptions.map((b) => (
-                    <option key={b} value={b}>
-                      {b}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  College / Course
-                </label>
-                <select
-                  value={exportCourse}
-                  onChange={(e) => setExportCourse(e.target.value)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
-                >
-                  <option value="">All courses</option>
-                  {courseOptions.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Gender
-                </label>
-                <select
-                  value={exportGender}
-                  onChange={(e) => setExportGender(e.target.value)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
-                >
-                  <option value="">All genders</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                </select>
-              </div>
+              <SearchableFilterSelect
+                placeholder="All batch years"
+                options={batchOptions}
+                value={exportBatch}
+                onChange={setExportBatch}
+              />
+              <CollegeCourseSelect
+                stacked
+                allowEmpty
+                filterStyle
+                college={exportCollege}
+                course={exportCourse}
+                onChange={({ college, course }) => {
+                  setExportCollege(college);
+                  setExportCourse(course);
+                }}
+              />
+              <SearchableFilterSelect
+                placeholder="All genders"
+                options={exportGenderOptions}
+                value={exportGender}
+                onChange={setExportGender}
+              />
             </div>
 
             <p className="text-xs text-muted-foreground">
