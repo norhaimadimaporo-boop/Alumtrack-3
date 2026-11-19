@@ -27,6 +27,7 @@ import { Modal, LabeledInput, PrimaryButton } from "@/components/modal";
 import { useAdminRole } from "@/hooks/use-session";
 import { BATCHES, initials } from "@/data/alumni";
 import { sameCollege, sameCourse } from "@/lib/msu-colleges";
+import { CSV_IMPORT_LIMITS, splitCsvIntoChunks, type CsvChunk } from "@/lib/csv-chunk";
 import { toast } from "sonner";
 
 import {
@@ -206,11 +207,16 @@ function AdminAlumni() {
   const [importFile, setImportFile] = useState<{
     name: string;
     size: number;
-    text: string;
+    chunks: CsvChunk[];
+    totalRows: number;
   } | null>(null);
   const [importBusy, setImportBusy] = useState(false);
   const [importResult, setImportResult] = useState<AdminImportResult | null>(null);
   const [importDone, setImportDone] = useState(false);
+  const [importProgress, setImportProgress] = useState<{
+    processed: number;
+    total: number;
+  } | null>(null);
   const [importHistory, setImportHistory] = useState<AdminImportHistoryItem[]>([]);
   const [exporting, setExporting] = useState(false);
   const [confirmingExport, setConfirmingExport] = useState(false);
@@ -586,6 +592,7 @@ function AdminAlumni() {
     setImportFile(null);
     setImportResult(null);
     setImportDone(false);
+    setImportProgress(null);
   };
 
   const downloadImportTemplate = () => {
@@ -621,11 +628,25 @@ function AdminAlumni() {
 
     try {
       const text = await file.text();
-      if (!text.trim()) {
-        setImportResult({ ok: false, message: "The selected CSV file is empty.", errors: [] });
+      const { chunks, totalRows } = splitCsvIntoChunks(text);
+      if (totalRows < CSV_IMPORT_LIMITS.minRows) {
+        setImportResult({
+          ok: false,
+          message: "The selected CSV file has no data rows to import.",
+          errors: [],
+        });
         return;
       }
-      setImportFile({ name: file.name, size: file.size, text });
+      if (totalRows > CSV_IMPORT_LIMITS.maxRows) {
+        setImportResult({
+          ok: false,
+          message:
+            "Maximum 1,000 rows allowed per CSV file. Please split larger files into batches of 1,000 rows or fewer.",
+          errors: [],
+        });
+        return;
+      }
+      setImportFile({ name: file.name, size: file.size, chunks, totalRows });
       setImportResult(null);
     } catch (error) {
       console.error(error);
@@ -640,21 +661,65 @@ function AdminAlumni() {
   const handleImport = async () => {
     if (!importFile || importBusy) return;
 
-    const filename = importFile.name;
+    const { name: filename, chunks, totalRows } = importFile;
     setImportDone(false);
     setImportBusy(true);
     setImportResult(null);
+    setImportProgress({ processed: 0, total: totalRows });
+
+    let created = 0;
+    let updated = 0;
+    let totalImportedRows = 0;
+    let processed = 0;
+    const errors: string[] = [];
 
     try {
-      const result = await importAlumni({ data: { csv: importFile.text, filename } });
-      setImportResult(result);
-      if (result.ok) {
-        setImportDone(true);
-        setImportFile(null);
-        await router.invalidate();
-        const historyResult = await getImportHistory();
-        if (historyResult.ok) setImportHistory(historyResult.history);
+      // Small sequential requests keep each one well under Vercel's function
+      // timeout, even for a full 1,000-row file.
+      for (let index = 0; index < chunks.length; index += 1) {
+        const chunk = chunks[index];
+        if (!chunk) continue;
+
+        const result = await importAlumni({
+          data: {
+            csv: chunk.csv,
+            filename,
+            isFirstChunk: index === 0,
+            isLastChunk: index === chunks.length - 1,
+            totalFileRows: totalRows,
+            totalCreated: created,
+            totalUpdated: updated,
+          },
+        });
+        if (!result.ok) {
+          setImportResult(result);
+          return;
+        }
+
+        created += result.created;
+        updated += result.updated;
+        totalImportedRows += result.totalRows;
+        errors.push(...result.errors);
+        processed += chunk.rows;
+        setImportProgress({ processed, total: totalRows });
       }
+
+      const skipped = errors.length;
+      setImportResult({
+        ok: true,
+        message: `Imported ${totalImportedRows} of ${totalRows} row${
+          totalRows === 1 ? "" : "s"
+        }: ${created} new, ${updated} updated${skipped > 0 ? `, ${skipped} skipped` : ""}.`,
+        created,
+        updated,
+        totalRows: totalImportedRows,
+        errors,
+      });
+      setImportDone(true);
+      setImportFile(null);
+      await router.invalidate();
+      const historyResult = await getImportHistory();
+      if (historyResult.ok) setImportHistory(historyResult.history);
     } catch (error) {
       console.error(error);
       setImportResult({
@@ -772,9 +837,7 @@ function AdminAlumni() {
   };
 
   const open = adding || editing !== null;
-  const importRowCount = importFile
-    ? Math.max(0, importFile.text.split(/\r?\n/).filter((line) => line.trim() !== "").length - 1)
-    : 0;
+  const importRowCount = importFile?.totalRows ?? 0;
 
   return (
     <AdminShell
@@ -1173,7 +1236,7 @@ function AdminAlumni() {
                 {importFile ? "Choose a different CSV file" : "Upload CSV file"}
               </span>
               <span className="text-[11px] text-muted-foreground">
-                Click to browse or drag and drop - .csv only, up to 5,000 rows.
+                Click to browse or drag and drop - .csv only, 1 to 1,000 rows per file.
               </span>
               <input
                 key={importFile?.name ?? "empty"}
@@ -1265,9 +1328,28 @@ function AdminAlumni() {
             {importBusy ? (
               <>
                 <Loader2 className="mx-auto size-10 animate-spin text-brand" />
-                <p className="mt-4 text-sm font-bold text-foreground">Importing...</p>
+                <p className="mt-4 text-sm font-bold text-foreground">
+                  Importing records
+                  {importProgress && importProgress.total > 0
+                    ? `... ${importProgress.processed} / ${importProgress.total} rows (${Math.round(
+                        (importProgress.processed / importProgress.total) * 100,
+                      )}%)`
+                    : "..."}
+                </p>
+                <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-brand transition-all duration-300"
+                    style={{
+                      width: `${
+                        importProgress && importProgress.total > 0
+                          ? Math.round((importProgress.processed / importProgress.total) * 100)
+                          : 0
+                      }%`,
+                    }}
+                  />
+                </div>
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                  Please do not close or refresh this tab. Importing alumni records, please wait...
+                  Please do not close or refresh this tab. Records are uploaded in small batches.
                 </p>
               </>
             ) : (

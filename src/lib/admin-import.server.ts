@@ -18,8 +18,17 @@ import type { EducationLevel, EmploymentInput } from "./registration.types";
  */
 
 const DEFAULT_PASSWORD = "Alumtrack2026!";
-const MAX_ROWS = 5000;
+const MAX_ROWS = 1000;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Metadata supplied by the client when a file is uploaded in chunks. */
+export type ImportChunkMeta = {
+  isFirstChunk?: boolean | undefined;
+  isLastChunk?: boolean | undefined;
+  totalFileRows?: number | undefined;
+  totalCreated?: number | undefined;
+  totalUpdated?: number | undefined;
+};
 
 let importHistoryPromise: Promise<void> | null = null;
 
@@ -920,6 +929,7 @@ async function importRow(
 export async function importAlumniCsv(
   csv: string,
   filename?: string,
+  meta: ImportChunkMeta = {},
 ): Promise<AdminImportResult> {
   const admin = await getSessionUser();
   if (!admin || admin.role !== "admin") {
@@ -956,13 +966,19 @@ export async function importAlumniCsv(
     };
   }
 
-  const dataRows = table
-    .slice(1)
-    .filter((row) => row.some((cell) => cell.trim() !== ""))
-    .slice(0, MAX_ROWS);
+  const dataRows = table.slice(1).filter((row) => row.some((cell) => cell.trim() !== ""));
 
   if (dataRows.length === 0) {
     return { ok: false, message: "The CSV file only contains a header row.", errors: [] };
+  }
+
+  if (dataRows.length > MAX_ROWS) {
+    return {
+      ok: false,
+      message:
+        "Maximum 1,000 rows allowed per CSV file. Please split larger files into batches of 1,000 rows or fewer.",
+      errors: [],
+    };
   }
 
   let passwordHash: string;
@@ -1008,14 +1024,24 @@ export async function importAlumniCsv(
       }
     }
 
-    if (created + updated > 0) {
+    // A chunked upload sends many requests for one file. Only the final chunk
+    // writes the activity entry and the "Imported CSV files" history row, using
+    // the client-supplied totals so a 300-row file produces one accurate entry.
+    const shouldLogImport = meta.isLastChunk !== false;
+    const historyTotalRows = meta.totalFileRows ?? dataRows.length;
+    // `totalCreated`/`totalUpdated` carry the counts from earlier chunks; add
+    // this chunk's counts so the final entry reflects the entire file.
+    const historyCreated = (meta.totalCreated ?? 0) + created;
+    const historyUpdated = (meta.totalUpdated ?? 0) + updated;
+
+    if (shouldLogImport && historyCreated + historyUpdated > 0) {
       await pool.execute(
         `INSERT INTO activity_log (actor_user_id, actor_name, action, entity_type, entity_id)
          VALUES (?, ?, ?, 'admin', NULL)`,
         [
           admin.id,
           admin.fullName ?? admin.email,
-          `Imported CSV - ${created} new, ${updated} updated`,
+          `Imported CSV - ${historyCreated} new, ${historyUpdated} updated`,
         ],
       );
       try {
@@ -1025,9 +1051,9 @@ export async function importAlumniCsv(
            VALUES (?, ?, ?, ?, ?)`,
           [
             (filename ?? "").trim().slice(0, 255) || "CSV import",
-            dataRows.length,
-            created,
-            updated,
+            historyTotalRows,
+            historyCreated,
+            historyUpdated,
             admin.id,
           ],
         );
