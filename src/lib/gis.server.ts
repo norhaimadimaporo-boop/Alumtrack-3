@@ -74,9 +74,11 @@ function toBatchYear(value: number | string | null): string {
  * immediately. Existing records without stored coordinates fall back to the
  * offline gazetteer using their current address.
  */
-export async function listAlumniMapPins(options: {
-  includeOptOut?: boolean;
-} = {}): Promise<AlumniMapPinsResult> {
+export async function listAlumniMapPins(
+  options: {
+    includeOptOut?: boolean;
+  } = {},
+): Promise<AlumniMapPinsResult> {
   const includeOptOut = options.includeOptOut === true;
   const viewer = await getSessionUser();
   const isAdmin = viewer?.role === "admin";
@@ -149,7 +151,11 @@ export async function listAlumniMapPins(options: {
       const looksLikeCountry =
         presentCity !== "" &&
         (presentCountry === "" || presentCity.toLowerCase() === presentCountry.toLowerCase());
-      if (streetText && looksLikeCountry && streetText.toLowerCase() !== presentCity.toLowerCase()) {
+      if (
+        streetText &&
+        looksLikeCountry &&
+        streetText.toLowerCase() !== presentCity.toLowerCase()
+      ) {
         presentCountry = presentCity;
         presentCity = streetText;
       }
@@ -161,34 +167,23 @@ export async function listAlumniMapPins(options: {
       };
       const displayLabel = formatLocationLabel(present);
 
-      // Stored dropdown coordinates are used only when they cannot be a
-      // Philippine fallback for an overseas present address.
-      const storedIsPhFallback =
-        storedLat !== null &&
-        storedLng !== null &&
-        ((Math.abs(storedLat - 12.8797) < 0.5 && Math.abs(storedLng - 121.774) < 0.5) ||
-          (storedLat >= 4 && storedLat <= 22 && storedLng >= 116 && storedLng <= 127.5)) &&
-        presentCountry !== "" &&
-        presentCountry.trim().toLowerCase() !== "philippines";
-      const presentLocation =
-        storedLat === null || storedLng === null || storedIsPhFallback
-          ? resolvePresentAddress(present)
-          : null;
+      // The Present Address is authoritative for every pin. Stored coordinates
+      // are only a fallback for records with no present city/province/country,
+      // so an old Spain pin for "Valencia City, Bukidnon" can never win.
+      const hasPresentAddress = Boolean(present.city || present.province || present.country);
+      const presentLocation = hasPresentAddress ? resolvePresentAddress(present) : null;
 
-      let lat = storedLat;
-      let lng = storedLng;
+      let lat = presentLocation?.lat ?? storedLat;
+      let lng = presentLocation?.lng ?? storedLng;
       let pinCity = present.city || row.current_city?.trim() || "";
       let pinProvince = present.province || "";
       if (presentLocation) {
-        lat = presentLocation.lat;
-        lng = presentLocation.lng;
         pinCity = present.city || presentLocation.city;
         pinProvince = present.province || presentLocation.region;
       }
-      // Runtime safety net for rows the batch has not reached: Workplace
-      // Address first, then Birth Place, so every verified record stays
-      // plotted and the admin tally matches the total.
-      if (lat === null || lng === null) {
+      // Runtime safety net for rows without a Present Address: Workplace
+      // Address first, then Birth Place, so every verified record stays plotted.
+      if (!hasPresentAddress && (lat === null || lng === null)) {
         const workplaceText = row.workplace_address?.trim() ?? "";
         const birthText = row.birth_place?.trim() ?? "";
         const fallback =
@@ -259,7 +254,10 @@ export async function listAlumniMapPins(options: {
 export async function listAdminMapPins(): Promise<AlumniMapPinsResult> {
   const user = await getSessionUser();
   if (!user || user.role !== "admin") {
-    return { ok: false, message: "The alumni map could not be loaded right now. Please try again later." };
+    return {
+      ok: false,
+      message: "The alumni map could not be loaded right now. Please try again later.",
+    };
   }
   return listAlumniMapPins({ includeOptOut: true });
 }

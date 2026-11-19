@@ -46,7 +46,7 @@ function normalize(value: string | null | undefined): string {
 
 /** City-level entries: [city, province, region, lat, lng]. */
 const PH_CITIES: Array<[string, string, string, number, number]> = [
-  ["Marawi", "Lanao del Sur", "BARMM", 8.0, 124.29],
+  ["Marawi", "Lanao del Sur", "BARMM", 8.0, 124.2928],
   ["Taguig", "Metro Manila", "NCR - Metro Manila", 14.5176, 121.0509],
   ["Makati", "Metro Manila", "NCR - Metro Manila", 14.5547, 121.0244],
   ["Quezon", "Metro Manila", "NCR - Metro Manila", 14.676, 121.0437],
@@ -90,7 +90,7 @@ const PH_CITIES: Array<[string, string, string, number, number]> = [
   ["Calamba", "Laguna", "Region IV-A - CALABARZON", 14.2117, 121.1653],
   ["Santa Rosa", "Laguna", "Region IV-A - CALABARZON", 14.3122, 121.1114],
   ["Balabagan", "Lanao del Sur", "BARMM", 7.5333, 124.1167],
-  ["Malabang", "Lanao del Sur", "BARMM", 7.6167, 124.0667],
+  ["Malabang", "Lanao del Sur", "BARMM", 7.5917, 124.0694],
   ["Wao", "Lanao del Sur", "BARMM", 7.6833, 124.7333],
   ["Binidayan", "Lanao del Sur", "BARMM", 7.8, 124.1667],
   ["Marantao", "Lanao del Sur", "BARMM", 7.9167, 124.3167],
@@ -138,6 +138,25 @@ const PH_CITIES: Array<[string, string, string, number, number]> = [
   ["Datu Odin Sinsuat", "Maguindanao", "BARMM", 7.0167, 124.3167],
   ["Parang", "Maguindanao", "BARMM", 7.3667, 124.2667],
   ["Buluan", "Maguindanao", "BARMM", 6.7167, 124.8],
+  // Exact GIS coordinates for cities commonly typed with a "City" suffix,
+  // plus namesakes that used to resolve abroad (e.g. Valencia, Spain).
+  ["Marawi City", "Lanao del Sur", "BARMM", 8.0, 124.2928],
+  ["Iligan City", "Lanao del Norte", "Region X - Northern Mindanao", 8.228, 124.2452],
+  ["Cagayan de Oro City", "Misamis Oriental", "Region X - Northern Mindanao", 8.4542, 124.6319],
+  ["Valencia", "Bukidnon", "Region X - Northern Mindanao", 7.9064, 125.0942],
+  ["Valencia City", "Bukidnon", "Region X - Northern Mindanao", 7.9064, 125.0942],
+  ["Malaybalay", "Bukidnon", "Region X - Northern Mindanao", 8.1575, 125.1278],
+  ["Malaybalay City", "Bukidnon", "Region X - Northern Mindanao", 8.1575, 125.1278],
+  ["Manolo Fortich", "Bukidnon", "Region X - Northern Mindanao", 8.3667, 124.8644],
+  ["Davao City", "Davao del Sur", "Region XI - Davao", 7.1907, 125.4553],
+  ["Polomolok", "South Cotabato", "Region XII - SOCCSKSARGEN", 6.2233, 125.0631],
+  ["Cotabato City", "Maguindanao del Norte", "BARMM", 7.2047, 124.231],
+  ["Zamboanga City", "Zamboanga del Sur", "Region IX - Zamboanga Peninsula", 6.9214, 122.079],
+  ["General Santos City", "South Cotabato", "Region XII - SOCCSKSARGEN", 6.1164, 125.1716],
+  ["Quezon City", "Metro Manila", "NCR - Metro Manila", 14.676, 121.0437],
+  ["Makati City", "Metro Manila", "NCR - Metro Manila", 14.5547, 121.0244],
+  ["Taguig City", "Metro Manila", "NCR - Metro Manila", 14.5176, 121.0509],
+  ["Cebu City", "Cebu", "Region VII - Central Visayas", 10.3157, 123.8854],
 ];
 
 /** Province / region centroids: [province, region, lat, lng]. */
@@ -641,15 +660,18 @@ function withLabels(
 }
 
 /**
- * Gazetteer indexes in lookup order. Overseas entries come first so a city such
- * as "Shanghai" resolves to China even when the country name is missing.
+ * Gazetteer indexes in lookup order. Philippine entries come first: this is a
+ * Philippine alumni system, so a city such as "Valencia" or "Cordova" must
+ * resolve to its Philippine location unless an overseas country is declared.
+ * Foreign entries are still consulted for overseas names ("Shanghai", "Dubai")
+ * that have no Philippine match.
  */
 const EXACT_INDEXES: Array<{ rank: number; index: Map<string, Place> }> = [
-  { rank: 0, index: FOREIGN_CITY_INDEX },
-  { rank: 1, index: FOREIGN_COUNTRY_INDEX },
-  { rank: 2, index: PH_CITY_INDEX },
-  { rank: 3, index: PH_PROVINCE_INDEX },
-  { rank: 4, index: PH_REGION_INDEX },
+  { rank: 0, index: PH_CITY_INDEX },
+  { rank: 1, index: PH_PROVINCE_INDEX },
+  { rank: 2, index: PH_REGION_INDEX },
+  { rank: 3, index: FOREIGN_CITY_INDEX },
+  { rank: 4, index: FOREIGN_COUNTRY_INDEX },
 ];
 
 /**
@@ -748,12 +770,16 @@ function canonicalCountryKey(country: string): string {
 }
 
 /** Legacy CSV rows store street=city and city=country; detect + swap. */
-export function normalizeLegacyPresent(present: PresentAddress & { street?: string }): PresentAddress {
-  let { country, city, province, subdivision, street } = {
-    country: present.country,
-    city: present.city,
+export function normalizeLegacyPresent(
+  present: PresentAddress & { street?: string },
+): PresentAddress {
+  const { province, subdivision } = {
     province: present.province,
     subdivision: present.subdivision ?? "",
+  };
+  let { country, city, street } = {
+    country: present.country,
+    city: present.city,
     street: (present as { street?: string }).street ?? "",
   };
   country = country.trim();
@@ -762,7 +788,9 @@ export function normalizeLegacyPresent(present: PresentAddress & { street?: stri
   if (!street) return { country, city, province, subdivision };
   const cityKey = canonicalCountryKey(city);
   const countryKey = canonicalCountryKey(country);
-  const knownCountries = new Set([...FOREIGN_COUNTRY_INDEX.keys()].map((k) => canonicalCountryKey(k)));
+  const knownCountries = new Set(
+    [...FOREIGN_COUNTRY_INDEX.keys()].map((k) => canonicalCountryKey(k)),
+  );
   const cityIsCountry =
     Boolean(city) &&
     (cityKey === countryKey || knownCountries.has(cityKey) || cityKey.endsWith(countryKey));
@@ -776,7 +804,9 @@ export function normalizeLegacyPresent(present: PresentAddress & { street?: stri
 /** True when the declared country is the Philippines (any casing/alias). */
 export function isPhilippinesCountryName(country: string | null | undefined): boolean {
   const key = normalize(country);
-  return key === "philippines" || key === "ph" || key === "phil" || key === "republic of the philippines";
+  return (
+    key === "philippines" || key === "ph" || key === "phil" || key === "republic of the philippines"
+  );
 }
 
 function isPhilippineCoords(lat: number, lng: number): boolean {
@@ -857,7 +887,7 @@ export function resolvePresentAddress(address: PresentAddress): ResolvedLocation
       return withPresentLabels(cityPlace);
     // 2. City mentioned inside a longer present segment, restricted to the
     //    declared country.
-    const inCity = findPlaceInSegments([city, province], (rank) => rank <= 1);
+    const inCity = findPlaceInSegments([city, province], (rank) => rank >= 3);
     if (inCity && canonicalCountryKey(inCity.place.country) === countryKey)
       return withPresentLabels(inCity.place);
     // 3. Province/state in that country may disambiguate the city; the city
@@ -882,13 +912,13 @@ export function resolvePresentAddress(address: PresentAddress): ResolvedLocation
   if (subdivisionKey) {
     const place = PH_PROVINCE_INDEX.get(subdivisionKey);
     if (place) return withPresentLabels(place);
-    const inSubdiv = findPlaceInSegments([subdivision], () => true);
+    const inSubdiv = findPlaceInSegments([subdivision], (rank) => rank <= 2);
     if (inSubdiv) return withPresentLabels(inSubdiv.place);
   }
   // Longer present segments that embed a known PH place.
   const local = findPlaceInSegments(
     [city, province, subdivision].filter(Boolean),
-    () => true,
+    (rank) => rank <= 2,
   );
   if (local) return withPresentLabels(local.place);
   // Unknown municipality in PH: keep a country-level pin instead of dropping
@@ -943,7 +973,7 @@ export function resolveLocation(
   }
 
   // 2. Overseas city/country mentioned inside a longer segment.
-  const overseas = findPlaceInSegments(segments, (rank) => rank <= 1);
+  const overseas = findPlaceInSegments(segments, (rank) => rank >= 3);
   if (overseas) return withLabels(overseas.place, "", "");
 
   // 3. Unknown overseas address - do not fall back to Philippine coordinates.
@@ -956,7 +986,7 @@ export function resolveLocation(
   if (hasInternationalPostalCode(rawText)) return null;
 
   // 4. Philippine place mentioned inside a longer segment.
-  const local = findPlaceInSegments(segments, () => true);
+  const local = findPlaceInSegments(segments, (rank) => rank <= 2);
   if (local) return withLabels(local.place, "", "");
 
   // 5. Unknown Philippine address - keep the pin on the country so the record
@@ -966,7 +996,9 @@ export function resolveLocation(
 
 /** Valid latitude/longitude or null; out-of-range values from a bad request are dropped. */
 function validCoordinate(value: number | null | undefined, limit: number): number | null {
-  return typeof value === "number" && Number.isFinite(value) && Math.abs(value) <= limit ? value : null;
+  return typeof value === "number" && Number.isFinite(value) && Math.abs(value) <= limit
+    ? value
+    : null;
 }
 
 /**
