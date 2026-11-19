@@ -303,7 +303,7 @@ function botAnswer(message: string): string {
     normalized.includes("vacanc") ||
     normalized.includes("work")
   ) {
-    return "You can browse verified career opportunities and hiring announcements from OARCC partner employers in the **Job Offerings** tab on your Alumni Dashboard or under **Latest Posts**. To get notified when roles match your degree, go to **Privacy & Settings** and turn on *'New job offerings matching my course'*.";
+    return 'You can browse verified career opportunities and hiring announcements from OARCC partner employers in the Job Offerings tab on your Alumni Dashboard or under Latest Posts. To get notified when roles match your degree, go to Privacy & Settings and turn on "New job offerings matching my course".';
   }
   if (
     normalized.includes("organization") ||
@@ -311,7 +311,7 @@ function botAnswer(message: string): string {
     normalized.includes("affiliation") ||
     normalized.includes("group")
   ) {
-    return "To add or update your alumni chapter, batch group, or professional affiliation, open the **Organization** tab in your Alumni Dashboard sidebar. Enter your organization name, role/position, and chapter details, then click **Save** so your profile stays connected with fellow MSU graduates.";
+    return "To add or update your alumni chapter, batch group, or professional affiliation, open the Organization tab in your Alumni Dashboard sidebar. Enter your organization name, role/position, and chapter details, then click Save so your profile stays connected with fellow MSU graduates.";
   }
   if (normalized.includes("id") || normalized.includes("certificate")) {
     return "For an Alumni ID or certificate request, please contact the OARCC office with your full name, course, and graduation year. An OARCC agent can help with the current requirements.";

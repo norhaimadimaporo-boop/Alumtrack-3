@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Facebook, Mail, MapPin, Phone, Clock } from "lucide-react";
+import { Facebook, Instagram, Mail, MapPin, Phone, Clock, Globe } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 
 export function SiteFooter() {
@@ -40,16 +40,44 @@ export function SiteFooter() {
             <p className="text-lg font-bold">AlumTrack</p>
           </div>
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-[#5A0012]/80">
-            Alumni Tracing System and Online Platform for Mindanao State University — Main Campus,
+            Alumni Tracing System and Online Platform for Mindanao State University - Main Campus,
             Marawi City.
           </p>
           <div className="mt-4 flex gap-2">
-            <span className="inline-flex size-9 items-center justify-center rounded-xl border border-[#5A0012]/25 text-[#5A0012] transition-colors hover:bg-brand hover:text-white">
+            <a
+              href="https://www.facebook.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="AlumTrack Facebook"
+              className="flex size-10 items-center justify-center rounded-full border border-[#D8CFC4] text-[#7A1315] transition-colors hover:bg-[#7A1315] hover:text-white"
+            >
               <Facebook className="size-4" />
-            </span>
-            <span className="inline-flex size-9 items-center justify-center rounded-xl border border-[#5A0012]/25 text-[#5A0012] transition-colors hover:bg-brand hover:text-white">
+            </a>
+            <a
+              href="mailto:officeofalumnirelations01@gmail.com"
+              aria-label="Email OARCC"
+              className="flex size-10 items-center justify-center rounded-full border border-[#D8CFC4] text-[#7A1315] transition-colors hover:bg-[#7A1315] hover:text-white"
+            >
               <Mail className="size-4" />
-            </span>
+            </a>
+            <a
+              href="https://www.instagram.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="MSU OARCC Instagram"
+              className="flex size-10 items-center justify-center rounded-full border border-[#D8CFC4] text-[#7A1315] transition-colors hover:bg-[#7A1315] hover:text-white"
+            >
+              <Instagram className="size-4" />
+            </a>
+            <a
+              href="https://www.msumain.edu.ph"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="MSU Main Campus Website"
+              className="flex size-10 items-center justify-center rounded-full border border-[#D8CFC4] text-[#7A1315] transition-colors hover:bg-[#7A1315] hover:text-white"
+            >
+              <Globe className="size-4" />
+            </a>
           </div>
         </div>
 
@@ -102,11 +130,18 @@ export function SiteFooter() {
             </li>
             <li className="flex gap-2">
               <Phone className="size-4 shrink-0 text-brand" />
-              0956-739-3998
+              <a href="tel:09461617360" className="hover:underline">
+                0946-161-7360
+              </a>
             </li>
             <li className="flex gap-2">
               <Mail className="size-4 shrink-0 text-brand" />
-              msuoarcc@gmail.com
+              <a
+                href="mailto:officeofalumnirelations01@gmail.com"
+                className="break-all hover:underline"
+              >
+                officeofalumnirelations01@gmail.com
+              </a>
             </li>
             <li className="flex gap-2">
               <Clock className="size-4 shrink-0 text-brand" />
@@ -116,7 +151,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-[#5A0012]/15 py-5 text-center text-xs text-[#5A0012]/65">
-        © {new Date().getFullYear()} AlumTrack — MSU Main Campus. Capstone Project, College of
+        © {new Date().getFullYear()} AlumTrack - MSU Main Campus. Capstone Project, College of
         Information and Computing Sciences.
       </div>
     </footer>
