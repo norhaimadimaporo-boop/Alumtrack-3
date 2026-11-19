@@ -2,7 +2,7 @@ import type { RowDataPacket } from "mysql2/promise";
 
 import { getPool } from "./db.server";
 import { ensureSoftDeleteColumns } from "./soft-delete.server";
-import { resolveLocation, resolvePresentAddress } from "./geo";
+import { listAlumniMapPins } from "./gis.server";
 import { fullName } from "./profile-format";
 import type { ReportRecord, ReportRecordsResult } from "./reports.types";
 import type { ProfileEmploymentStatus } from "./admin.types";
@@ -42,26 +42,6 @@ type ReportRow = RowDataPacket & {
   gis_show_workplace: number | null;
   gis_city_only: number | null;
 };
-
-function abbreviate(firstName: string, middleName: string | null, lastName: string): string {
-  const first = firstName.trim();
-  const middle = middleName?.trim();
-  const middleInitial = middle ? `${middle.charAt(0).toUpperCase()}.` : "";
-  const trimmedLast = lastName.trim();
-  const lastInitial = trimmedLast ? `${trimmedLast.charAt(0).toUpperCase()}.` : "";
-  return [first, middleInitial, lastInitial].filter(Boolean).join(" ");
-}
-
-/** About 11 km at one decimal place: enough to show a city, not a workplace. */
-function coarsen(value: number): number {
-  return Math.round(value * 10) / 10;
-}
-
-function toNumber(value: number | string | null): number | null {
-  if (value === null) return null;
-  const parsed = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
 
 function toYear(value: number | string | null): number | null {
   if (value === null || value === undefined) return null;
@@ -153,90 +133,13 @@ export async function listReportRecords(): Promise<ReportRecordsResult> {
         toYear(row.postgrad_grad_year) ??
         toYear(row.batch_year);
       const batch = batchYear ? String(batchYear) : "-";
-      const country =
-        row.current_country?.trim() ||
-        row.address_country?.trim() ||
-        "Philippines";
-      const province =
-        row.address_province?.trim() ||
-        row.current_region?.trim() ||
-        "Not provided";
+      const country = row.current_country?.trim() || row.address_country?.trim() || "Philippines";
+      const province = row.address_province?.trim() || row.current_region?.trim() || "Not provided";
       const employed = row.employment_status === "employed";
       const abroad = employed && !/^philippines?$/i.test(country);
 
-      // Map pin with the same strict present-address GIS rules as the public
-      // map. Admin Reports is an admin-only surface: every verified record
-      // stays plotted with FULL details (exact coordinates + company) even
-      // when the owner turned off map visibility - role-based visibility.
-      let pin: ReportRecord["pin"] = null;
-      {
-        const cityOnly = false;
-        const storedLat = toNumber(row.latitude);
-        const storedLng = toNumber(row.longitude);
-        const declaredCountry = country;
-        const present = {
-          country: declaredCountry,
-          city: row.address_city?.trim() || row.current_city?.trim() || "",
-          province: row.address_province?.trim() || "",
-          subdivision: row.address_subdivision?.trim() || "",
-          street: row.address_street?.trim() || "",
-        };
-        const storedIsPhFallback =
-          storedLat !== null &&
-          storedLng !== null &&
-          ((Math.abs(storedLat - 12.8797) < 0.5 && Math.abs(storedLng - 121.774) < 0.5) ||
-            (storedLat >= 4 && storedLat <= 22 && storedLng >= 116 && storedLng <= 127.5)) &&
-          declaredCountry.trim().toLowerCase() !== "philippines";
-        let location =
-          storedLat === null || storedLng === null || storedIsPhFallback
-            ? resolvePresentAddress(present)
-            : null;
-        let lat = storedLat;
-        let lng = storedLng;
-        if (lat === null || lng === null) {
-          if (location) {
-            lat = location.lat;
-            lng = location.lng;
-          }
-        }
-        if (lat === null || lng === null) {
-          const workplaceText = row.workplace_address?.trim() ?? "";
-          const birthText = row.birth_place?.trim() ?? "";
-          const fallback =
-            workplaceText && !/^not provided$/i.test(workplaceText)
-              ? resolveLocation(workplaceText, null)
-              : null;
-          const birthFallback =
-            !fallback && birthText && !/^not provided$/i.test(birthText)
-              ? resolveLocation(birthText, null)
-              : null;
-          const resolved = fallback ?? birthFallback;
-          if (resolved) {
-            lat = resolved.lat;
-            lng = resolved.lng;
-            location = resolved;
-          }
-        }
-        if (lat !== null && lng !== null) {
-            const position = row.current_position?.trim();
-            pin = {
-              id: `pin-${row.user_id}`,
-              name: abbreviate(row.first_name, row.middle_name, row.last_name),
-              role: employed ? position || "Employed" : "Seeking employment",
-              status: employed ? "Employed" : "Unemployed",
-              company: employed && !cityOnly ? row.current_company?.trim() || null : null,
-              city: present.city || location?.city?.trim() || declaredCountry || "Unknown",
-              region: present.province || location?.region?.trim() || row.address_province?.trim() || "",
-              country: declaredCountry || location?.country?.trim() || "Philippines",
-              precision: present.city ? "city" : "state",
-              lat: cityOnly ? coarsen(lat) : lat,
-              lng: cityOnly ? coarsen(lng) : lng,
-              course: row.course?.trim() || "Course not provided",
-              batch,
-            };
-        }
-      }
-
+      // Pins are attached below from the shared GIS pin source so the Reports
+      // map and the System Usage map always show the exact same plotted alumni.
       records.push({
         id: row.id,
         userId: row.user_id,
@@ -254,8 +157,23 @@ export async function listReportRecords(): Promise<ReportRecordsResult> {
         country,
         abroad,
         affiliation: affiliationFromOrgs(row.org_names),
-        pin,
+        pin: null,
       });
+    }
+
+    // One shared, uncapped pin query for every admin map. This removes the
+    // old per-surface coordinate logic that made Reports and System Usage
+    // disagree on the plotted total (e.g. 987 vs 1023).
+    const pinsResult = await listAlumniMapPins({ includeOptOut: true });
+    if (pinsResult.ok) {
+      const pinByUser = new Map<number, ReportRecord["pin"]>();
+      for (const pin of pinsResult.pins) {
+        const userId = Number(pin.id.replace(/^pin-/, ""));
+        if (Number.isFinite(userId)) pinByUser.set(userId, pin);
+      }
+      for (const record of records) {
+        record.pin = pinByUser.get(record.userId) ?? null;
+      }
     }
 
     return { ok: true, records };
