@@ -4,6 +4,7 @@ import type { RowDataPacket } from "mysql2/promise";
 import { getRequestHeader, setResponseHeader } from "@tanstack/react-start/server";
 
 import { getPool } from "./db.server";
+import { recordAccessLog } from "./access-log.server";
 import { ensureSoftDeleteColumns } from "./soft-delete.server";
 import type { AdminRole, Role } from "./session";
 
@@ -188,7 +189,8 @@ export async function loginUser(input: { email: string; password: string; role: 
     if (user.role === "alumni" && user.verification_status === "rejected") {
       return {
         ok: false as const,
-        message: "Your account registration was rejected by the admin. Contact the OARCC for assistance.",
+        message:
+          "Your account registration was rejected by the admin. Contact the OARCC for assistance.",
       };
     }
 
@@ -201,6 +203,13 @@ export async function loginUser(input: { email: string; password: string; role: 
         [user.id, user.full_name ?? user.email],
       )
       .catch(() => undefined);
+    // Permanent access-log entry (independent of the session lifecycle).
+    await recordAccessLog({
+      userId: user.id,
+      userName: user.full_name ?? user.email,
+      role: user.role === "admin" ? "ADMIN" : "ALUMNI",
+      action: "Login",
+    }).catch(() => undefined);
     setResponseHeader("Set-Cookie", sessionCookie(sessionToken, SESSION_TTL_SECONDS));
 
     const authUser = toAuthUser(user);
@@ -254,10 +263,11 @@ export async function logoutUser(): Promise<{ ok: true }> {
       await pool.execute("DELETE FROM sessions WHERE token_hash = ?", [hashToken(token)]);
       if (sessionUserId) {
         const [users] = await pool.execute<RowDataPacket[]>(
-          "SELECT full_name, email FROM users WHERE id = ? LIMIT 1",
+          "SELECT full_name, email, role FROM users WHERE id = ? LIMIT 1",
           [sessionUserId],
         );
-        const name = (users[0] as { full_name?: string | null; email?: string } | undefined);
+        const name = users[0] as
+          { full_name?: string | null; email?: string; role?: string } | undefined;
         await pool
           .execute(
             `INSERT INTO activity_log (actor_user_id, actor_name, action, entity_type)
@@ -265,6 +275,12 @@ export async function logoutUser(): Promise<{ ok: true }> {
             [sessionUserId, name?.full_name ?? name?.email ?? "-"],
           )
           .catch(() => undefined);
+        await recordAccessLog({
+          userId: sessionUserId,
+          userName: name?.full_name ?? name?.email ?? "-",
+          role: name?.role === "admin" ? "ADMIN" : "ALUMNI",
+          action: "Logout",
+        }).catch(() => undefined);
       }
     } catch (error) {
       console.error("[auth] Session delete failed:", error);

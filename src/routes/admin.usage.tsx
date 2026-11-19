@@ -59,6 +59,40 @@ function formatCount(value: number) {
   return new Intl.NumberFormat("en-PH").format(value);
 }
 
+/** Manila calendar parts from either an ISO stamp or a YYYY-MM-DD / DD-MM-YYYY label. */
+function logDateParts(log: { date: string; stamp: string }) {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  if (log.stamp) {
+    const parsed = new Date(log.stamp);
+    if (!Number.isNaN(parsed.getTime())) {
+      const local = new Date(parsed.getTime() + 8 * 60 * 60 * 1000);
+      return {
+        year: String(local.getUTCFullYear()),
+        month: pad(local.getUTCMonth() + 1),
+        day: pad(local.getUTCDate()),
+      };
+    }
+  }
+  const raw = (log.date ?? "").trim();
+  let match = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(raw);
+  if (match) {
+    return {
+      year: match[1] ?? "",
+      month: pad(Number(match[2] ?? 0)),
+      day: pad(Number(match[3] ?? 0)),
+    };
+  }
+  match = /^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(raw);
+  if (match) {
+    return {
+      year: match[3] ?? "",
+      month: pad(Number(match[2] ?? 0)),
+      day: pad(Number(match[1] ?? 0)),
+    };
+  }
+  return { year: "", month: "", day: "" };
+}
+
 function AdminUsage() {
   const data = Route.useLoaderData();
   const router = useRouter();
@@ -105,7 +139,7 @@ function AdminUsage() {
 
   const yearOptions = useMemo(() => {
     const dataYears = (usage?.accessLogs ?? [])
-      .map((item) => item.date.slice(0, 4))
+      .map((item) => logDateParts(item).year)
       .filter(Boolean);
     const merged = [...new Set([...dataYears, ...BASE_YEAR_OPTIONS.map((o) => o.label)])].sort(
       (a, b) => b.localeCompare(a),
@@ -114,13 +148,16 @@ function AdminUsage() {
   }, [usage]);
 
   const logs = usage?.accessLogs ?? [];
+  const totalAccessLogs = usage?.totalAccessLogs ?? logs.length;
   const filteredLogs = useMemo(
     () =>
       logs.filter((item) => {
-        const [year, month, day] = item.date.split("-");
-        if (filterYear && year !== filterYear.trim()) return false;
-        if (monthNumber >= 0 && month !== String(monthNumber + 1).padStart(2, "0")) return false;
-        if (filterDay && day !== filterDay.trim().padStart(2, "0")) return false;
+        const parts = logDateParts(item);
+        if (filterYear && parts.year !== filterYear.trim()) return false;
+        if (monthNumber >= 0 && parts.month !== String(monthNumber + 1).padStart(2, "0")) {
+          return false;
+        }
+        if (filterDay && parts.day !== filterDay.trim().padStart(2, "0")) return false;
         return true;
       }),
     [logs, filterDay, filterYear, monthNumber],
@@ -186,7 +223,7 @@ function AdminUsage() {
               </button>
             </div>
             <ul className="mt-3 max-h-[280px] space-y-3 overflow-y-auto pr-2 custom-scrollbar">
-              {logs.map((l) => (
+              {logs.slice(0, 8).map((l) => (
                 <li
                   key={l.id}
                   className="flex min-h-[52px] items-start justify-between gap-3 border-b border-border py-2 last:border-b-0"
@@ -378,7 +415,7 @@ function AdminUsage() {
           </div>
 
           <p className="mt-4 text-xs text-muted-foreground">
-            Showing {filteredLogs.length} of {logs.length} access logs
+            Showing {filteredLogs.length} of {totalAccessLogs} access logs
           </p>
 
           <div className="mt-2 max-h-96 w-full overflow-x-auto overflow-y-auto rounded-2xl border border-border">

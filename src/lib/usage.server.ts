@@ -1,43 +1,36 @@
 import type { RowDataPacket } from "mysql2/promise";
 
 import { requireAdmin } from "./admin.server";
+import { backfillAccessLogsFromActivity } from "./access-log.server";
 import { getPool } from "./db.server";
 import { ensureSoftDeleteColumns } from "./soft-delete.server";
 import { manilaClock, manilaDate } from "./manila-time";
-import { fullName } from "./profile-format";
 import type { SystemUsageData, SystemUsageResult } from "./usage.types";
 
 type CountRow = RowDataPacket & Record<string, number>;
 
 type LogRow = RowDataPacket & {
-  token_hash: string;
-  user_id: number;
+  id: number;
+  user_id: number | null;
+  user_name: string;
   role: string;
-  email: string;
-  full_name: string | null;
-  first_name: string | null;
-  middle_name: string | null;
-  last_name: string | null;
+  action: string;
+  created_at: Date | string;
   current_city: string | null;
   current_region: string | null;
   address_city: string | null;
   address_province: string | null;
-  expires_at: Date | string;
-  created_at: Date | string;
 };
 
 /**
- * Live system counters from `sessions` + `users`/`alumni_profiles`:
- * active sessions (unexpired, distinct users), logins today (last_login_at,
- * counted by Asia/Manila calendar day - `last_login_at` is stored as UTC),
- * distinct regions with an active session, and overseas active sessions.
+ * Live system counters from `sessions` + `users`/`alumni_profiles`, plus the
+ * permanent `access_logs` Login/Logout trail for the /admin/usage viewer.
+ * Access logs are append-only: every stored row is returned (no LIMIT), so the
+ * "View All Access Logs" modal shows full history while the summary card
+ * locally slices a short preview.
  *
- * Access control: detailed per-user login/logout rows are Head Admin only.
- * Standard/Viewer admins still get the aggregate counters, but
- * `canViewAccessLogs` is false and `accessLogs` is never queried or
- * returned for them - the rows are filtered on the server, not just hidden
- * in the UI. Standard history remains available via Recent Admin Activity
- * (`getAdminDashboard`, viewer+).
+ * Access control: detailed rows are Head Admin only. Standard/Viewer admins
+ * get the aggregate counters but no log rows leave the server.
  */
 export async function getSystemUsage(): Promise<SystemUsageResult> {
   const access = await requireAdmin("viewer");
@@ -47,6 +40,8 @@ export async function getSystemUsage(): Promise<SystemUsageResult> {
 
   try {
     await ensureSoftDeleteColumns();
+    if (canViewAccessLogs) await backfillAccessLogsFromActivity();
+
     const pool = getPool();
     const [[counts], [logRows]] = await Promise.all([
       pool.query<CountRow[]>(
@@ -63,57 +58,51 @@ export async function getSystemUsage(): Promise<SystemUsageResult> {
               JOIN alumni_profiles p ON p.user_id = s.user_id AND COALESCE(p.is_deleted, 0) = 0
              WHERE s.expires_at > UTC_TIMESTAMP()
                AND p.current_country IS NOT NULL AND TRIM(p.current_country) <> ''
-               AND LOWER(TRIM(p.current_country)) NOT LIKE '%philippines%') AS overseas`,
+               AND LOWER(TRIM(p.current_country)) NOT LIKE '%philippines%') AS overseas,
+           (SELECT COUNT(*) FROM access_logs) AS access_logs`,
       ),
-      // Head-only: skip the per-user log query entirely for other tiers so
-      // their rows never leave the server.
+      // Head-only: skip the per-user log query entirely for other tiers.
       canViewAccessLogs
         ? pool.query<LogRow[]>(
-            `SELECT s.token_hash, s.user_id, u.role, u.email, u.full_name,
-                    p.first_name, p.middle_name, p.last_name,
+            `SELECT l.id, l.user_id, l.user_name, l.role, l.action, l.created_at,
                     p.current_city, p.current_region,
-                    cur.city AS address_city, cur.province AS address_province,
-                    s.expires_at, s.created_at
-               FROM sessions s
-               JOIN users u ON u.id = s.user_id AND COALESCE(u.is_deleted, 0) = 0
-          LEFT JOIN alumni_profiles p ON p.user_id = s.user_id AND COALESCE(p.is_deleted, 0) = 0
-          LEFT JOIN alumni_addresses cur ON cur.user_id = s.user_id AND cur.kind = 'current'
-              ORDER BY s.created_at DESC, s.user_id ASC
-              LIMIT 200`,
+                    cur.city AS address_city, cur.province AS address_province
+               FROM access_logs l
+               LEFT JOIN users u ON u.id = l.user_id
+               LEFT JOIN alumni_profiles p ON p.user_id = l.user_id AND COALESCE(p.is_deleted, 0) = 0
+               LEFT JOIN alumni_addresses cur ON cur.user_id = l.user_id AND cur.kind = 'current'
+              ORDER BY l.created_at DESC, l.id DESC`,
           )
         : Promise.resolve([[]] as [LogRow[]]),
     ]);
 
     const countRow = counts[0];
     const usage: SystemUsageData = {
-      activeSessions: Number(countRow?.active_sessions ?? 0),
-      loginsToday: Number(countRow?.logins_today ?? 0),
-      regionsWithActivity: Number(countRow?.regions ?? 0),
-      overseasSessions: Number(countRow?.overseas ?? 0),
+      activeSessions: Number(countRow?.["active_sessions"] ?? 0),
+      loginsToday: Number(countRow?.["logins_today"] ?? 0),
+      regionsWithActivity: Number(countRow?.["regions"] ?? 0),
+      overseasSessions: Number(countRow?.["overseas"] ?? 0),
       canViewAccessLogs,
+      totalAccessLogs: Number(countRow?.["access_logs"] ?? 0),
       accessLogs: logRows.map((row) => {
-        const created =
-          row.created_at instanceof Date ? row.created_at : new Date(row.created_at);
-        const expires =
-          row.expires_at instanceof Date ? row.expires_at : new Date(row.expires_at);
-        const displayName =
-          row.role === "alumni" && row.first_name
-            ? fullName(row.first_name, row.middle_name ?? "", row.last_name ?? "")
-            : row.full_name?.trim() || row.email;
+        const created = row.created_at instanceof Date ? row.created_at : new Date(row.created_at);
         const where =
-          [row.current_city?.trim() || row.address_city?.trim(), row.current_region?.trim() || row.address_province?.trim()]
+          [
+            row.current_city?.trim() || row.address_city?.trim(),
+            row.current_region?.trim() || row.address_province?.trim(),
+          ]
             .filter(Boolean)
             .join(", ") || "-";
         return {
-          id: row.token_hash.slice(0, 16),
-          user: displayName,
-          role: row.role === "admin" ? ("Admin" as const) : ("Alumni" as const),
-          action: "Login" as const,
+          id: `log-${row.id}`,
+          user: row.user_name?.trim() || "-",
+          role: row.role === "ADMIN" ? ("Admin" as const) : ("Alumni" as const),
+          action: row.action === "Logout" ? ("Logout" as const) : ("Login" as const),
           date: manilaDate(created),
           clock: manilaClock(created),
           stamp: Number.isNaN(created.getTime()) ? "" : created.toISOString(),
           where,
-          active: expires.getTime() > Date.now(),
+          active: false,
         };
       }),
     };

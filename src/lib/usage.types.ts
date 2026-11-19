@@ -22,10 +22,11 @@ export type SystemUsageData = {
   overseasSessions: number;
   /** True only for Head Admins - detailed login/logout rows are Head-only. */
   canViewAccessLogs: boolean;
-  /** Recent access logs, newest first (capped on the server). Head Admin only. */
+  /** True total of all stored access logs (never trimmed or capped). */
+  totalAccessLogs: number;
+  /** All stored access logs, newest first. Head Admin only; preview slices locally. */
   accessLogs: AccessLogEntry[];
 };
 
 export type SystemUsageResult =
-  | { ok: true; usage: SystemUsageData }
-  | { ok: false; message: string };
+  { ok: true; usage: SystemUsageData } | { ok: false; message: string };
