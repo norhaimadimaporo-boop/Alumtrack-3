@@ -81,18 +81,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "AlumTrack — MSU Main Campus Alumni Platform" },
+      { title: "AlumTrack - MSU Main Campus Alumni Platform" },
       {
         name: "description",
         content:
-          "Alumni Tracing System and Online Platform for Mindanao State University — Main Campus.",
+          "Alumni Tracing System and Online Platform for Mindanao State University - Main Campus.",
       },
       { name: "author", content: "MSU OARCC" },
-      { property: "og:title", content: "AlumTrack — MSU Main Campus Alumni Platform" },
+      { property: "og:title", content: "AlumTrack - MSU Main Campus Alumni Platform" },
       {
         property: "og:description",
         content:
-          "Alumni Tracing System and Online Platform for Mindanao State University — Main Campus.",
+          "Alumni Tracing System and Online Platform for Mindanao State University - Main Campus.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

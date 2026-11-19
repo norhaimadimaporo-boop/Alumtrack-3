@@ -10,13 +10,13 @@ import type { PostRecord } from "@/lib/posts.types";
 export const Route = createFileRoute("/jobs")({
   head: () => ({
     meta: [
-      { title: "Job Offerings — AlumTrack MSU Main Campus" },
+      { title: "Job Offerings - AlumTrack MSU Main Campus" },
       {
         name: "description",
         content:
           "Browse job offerings posted by OARCC partner companies, open the full details, and apply as an MSU Main Campus alumnus.",
       },
-      { property: "og:title", content: "Job Offerings — AlumTrack" },
+      { property: "og:title", content: "Job Offerings - AlumTrack" },
       {
         property: "og:description",
         content: "Job openings from OARCC partner companies, open to MSU alumni.",
@@ -74,7 +74,7 @@ const JOBS: Job[] = [
     location: "Marawi City, BARMM",
     type: "Contractual",
     posted: "5 days ago",
-    salary: "SG 11 — PHP 27,000 / month",
+    salary: "SG 11 - PHP 27,000 / month",
     deadline: "22-08-2026",
     description:
       "Maintain provincial office network and end-user hardware, and assist offices with system troubleshooting.",
@@ -92,7 +92,7 @@ const JOBS: Job[] = [
     location: "Cagayan de Oro City",
     type: "Permanent",
     posted: "1 week ago",
-    salary: "SG 16 — PHP 39,672 / month",
+    salary: "SG 16 - PHP 39,672 / month",
     deadline: "05-09-2026",
     description:
       "Supervise infrastructure projects, prepare program of works, and validate contractor accomplishment reports.",
@@ -128,7 +128,7 @@ const JOBS: Job[] = [
     location: "Marawi City, BARMM",
     type: "Permanent",
     posted: "2 weeks ago",
-    salary: "SG 11 — PHP 27,000 / month",
+    salary: "SG 11 - PHP 27,000 / month",
     deadline: "28-08-2026",
     description:
       "Teach STEM subjects for Grades 11 and 12 and assist in co-curricular student activities.",
@@ -151,7 +151,7 @@ function toJob(post: PostRecord): Job {
     id: post.id,
     title: post.title,
     company: post.company || fallback?.company || "OARCC",
-    location: post.location || fallback?.location || "—",
+    location: post.location || fallback?.location || "-",
     type: post.jobType || fallback?.type || "Full-time",
     posted: post.date,
     salary: post.salary || fallback?.salary || "",

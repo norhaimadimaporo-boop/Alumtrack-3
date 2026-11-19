@@ -39,7 +39,7 @@ export function LocationCombobox({
     const matches = query
       ? options.filter((option) => normalizeForSearch(option.label).includes(query))
       : options;
-    // Full A-Z list — no item cap. The dropdown scrolls (max-h-56) so every
+    // Full A-Z list - no item cap. The dropdown scrolls (max-h-56) so every
     // country / province / city / barangay stays reachable. Callers that need
     // chronological or descending order pass sortOptions={false}.
     return sortOptions ? [...matches].sort((a, b) => a.label.localeCompare(b.label)) : matches;

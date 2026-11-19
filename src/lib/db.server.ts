@@ -59,7 +59,7 @@ export function getPool(): Pool {
     // same way on every host. Local MySQL runs with SYSTEM=Asia/Manila while
     // Aiven runs with SYSTEM=UTC: without this, a TIMESTAMP string sent in
     // the session zone (Manila wall time locally) is parsed by mysql2
-    // (`timezone: "Z"`) as UTC, then `manilaClock()` adds another +8h — the
+    // (`timezone: "Z"`) as UTC, then `manilaClock()` adds another +8h - the
     // Activity History times showed ~08:52 for a login that really happened
     // at 00:52 Manila time. Forcing `time_zone = '+00:00'` makes
     // TIMESTAMP values arrive as UTC wall time on both hosts, so mysql2

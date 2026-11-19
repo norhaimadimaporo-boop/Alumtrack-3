@@ -54,13 +54,13 @@ import {
 export const Route = createFileRoute("/admin/alumni")({
   head: () => ({
     meta: [
-      { title: "Manage Alumni Directory — AlumTrack Admin" },
+      { title: "Manage Alumni Directory - AlumTrack Admin" },
       {
         name: "description",
         content:
           "Add, edit, search, and delete alumni records and verify submitted professional information.",
       },
-      { property: "og:title", content: "Manage Alumni Directory — AlumTrack Admin" },
+      { property: "og:title", content: "Manage Alumni Directory - AlumTrack Admin" },
       {
         property: "og:description",
         content: "Full control over alumni records and verification of professional info.",
@@ -106,7 +106,7 @@ const EXPORT_FIELDS = [
 ];
 
 const CSV_TEMPLATE_COLUMNS = [
-  // Phase 1 — personal details
+  // Phase 1 - personal details
   "Last Name",
   "First Name",
   "Middle Name",
@@ -115,25 +115,25 @@ const CSV_TEMPLATE_COLUMNS = [
   "Ethnicity",
   "Religion",
   "Birth Place",
-  // Phase 2 — address & contact
+  // Phase 2 - address & contact
   "Home Address",
   "Present Address",
   "Contact Number",
   "Email Address",
   "Facebook Link",
-  // Phase 3 — educational background
+  // Phase 3 - educational background
   "College",
   "Degree/Course taken",
   "Date Graduated",
   "Campus Graduated",
   "MSU ID No.",
-  // Phase 4 — employment
+  // Phase 4 - employment
   "Employment Status",
   "Employer",
   "Sector",
   "Position",
   "Workplace Address",
-  // Phase 5 — organization affiliation
+  // Phase 5 - organization affiliation
   "Organization Name",
   "Organization Position",
   "Organization Address",
@@ -689,7 +689,7 @@ function AdminAlumni() {
 
   const alumni = data.alumni;
   const batchOptions = [...new Set(alumni.map((record) => record.batch))]
-    .filter((value) => value && value !== "—")
+    .filter((value) => value && value !== "-")
     .sort((a, b) => Number(b) - Number(a));
   const exportGenderOptions = [
     ...new Set(["Male", "Female", ...alumni.map((record) => record.gender.trim()).filter(Boolean)]),
@@ -705,7 +705,7 @@ function AdminAlumni() {
     );
   });
 
-  // Cascading export filters — independent of the directory search filters above.
+  // Cascading export filters - independent of the directory search filters above.
   // College/course matching is normalized so legacy values with or without
   // trailing acronyms (e.g. "(CICS)") still match the standardized MSU labels.
   const exportRows = alumni.filter(
@@ -1102,7 +1102,7 @@ function AdminAlumni() {
               <ul className="mt-1.5 space-y-1 pl-4 text-xs text-muted-foreground">
                 {CSV_INSTRUCTIONS.map((item) => (
                   <li key={item.phase}>
-                    <span className="font-semibold text-foreground">{item.phase}</span> —{" "}
+                    <span className="font-semibold text-foreground">{item.phase}</span> -{" "}
                     {item.detail}
                   </li>
                 ))}
@@ -1173,7 +1173,7 @@ function AdminAlumni() {
                 {importFile ? "Choose a different CSV file" : "Upload CSV file"}
               </span>
               <span className="text-[11px] text-muted-foreground">
-                Click to browse or drag and drop — .csv only, up to 5,000 rows.
+                Click to browse or drag and drop - .csv only, up to 5,000 rows.
               </span>
               <input
                 key={importFile?.name ?? "empty"}
@@ -1333,7 +1333,7 @@ function AdminAlumni() {
             {step === 0 && (
               <div className="space-y-4">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-brand">
-                  Phase 1 — Personal details
+                  Phase 1 - Personal details
                 </p>
                 <LabeledInput
                   label="Full name"
@@ -1389,7 +1389,7 @@ function AdminAlumni() {
             {step === 1 && (
               <div className="space-y-6">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-brand">
-                  Phase 2 — Address and contact details
+                  Phase 2 - Address and contact details
                 </p>
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wide text-foreground">
@@ -1453,12 +1453,12 @@ function AdminAlumni() {
             {step === 2 && (
               <div className="space-y-4">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-brand">
-                  Phase 3 — Educational background
+                  Phase 3 - Educational background
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Select every degree earned. Details are requested per degree. Baccalaureate Degree
                   is the primary (default) degree; Graduate and Post Graduate are used only when
-                  Baccalaureate is not selected. School ID No. stays here in Phase 3 only — there is
+                  Baccalaureate is not selected. School ID No. stays here in Phase 3 only - there is
                   no separate ID Number field in Phase 1.
                 </p>
                 <div className="grid gap-2 sm:grid-cols-3">
@@ -1537,7 +1537,7 @@ function AdminAlumni() {
 
                 <div className="rounded-md border-l-4 border-brand bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
                   Course, College, and Batch Year below are auto-synced from the primary degree
-                  above — Baccalaureate first, then Graduate, then Post Graduate. Editing either
+                  above - Baccalaureate first, then Graduate, then Post Graduate. Editing either
                   side updates the other; Batch Year is the year of that Date Graduated (e.g. 2015).
                 </div>
 
@@ -1574,7 +1574,7 @@ function AdminAlumni() {
             {step === 3 && (
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-wide text-brand">
-                  Phase 4 — Employment (optional)
+                  Phase 4 - Employment (optional)
                 </p>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <Radio
@@ -1654,7 +1654,7 @@ function AdminAlumni() {
             {step === 4 && (
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-wide text-brand">
-                  Phase 5 — Organization / group affiliation (optional)
+                  Phase 5 - Organization / group affiliation (optional)
                 </p>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <Radio
@@ -1783,7 +1783,7 @@ function AdminAlumni() {
               {[
                 { label: "Batch", value: viewing.batch },
                 { label: "Degrees", value: String(viewing.education.length) },
-                { label: "Registered", value: viewing.createdAt || "—" },
+                { label: "Registered", value: viewing.createdAt || "-" },
               ].map((s) => (
                 <div key={s.label} className="rounded-lg border border-border bg-card p-3">
                   <p className="text-base font-bold text-foreground">{s.value}</p>
@@ -1794,12 +1794,12 @@ function AdminAlumni() {
 
             <MiniCard icon={UserRound} title="Personal details">
               <Row label="Full name" value={viewing.name} />
-              <Row label="Gender" value={viewing.gender || "—"} />
-              <Row label="Date of birth" value={viewing.birthDate || "—"} />
-              <Row label="Age" value={viewing.age || "—"} />
-              <Row label="Ethnicity / Tribe" value={viewing.ethnicity || "—"} />
-              <Row label="Place of birth" value={viewing.birthPlace || "—"} />
-              <Row label="Religious affiliation" value={viewing.religion || "—"} />
+              <Row label="Gender" value={viewing.gender || "-"} />
+              <Row label="Date of birth" value={viewing.birthDate || "-"} />
+              <Row label="Age" value={viewing.age || "-"} />
+              <Row label="Ethnicity / Tribe" value={viewing.ethnicity || "-"} />
+              <Row label="Place of birth" value={viewing.birthPlace || "-"} />
+              <Row label="Religious affiliation" value={viewing.religion || "-"} />
             </MiniCard>
 
             <MiniCard icon={MapPin} title="Addresses">
@@ -1814,10 +1814,10 @@ function AdminAlumni() {
             </MiniCard>
 
             <MiniCard icon={Phone} title="Contact details">
-              <Row label="Mobile number" value={viewing.mobileNumber || "—"} />
+              <Row label="Mobile number" value={viewing.mobileNumber || "-"} />
               <Row label="Email address" value={viewing.contactEmail || viewing.email} />
-              <Row label="Akan email address" value={viewing.akanEmail || "—"} />
-              <Row label="Facebook account" value={viewing.facebook || "—"} />
+              <Row label="Akan email address" value={viewing.akanEmail || "-"} />
+              <Row label="Facebook account" value={viewing.facebook || "-"} />
             </MiniCard>
 
             <MiniCard icon={GraduationCap} title="Educational details">
@@ -2007,7 +2007,7 @@ function AddressBreakdown({ parts }: { parts: AddressInput | undefined }) {
   return (
     <>
       {rows.map(([label, value]) => (
-        <Row key={label} label={label} value={value?.trim() || "—"} />
+        <Row key={label} label={label} value={value?.trim() || "-"} />
       ))}
     </>
   );

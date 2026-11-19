@@ -24,13 +24,13 @@ import { ProfileAvatar } from "@/components/profile-avatar";
 export const Route = createFileRoute("/search")({
   head: () => ({
     meta: [
-      { title: "Search Alumni — AlumTrack MSU Main Campus" },
+      { title: "Search Alumni - AlumTrack MSU Main Campus" },
       {
         name: "description",
         content:
           "Search MSU Main Campus graduates by name, course, college, region, and batch year, and view their current job, company, and location.",
       },
-      { property: "og:title", content: "Search Alumni — AlumTrack" },
+      { property: "og:title", content: "Search Alumni - AlumTrack" },
       {
         property: "og:description",
         content: "Find MSU Main Campus alumni by name, course, college, region, and batch year.",
@@ -59,7 +59,7 @@ function pickLabels(values: string[]) {
   const seen = new Map<string, string>();
   for (const raw of values) {
     const value = raw.trim();
-    if (!value || value === "—" || value === "Not provided") continue;
+    if (!value || value === "-" || value === "Not provided") continue;
     const key = value.toLowerCase();
     const current = seen.get(key);
     const capitals = (value.match(/[A-Z]/g) ?? []).length;
@@ -82,7 +82,7 @@ function SearchPage() {
     () => ({
       courses: pickLabels(alumni.map((a) => a.course)),
       colleges: pickLabels(alumni.map((a) => a.college)),
-      batches: [...new Set(alumni.map((a) => a.batch).filter((b) => b !== "—"))].sort((a, b) =>
+      batches: [...new Set(alumni.map((a) => a.batch).filter((b) => b !== "-"))].sort((a, b) =>
         b.localeCompare(a),
       ),
     }),
@@ -95,7 +95,7 @@ function SearchPage() {
     // Text search matches the alumni NAME only: every typed word must appear
     // in first/middle/last name (case-insensitive), so "Naimah" shows only
     // Naimah Tomawis Abdulcader and "abdul" shows only the Abdul/Abdulcader
-    // names — never alumni whose name does not match the query.
+    // names - never alumni whose name does not match the query.
     const q = query.trim().toLowerCase();
     const tokens = q ? q.split(/\s+/).filter(Boolean) : [];
     return alumni.filter((a) => {
@@ -126,7 +126,7 @@ function SearchPage() {
       <div className="border-l-4 border-brand pl-4">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Search Alumni</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Browse the public directory of Mindanao State University — Main Campus graduates.
+          Browse the public directory of Mindanao State University - Main Campus graduates.
         </p>
       </div>
 
@@ -324,7 +324,7 @@ function AlumniCard({ alumnus, signedIn }: { alumnus: PublicAlumnus; signedIn: b
 
       {!signedIn && (
         <p className="mt-3 flex items-center gap-1.5 border-t border-border pt-3 text-[10px] text-muted-foreground">
-          <Lock className="size-3" /> Shared contact details — sign in as alumni to view more
+          <Lock className="size-3" /> Shared contact details - sign in as alumni to view more
         </p>
       )}
     </article>

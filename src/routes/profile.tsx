@@ -13,13 +13,13 @@ import type { AddressInput } from "@/lib/registration.types";
 export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
-      { title: "My Alumni Profile — AlumTrack MSU Main Campus" },
+      { title: "My Alumni Profile - AlumTrack MSU Main Campus" },
       {
         name: "description",
         content:
           "View and update your personal details, home and current address, contact information, and skills on AlumTrack.",
       },
-      { property: "og:title", content: "My Alumni Profile — AlumTrack" },
+      { property: "og:title", content: "My Alumni Profile - AlumTrack" },
       {
         property: "og:description",
         content: "Update your personal details, addresses, contacts, and skills.",
@@ -36,7 +36,7 @@ function Field({ label, value }: { label: string; value: string }) {
       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
-      <p className="mt-1 text-sm text-foreground">{value || "—"}</p>
+      <p className="mt-1 text-sm text-foreground">{value || "-"}</p>
     </div>
   );
 }
@@ -149,7 +149,7 @@ function ProfilePage() {
   return (
     <AlumniShell
       title="My Profile"
-      subtitle="Everything you entered during registration — personal, address and contact details."
+      subtitle="Everything you entered during registration - personal, address and contact details."
       user={{
         name: data.user.fullName,
         batch: data.user.batch,

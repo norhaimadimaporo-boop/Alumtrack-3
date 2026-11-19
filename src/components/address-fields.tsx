@@ -190,7 +190,7 @@ export function AddressFields({
             !value.city.trim()
               ? "Choose a city first, or type"
               : barangayOptions.length === 0
-                ? "No PSGC match — type a barangay"
+                ? "No PSGC match - type a barangay"
                 : "Search or type a barangay"
           }
         />

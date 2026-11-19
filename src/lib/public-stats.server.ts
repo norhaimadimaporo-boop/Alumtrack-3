@@ -44,7 +44,7 @@ function industryLabel(sector: string): string {
 }
 
 /**
- * Totally live public numbers — no hardcoded snapshot.
+ * Totally live public numbers - no hardcoded snapshot.
  *
  * Population is verified, active alumni (`alumni_profiles` joined to active
  * users), the same population used by Search, the GIS map, and Reports.

@@ -1,5 +1,5 @@
 export const ME = {
-  // Phase 1 — Personal details
+  // Phase 1 - Personal details
   lastName: "Abdulcader",
   firstName: "Naimah",
   middleName: "Tomawis",
@@ -21,9 +21,9 @@ export const ME = {
   // Employment summary
   job: "Software Engineer",
   company: "Accenture Philippines",
-  region: "NCR — Metro Manila",
+  region: "NCR - Metro Manila",
 
-  // Phase 2 — Address & contacts
+  // Phase 2 - Address & contacts
   currentAddress: "Blk 4, Lot 12, Sunrise Subd., Taguig City, Metro Manila, 1630",
   homeAddress: "Brgy. Marinaut East, Marawi City, Lanao del Sur, 9700",
   contact: "+63 917 555 0142",
@@ -116,7 +116,7 @@ export const EDUCATION: EducationRecord[] = [
     degree: "Master of Science in Computer Science",
     major: "Software Engineering",
     college: "College of Information and Computing Sciences",
-    school: "MSU — Main Campus",
+    school: "MSU - Main Campus",
     schoolAddress: "Marawi City, Lanao del Sur",
     graduated: "20-06-2026",
   },
@@ -127,7 +127,7 @@ export const EDUCATION: EducationRecord[] = [
     degree: "Bachelor of Science in Information Technology",
     major: "Information Technology",
     college: "College of Information and Computing Sciences",
-    school: "MSU — Main Campus",
+    school: "MSU - Main Campus",
     schoolAddress: "Marawi City, Lanao del Sur",
     graduated: "12-07-2024",
   },

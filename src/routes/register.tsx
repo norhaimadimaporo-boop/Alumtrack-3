@@ -398,8 +398,8 @@ function RegisterPage() {
   }));
   const primaryEducation = primaryEducationRecord(selectedEducation);
   const syncedBatchYear = priorityBatchYear(selectedEducation);
-  const syncedCourse = primaryEducation?.degree.trim() || "—";
-  const syncedCollege = primaryEducation?.college.trim() || "—";
+  const syncedCourse = primaryEducation?.degree.trim() || "-";
+  const syncedCollege = primaryEducation?.college.trim() || "-";
 
   const goToStep = (target: number) => {
     if (target <= step) {
@@ -714,7 +714,7 @@ function RegisterPage() {
             <p className="mb-3 text-sm text-muted-foreground">
               Select every degree you have earned. Details are requested per degree. Baccalaureate
               Degree is the primary (default) degree; Graduate and Post Graduate are only used when
-              Baccalaureate is not selected. School ID No. lives here in Phase 3 only — there is no
+              Baccalaureate is not selected. School ID No. lives here in Phase 3 only - there is no
               separate ID Number field in Phase 1.
             </p>
             <div className="grid gap-2 sm:grid-cols-3">
@@ -803,7 +803,7 @@ function RegisterPage() {
                 Auto-synced directory details
               </h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                Course, College, and Batch Year are copied automatically from your primary degree —
+                Course, College, and Batch Year are copied automatically from your primary degree -
                 Baccalaureate first, then Graduate, then Post Graduate. Batch Year is the year of
                 that Date Graduated (e.g. 2015). You do not need to enter them again.
               </p>
@@ -824,7 +824,7 @@ function RegisterPage() {
                   <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     Batch Year (auto-synced)
                   </dt>
-                  <dd className="mt-0.5 font-semibold text-foreground">{syncedBatchYear || "—"}</dd>
+                  <dd className="mt-0.5 font-semibold text-foreground">{syncedBatchYear || "-"}</dd>
                 </div>
               </dl>
             </div>

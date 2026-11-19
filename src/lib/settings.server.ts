@@ -61,8 +61,8 @@ const COLUMN_BY_KEY = new Map<string, string>(COLUMNS);
 /**
  * Saves every toggle at once (explicit Save Changes button). All columns
  * are written in a single upsert so the toggles the user sees are exactly
- * what lands in the database — and, downstream, in Search Alumni and GIS
- * Map visibility — only after they press Save.
+ * what lands in the database - and, downstream, in Search Alumni and GIS
+ * Map visibility - only after they press Save.
  */
 export async function saveMyPrivacySettings(
   settings: PrivacySettings,

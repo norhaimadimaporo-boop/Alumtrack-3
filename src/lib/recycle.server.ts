@@ -43,7 +43,7 @@ function stampOf(value: Date | string | null) {
   const date = value instanceof Date ? value : value ? new Date(value) : null;
   const valid = date && !Number.isNaN(date.getTime());
   return {
-    deletedAt: valid && date ? manilaDate(date) : "—",
+    deletedAt: valid && date ? manilaDate(date) : "-",
     stamp: valid && date ? date.toISOString() : "",
     clock: valid && date ? manilaClock(date) : "",
   };
@@ -52,7 +52,7 @@ function stampOf(value: Date | string | null) {
 /**
  * Head-Admin-only recycle bin listing. Runs the 7-day purge first (lazy
  * cron check) so expired records are gone before the list is built.
- * Non-head callers get an empty list — rows never leave the server.
+ * Non-head callers get an empty list - rows never leave the server.
  */
 export async function listRecycleBin(): Promise<RecycleBinResult> {
   const access = await requireAdmin("viewer");

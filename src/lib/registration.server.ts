@@ -243,7 +243,7 @@ export async function registerAlumniAccount(input: RegistrationInput): Promise<R
     await connection.execute(
       `INSERT INTO activity_log (actor_user_id, actor_name, action, entity_type, entity_id)
        VALUES (?, ?, ?, 'registration', ?)`,
-      [userId, displayName, `New alumni registration — ${displayName}`, userId],
+      [userId, displayName, `New alumni registration - ${displayName}`, userId],
     );
 
     await connection.commit();

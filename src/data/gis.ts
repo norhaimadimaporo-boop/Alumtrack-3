@@ -323,7 +323,7 @@ export const MAP_VIEWS: MapView[] = [
   },
 ];
 
-/** Legend copy — kept apart from the map component so it is easy to audit. */
+/** Legend copy - kept apart from the map component so it is easy to audit. */
 export const MAP_LEGEND = [
   {
     status: "Employed" as const,
@@ -363,21 +363,21 @@ export const NEARBY_ALUMNI = [
 
 export const LOGIN_ACTIVITY = [
   { region: "BARMM", sessions: 142, x: 48, y: 74 },
-  { region: "Region X — Northern Mindanao", sessions: 96, x: 58, y: 66 },
-  { region: "NCR — Metro Manila", sessions: 118, x: 34, y: 30 },
-  { region: "Region XI — Davao", sessions: 54, x: 68, y: 79 },
+  { region: "Region X - Northern Mindanao", sessions: 96, x: 58, y: 66 },
+  { region: "NCR - Metro Manila", sessions: 118, x: 34, y: 30 },
+  { region: "Region XI - Davao", sessions: 54, x: 68, y: 79 },
   { region: "Overseas", sessions: 37, x: 14, y: 44 },
 ];
 
 /* ---------- Standard reports required by OARCC ---------- */
 
 export const GRADUATES_PER_YEAR = [
-  { label: "2026 — Undergraduate", value: 1420 },
-  { label: "2026 — Masteral", value: 186 },
-  { label: "2025 — Undergraduate", value: 1365 },
-  { label: "2025 — Masteral", value: 174 },
-  { label: "2024 — Undergraduate", value: 1298 },
-  { label: "2024 — Masteral", value: 151 },
+  { label: "2026 - Undergraduate", value: 1420 },
+  { label: "2026 - Masteral", value: 186 },
+  { label: "2025 - Undergraduate", value: 1365 },
+  { label: "2025 - Masteral", value: 174 },
+  { label: "2024 - Undergraduate", value: 1298 },
+  { label: "2024 - Masteral", value: 151 },
 ];
 
 export const GRADUATES_PER_COURSE = [

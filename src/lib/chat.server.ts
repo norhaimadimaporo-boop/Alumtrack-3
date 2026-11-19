@@ -188,7 +188,7 @@ function toMessage(row: MessageRow): ChatMessage {
 function conversationFromRow(row: InboxRow): AdminChatConversation {
   const date = asDate(row.updated_at);
   const yearValue = row.batch_grad_year ?? row.batch_year;
-  const year = yearValue === null ? "—" : String(Number(yearValue));
+  const year = yearValue === null ? "-" : String(Number(yearValue));
   return {
     id: Number(row.id),
     alumniUserId: Number(row.alumni_user_id),

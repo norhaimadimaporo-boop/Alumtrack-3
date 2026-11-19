@@ -102,7 +102,7 @@ function affiliationFromOrgs(orgNames: string | null): ReportRecord["affiliation
  * Verified, active alumni rows for Reports & Graduate Statistics. Batch
  * year follows the priority Baccalaureate → Graduate → Post Graduate
  * graduation year in `alumni_education` (stored `batch_year` only as a
- * last resort), so no card shows "Batch —" when an education year exists.
+ * last resort), so no card shows "Batch -" when an education year exists.
  * Pins mirror the GIS map logic (strict present-address geocoding) but
  * Reports is an admin surface: every verified record stays plotted with
  * full details even when the owner opted out of public map visibility.
@@ -152,7 +152,7 @@ export async function listReportRecords(): Promise<ReportRecordsResult> {
         toYear(row.grad_grad_year) ??
         toYear(row.postgrad_grad_year) ??
         toYear(row.batch_year);
-      const batch = batchYear ? String(batchYear) : "—";
+      const batch = batchYear ? String(batchYear) : "-";
       const country =
         row.current_country?.trim() ||
         row.address_country?.trim() ||
@@ -167,7 +167,7 @@ export async function listReportRecords(): Promise<ReportRecordsResult> {
       // Map pin with the same strict present-address GIS rules as the public
       // map. Admin Reports is an admin-only surface: every verified record
       // stays plotted with FULL details (exact coordinates + company) even
-      // when the owner turned off map visibility — role-based visibility.
+      // when the owner turned off map visibility - role-based visibility.
       let pin: ReportRecord["pin"] = null;
       {
         const cityOnly = false;
@@ -250,7 +250,7 @@ export async function listReportRecords(): Promise<ReportRecordsResult> {
         employmentStatus: row.employment_status,
         region: row.current_region?.trim() || province,
         province,
-        city: row.current_city?.trim() || row.address_city?.trim() || "—",
+        city: row.current_city?.trim() || row.address_city?.trim() || "-",
         country,
         abroad,
         affiliation: affiliationFromOrgs(row.org_names),

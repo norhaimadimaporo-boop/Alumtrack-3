@@ -83,7 +83,7 @@ function SearchableSelect({
     }
     const rect = buttonRef.current?.getBoundingClientRect();
     if (!rect) return;
-    // Always open directly below the trigger — never flip above the input.
+    // Always open directly below the trigger - never flip above the input.
     const width = Math.max(rect.width, 220);
     const top = rect.bottom + 8;
     const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));

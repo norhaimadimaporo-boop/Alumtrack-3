@@ -11,13 +11,13 @@ import { getMyWorkspaceData } from "@/lib/profile.functions";
 export const Route = createFileRoute("/alumni-map")({
   head: () => ({
     meta: [
-      { title: "Alumni Map — AlumTrack MSU Main Campus" },
+      { title: "Alumni Map - AlumTrack MSU Main Campus" },
       {
         name: "description",
         content:
           "Interactive GIS map of MSU Main Campus alumni in the Philippines and abroad. Find fellow graduates by city or host country based on opt-in privacy preferences.",
       },
-      { property: "og:title", content: "Alumni Map — AlumTrack" },
+      { property: "og:title", content: "Alumni Map - AlumTrack" },
       {
         property: "og:description",
         content: "View pinpointed alumni workplaces at home and overseas.",
@@ -55,7 +55,7 @@ function AlumniMapPage() {
   const batchOptions = useMemo(
     () =>
       Array.from(new Set(allPins.map((pin) => pin.batch)))
-        .filter((value) => value !== "—")
+        .filter((value) => value !== "-")
         .sort((a, b) => b.localeCompare(a)),
     [allPins],
   );
@@ -90,7 +90,7 @@ function AlumniMapPage() {
   return (
     <AlumniShell
       title="Alumni Map"
-      subtitle="See where fellow graduates work — from Marawi and Metro Manila to Dubai, Riyadh, and Doha."
+      subtitle="See where fellow graduates work - from Marawi and Metro Manila to Dubai, Riyadh, and Doha."
       user={
         user
           ? {

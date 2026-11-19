@@ -15,10 +15,10 @@ export { COLLEGE_OPTIONS as COLLEGES, COURSE_OPTIONS as COURSES } from "@/lib/ms
 
 export const REGIONS = [
   "BARMM",
-  "Region X — Northern Mindanao",
-  "Region XI — Davao",
-  "Region XII — SOCCSKSARGEN",
-  "NCR — Metro Manila",
+  "Region X - Northern Mindanao",
+  "Region XI - Davao",
+  "Region XII - SOCCSKSARGEN",
+  "NCR - Metro Manila",
   "Overseas",
 ] as const;
 
@@ -33,7 +33,7 @@ export const ALUMNI: Alumnus[] = [
     batch: "2024",
     job: "Software Engineer",
     company: "Accenture Philippines",
-    region: "NCR — Metro Manila",
+    region: "NCR - Metro Manila",
     status: "Employed",
   },
   {
@@ -44,7 +44,7 @@ export const ALUMNI: Alumnus[] = [
     batch: "2022",
     job: "Data Analyst",
     company: "Globe Telecom",
-    region: "NCR — Metro Manila",
+    region: "NCR - Metro Manila",
     status: "Employed",
   },
   {
@@ -66,7 +66,7 @@ export const ALUMNI: Alumnus[] = [
     batch: "2018",
     job: "Project Engineer",
     company: "DPWH Region X",
-    region: "Region X — Northern Mindanao",
+    region: "Region X - Northern Mindanao",
     status: "Employed",
   },
   {
@@ -77,7 +77,7 @@ export const ALUMNI: Alumnus[] = [
     batch: "2020",
     job: "Junior Auditor",
     company: "SGV & Co.",
-    region: "Region XI — Davao",
+    region: "Region XI - Davao",
     status: "Employed",
   },
   {
@@ -121,7 +121,7 @@ export const ALUMNI: Alumnus[] = [
     batch: "2024",
     job: "MS Computer Science Student",
     company: "University of the Philippines Diliman",
-    region: "NCR — Metro Manila",
+    region: "NCR - Metro Manila",
     status: "Further Studies",
   },
   {
@@ -132,7 +132,7 @@ export const ALUMNI: Alumnus[] = [
     batch: "2015",
     job: "Structural Designer",
     company: "EEI Corporation",
-    region: "Region XII — SOCCSKSARGEN",
+    region: "Region XII - SOCCSKSARGEN",
     status: "Employed",
   },
   {
@@ -143,7 +143,7 @@ export const ALUMNI: Alumnus[] = [
     batch: "2018",
     job: "Finance Officer",
     company: "Bangko Sentral ng Pilipinas",
-    region: "NCR — Metro Manila",
+    region: "NCR - Metro Manila",
     status: "Employed",
   },
   {

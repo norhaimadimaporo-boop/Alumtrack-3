@@ -287,7 +287,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
 
     // Head Admins see the complete feed (including Login/Logout). Standard
     // and Viewer admins only see real administrative actions (registrations,
-    // record/post/admin changes, etc.) — login/logout events are filtered
+    // record/post/admin changes, etc.) - login/logout events are filtered
     // out on the server so they never reach the browser.
     const isHead = access.admin.adminRole === "head";
     const visibleActivity = activityRows.filter(
@@ -310,14 +310,14 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
         const stampDate =
           row.created_at instanceof Date ? row.created_at : new Date(row.created_at);
         const valid = !Number.isNaN(stampDate.getTime());
-        const date = valid ? manilaDate(stampDate) : `—`;
-        const clock = valid ? manilaClock(stampDate) : `—`;
+        const date = valid ? manilaDate(stampDate) : `-`;
+        const clock = valid ? manilaClock(stampDate) : `-`;
         return {
           id: String(row.id),
           text: row.action,
           time: relativeTime(row.created_at),
           kind: activityKind(row.entity_type),
-          actorName: row.actor_name?.trim() || "—",
+          actorName: row.actor_name?.trim() || "-",
           date,
           clock,
           stamp: valid ? stampDate.toISOString() : "",
@@ -338,7 +338,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
           id: row.id,
           name: fullName(row.first_name, row.middle_name ?? "", row.last_name),
           course: row.course ?? "Course not provided",
-          batch: batchYear ? String(batchYear) : "—",
+          batch: batchYear ? String(batchYear) : "-",
           status: employmentLabel(row.employment_status),
           verificationStatus: row.verification_status,
           createdAt: formatDate(row.created_at),
@@ -356,7 +356,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
 
 export async function listAdminAlumni(): Promise<AdminAlumniList> {
   // Role-based visibility: admin surface returns FULL details for every
-  // record — no privacy filter (gis_show_workplace / public_show_* are
+  // record - no privacy filter (gis_show_workplace / public_show_* are
   // ignored) for Head, Standard, and Viewer admins alike.
   const access = await requireAdmin("viewer");
   if (!access.ok) return { ok: false, message: access.message };
@@ -518,7 +518,7 @@ export async function listAdminAlumni(): Promise<AdminAlumniList> {
         facebook: row.facebook ?? "",
         course: row.course ?? "Course not provided",
         college: row.college ?? "College not provided",
-        batch: batchYear ? String(batchYear) : "—",
+        batch: batchYear ? String(batchYear) : "-",
         status: employmentLabel(row.employment_status),
         employmentStatus: row.employment_status,
         job: row.current_position ?? currentEmployment?.position ?? "Not provided",
@@ -591,7 +591,7 @@ export async function verifyAlumniRecord(profileId: number): Promise<AdminAction
     await pool.execute(
       `INSERT INTO activity_log (actor_user_id, actor_name, action, entity_type, entity_id)
        VALUES (?, ?, ?, 'verification', ?)`,
-      [admin.id, admin.fullName ?? admin.email, `Verified alumni record — ${name}`, profileId],
+      [admin.id, admin.fullName ?? admin.email, `Verified alumni record - ${name}`, profileId],
     );
 
     return { ok: true, message: `${name} is now verified.` };
@@ -648,7 +648,7 @@ export async function deleteAlumniRecord(profileId: number): Promise<AdminAction
     await connection.execute(
       `INSERT INTO activity_log (actor_user_id, actor_name, action, entity_type, entity_id)
        VALUES (?, ?, ?, 'deletion', ?)`,
-      [admin.id, admin.fullName ?? admin.email, `Deleted alumni record — ${name}`, profileId],
+      [admin.id, admin.fullName ?? admin.email, `Deleted alumni record - ${name}`, profileId],
     );
 
     await connection.commit();
@@ -674,7 +674,7 @@ export async function recordAlumniExport(count: number): Promise<AdminActionResu
       [
         access.admin.id,
         access.admin.fullName ?? access.admin.email,
-        `Exported alumni records — ${count} record${count === 1 ? "" : "s"} exported`,
+        `Exported alumni records - ${count} record${count === 1 ? "" : "s"} exported`,
       ],
     );
     return { ok: true, message: "Export recorded in recent admin activity." };
@@ -935,7 +935,7 @@ export async function updateAlumniRecord(
       [
         admin.id,
         admin.fullName ?? admin.email,
-        `Updated alumni record — ${fields.displayName}`,
+        `Updated alumni record - ${fields.displayName}`,
         input.id,
       ],
     );
@@ -1036,7 +1036,7 @@ export async function createAlumniRecord(input: AdminAlumniSaveInput): Promise<A
       [
         admin.id,
         admin.fullName ?? admin.email,
-        `Added alumni record — ${fields.displayName}`,
+        `Added alumni record - ${fields.displayName}`,
         profileId,
       ],
     );
@@ -1160,7 +1160,7 @@ export async function createAdminAccount(input: AdminAccountInput): Promise<Admi
 
     await logAdminActivity(
       access.admin,
-      `Created ${adminRoleLabel(input.role)} account — ${fullName}`,
+      `Created ${adminRoleLabel(input.role)} account - ${fullName}`,
       result.insertId,
     );
 
@@ -1246,7 +1246,7 @@ export async function updateAdminAccount(input: AdminAccountUpdate): Promise<Adm
 
     await logAdminActivity(
       access.admin,
-      `Updated ${adminRoleLabel(input.role)} account — ${fullName}`,
+      `Updated ${adminRoleLabel(input.role)} account - ${fullName}`,
       target.id,
     );
 
@@ -1297,7 +1297,7 @@ export async function deleteAdminAccount(id: number): Promise<AdminActionResult>
     );
     await logAdminActivity(
       access.admin,
-      `Deleted admin account — ${target.full_name ?? target.email}`,
+      `Deleted admin account - ${target.full_name ?? target.email}`,
       null,
     );
 

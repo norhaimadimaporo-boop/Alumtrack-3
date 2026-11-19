@@ -16,7 +16,7 @@ import type { AdminChatConversation, ChatMessage } from "@/lib/chat.types";
 export const Route = createFileRoute("/admin/messages")({
   head: () => ({
     meta: [
-      { title: "Messages — AlumTrack Admin" },
+      { title: "Messages - AlumTrack Admin" },
       {
         name: "description",
         content: "Read and reply to alumni support conversations in the OARCC admin inbox.",

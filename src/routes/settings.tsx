@@ -15,13 +15,13 @@ import type { PrivacySettings } from "@/lib/settings.types";
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Privacy & Settings — AlumTrack MSU Main Campus" },
+      { title: "Privacy & Settings - AlumTrack MSU Main Campus" },
       {
         name: "description",
         content:
           "Control which parts of your alumni profile are visible publicly and manage notifications and account security.",
       },
-      { property: "og:title", content: "Privacy & Settings — AlumTrack" },
+      { property: "og:title", content: "Privacy & Settings - AlumTrack" },
       {
         property: "og:description",
         content: "Manage profile visibility, notifications, and account security.",
@@ -56,7 +56,7 @@ const publicRows: ToggleRow[] = [
   {
     key: "publicIncludeRegionStats",
     label: "Include me in public regional statistics",
-    hint: "Counted as an aggregate number only — never by name.",
+    hint: "Counted as an aggregate number only - never by name.",
   },
 ];
 
@@ -143,7 +143,7 @@ function SettingsPage() {
     );
 
   function updateSetting(key: keyof PrivacySettings, value: boolean) {
-    // Draft only — nothing is written to the database until Save Changes.
+    // Draft only - nothing is written to the database until Save Changes.
     setSettings((current) => (current ? { ...current, [key]: value } : current));
     setSaveError("");
   }

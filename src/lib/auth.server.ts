@@ -262,7 +262,7 @@ export async function logoutUser(): Promise<{ ok: true }> {
           .execute(
             `INSERT INTO activity_log (actor_user_id, actor_name, action, entity_type)
              VALUES (?, ?, 'Logout', 'login')`,
-            [sessionUserId, name?.full_name ?? name?.email ?? "—"],
+            [sessionUserId, name?.full_name ?? name?.email ?? "-"],
           )
           .catch(() => undefined);
       }

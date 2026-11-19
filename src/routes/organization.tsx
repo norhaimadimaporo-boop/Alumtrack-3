@@ -16,13 +16,13 @@ import type { OrganizationRecordInput, WorkspaceOrganization } from "@/lib/profi
 export const Route = createFileRoute("/organization")({
   head: () => ({
     meta: [
-      { title: "Organization Affiliation — AlumTrack MSU Main Campus" },
+      { title: "Organization Affiliation - AlumTrack MSU Main Campus" },
       {
         name: "description",
         content:
           "View the organizations and groups you registered with, and add or edit your affiliation details on AlumTrack.",
       },
-      { property: "og:title", content: "Organization Affiliation — AlumTrack" },
+      { property: "og:title", content: "Organization Affiliation - AlumTrack" },
       {
         property: "og:description",
         content: "Manage the groups and organizations you are affiliated with.",

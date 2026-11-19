@@ -129,7 +129,7 @@ function MapCamera({ viewKey, pins }: { viewKey: MapViewKey; pins: AlumniMapPin[
         [bounds.maxLat, bounds.maxLng],
       ]);
 
-      // Expand the preset so every pin in that region stays on screen — e.g.
+      // Expand the preset so every pin in that region stays on screen - e.g.
       // the Middle East view must show West KSA and the East UAE coast at once.
       const visible = pinsForView(viewKey, pins);
       if (visible.length > 0) {
@@ -213,7 +213,7 @@ function SinglePinPopup({ pin }: { pin: AlumniMapPin }) {
             Company
           </dt>
           <dd className="min-w-0 font-semibold text-foreground">
-            {pin.company ?? "Not employed — open to opportunities"}
+            {pin.company ?? "Not employed - open to opportunities"}
             <span className="block font-normal text-muted-foreground">
               {pin.role} · {pin.course}, Batch {pin.batch}
             </span>
@@ -252,7 +252,7 @@ function GroupedPinPopup({ group }: { group: PinGroup }) {
               <StatusPill status={pin.status} />
             </div>
             <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
-              {pin.company ?? "Not employed — open to opportunities"}
+              {pin.company ?? "Not employed - open to opportunities"}
             </p>
             <p className="text-[10px] leading-tight text-muted-foreground">
               {pin.role} · {pin.course}, Batch {pin.batch}
@@ -314,8 +314,8 @@ export function LeafletAlumniMap({
         const first = group.pins[0]!;
         const label =
           group.pins.length > 1
-            ? `${group.pins.length} alumni — ${first.city}, ${first.country}`
-            : `${first.name} — ${first.city}, ${first.country}`;
+            ? `${group.pins.length} alumni - ${first.city}, ${first.country}`
+            : `${first.name} - ${first.city}, ${first.country}`;
 
         return (
           <Marker

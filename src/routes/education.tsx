@@ -18,13 +18,13 @@ import type { EducationRecordInput, WorkspaceEducation } from "@/lib/profile.typ
 export const Route = createFileRoute("/education")({
   head: () => ({
     meta: [
-      { title: "Education Details — AlumTrack MSU Main Campus" },
+      { title: "Education Details - AlumTrack MSU Main Campus" },
       {
         name: "description",
         content:
           "Review the degrees you entered at registration and add or edit baccalaureate, graduate, and post graduate records.",
       },
-      { property: "og:title", content: "Education Details — AlumTrack" },
+      { property: "og:title", content: "Education Details - AlumTrack" },
       {
         property: "og:description",
         content: "Add or edit your baccalaureate, graduate, and post graduate degrees.",
@@ -242,7 +242,7 @@ function EducationPage() {
                     Graduated
                   </p>
                   <p className="text-xs font-semibold text-foreground">
-                    {record.graduatedOn ? formatDate(record.graduatedOn) : "—"}
+                    {record.graduatedOn ? formatDate(record.graduatedOn) : "-"}
                   </p>
                   {canEdit && (
                     <div className="mt-2 flex flex-col items-end gap-1">

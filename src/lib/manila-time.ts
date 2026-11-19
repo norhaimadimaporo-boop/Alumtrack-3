@@ -28,13 +28,13 @@ function toDate(value: Date | string): Date {
 /** `YYYY-MM-DD` in Philippine Time. */
 export function manilaDate(value: Date | string): string {
   const date = toDate(value);
-  return Number.isNaN(date.getTime()) ? "—" : dateFormatter.format(date);
+  return Number.isNaN(date.getTime()) ? "-" : dateFormatter.format(date);
 }
 
 /** `HH:mm:ss` (24-hour) in Philippine Time (e.g. 00:57:19). */
 export function manilaClock(value: Date | string): string {
   const date = toDate(value);
-  return Number.isNaN(date.getTime()) ? "—" : timeFormatter.format(date);
+  return Number.isNaN(date.getTime()) ? "-" : timeFormatter.format(date);
 }
 
 /** Full `YYYY-MM-DD HH:mm:ss` stamp in Philippine Time. */

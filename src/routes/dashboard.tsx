@@ -9,13 +9,13 @@ import { initials } from "@/lib/profile-format";
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
-      { title: "Alumni Dashboard — AlumTrack MSU Main Campus" },
+      { title: "Alumni Dashboard - AlumTrack MSU Main Campus" },
       {
         name: "description",
         content:
           "Your AlumTrack dashboard: profile completion, employment record, announcements, and job offerings for MSU Main Campus alumni.",
       },
-      { property: "og:title", content: "Alumni Dashboard — AlumTrack" },
+      { property: "og:title", content: "Alumni Dashboard - AlumTrack" },
       {
         property: "og:description",
         content: "Manage your alumni profile, employment history, and posts from OARCC.",
@@ -38,10 +38,10 @@ function DashboardPage() {
 
   const firstName = profile?.firstName || "Alumni";
   const fullName = profile?.fullName || "Alumni User";
-  const batch = profile?.batch || "—";
+  const batch = profile?.batch || "-";
   const currentJob = profile?.employment?.[0]?.position || profile?.course || "Not specified";
   const currentCompany = profile?.employment?.[0]?.company || "Unemployed / Not provided";
-  const currentRegion = profile?.employment?.[0]?.workLocation || profile?.homeAddress || "—";
+  const currentRegion = profile?.employment?.[0]?.workLocation || profile?.homeAddress || "-";
   const empCount = profile?.employment?.length ?? 0;
   const eduCount = profile?.education?.length ?? 0;
   const userInitials = profile ? initials(profile.fullName) : "AL";

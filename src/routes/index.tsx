@@ -18,13 +18,13 @@ import { postExcerpt } from "@/lib/posts.types";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "AlumTrack — MSU Main Campus Alumni Tracing System" },
+      { title: "AlumTrack - MSU Main Campus Alumni Tracing System" },
       {
         name: "description",
         content:
-          "AlumTrack is the alumni tracing system and online platform of Mindanao State University — Main Campus. Search graduates, read OARCC news, and stay connected.",
+          "AlumTrack is the alumni tracing system and online platform of Mindanao State University - Main Campus. Search graduates, read OARCC news, and stay connected.",
       },
-      { property: "og:title", content: "AlumTrack — MSU Main Campus Alumni Platform" },
+      { property: "og:title", content: "AlumTrack - MSU Main Campus Alumni Platform" },
       {
         property: "og:description",
         content:
@@ -115,7 +115,7 @@ function Index() {
           <h1 className="mt-6 max-w-3xl text-4xl font-bold leading-[1.1] text-background drop-shadow-md sm:text-5xl md:text-6xl">
             AlumTrack
             <span className="mt-3 block text-lg font-medium leading-snug text-background/80 sm:text-xl">
-              Alumni Tracing System and Online Platform for Mindanao State University — Main Campus
+              Alumni Tracing System and Online Platform for Mindanao State University - Main Campus
             </span>
           </h1>
           <p className="mt-6 max-w-xl text-sm leading-relaxed text-background/70 drop-shadow-md">
@@ -225,7 +225,7 @@ function Index() {
           </h2>
           <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">
             Created in 1972 under the supervision of the Office of the President, OARCC enhances
-            mutuality of interests and concerns between the University and her pride — her alumni.
+            mutuality of interests and concerns between the University and her pride - her alumni.
           </p>
           <Link
             to="/oarcc"

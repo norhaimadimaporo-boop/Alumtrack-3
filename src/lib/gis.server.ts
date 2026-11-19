@@ -62,9 +62,9 @@ function toNumber(value: number | string | null): number | null {
 }
 
 function toBatchYear(value: number | string | null): string {
-  if (value === null || value === undefined) return "—";
+  if (value === null || value === undefined) return "-";
   const year = Number(value);
-  return Number.isFinite(year) && year > 0 ? String(Math.floor(year)) : "—";
+  return Number.isFinite(year) && year > 0 ? String(Math.floor(year)) : "-";
 }
 
 /**
@@ -215,11 +215,11 @@ export async function listAlumniMapPins(options: {
       // Batch priority: Baccalaureate → Graduate → Post Graduate → stored
       // `batch_year` (only when no education year exists).
       const batch =
-        toBatchYear(row.bac_grad_year) !== "—"
+        toBatchYear(row.bac_grad_year) !== "-"
           ? toBatchYear(row.bac_grad_year)
-          : toBatchYear(row.grad_grad_year) !== "—"
+          : toBatchYear(row.grad_grad_year) !== "-"
             ? toBatchYear(row.grad_grad_year)
-            : toBatchYear(row.postgrad_grad_year) !== "—"
+            : toBatchYear(row.postgrad_grad_year) !== "-"
               ? toBatchYear(row.postgrad_grad_year)
               : toBatchYear(row.batch_year);
 

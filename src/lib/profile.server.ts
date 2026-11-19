@@ -174,7 +174,7 @@ function batchFromEducation(row: ProfileRow, education: EducationRow[]): string 
       graduatedOn: toIsoDate(formatDate(record.graduated_on)),
     })),
   );
-  return synced || (row.batch_year ? String(row.batch_year) : "—");
+  return synced || (row.batch_year ? String(row.batch_year) : "-");
 }
 
 function buildSessionUser(row: ProfileRow, education: EducationRow[] = []): AlumniSessionUser {
@@ -405,7 +405,7 @@ export async function getMyWorkspace(): Promise<MyWorkspace> {
           userId: user.id,
           fullName: user.fullName ?? "Alumni",
           firstName: (user.fullName ?? "Alumni").split(" ")[0] || "Alumni",
-          batch: "—",
+          batch: "-",
           initials: initials(user.fullName ?? "Alumni"),
           avatarUrl: null,
           verificationStatus: null,
@@ -509,7 +509,7 @@ export async function getAlumniSession(): Promise<AlumniSessionResult> {
         userId: user.id,
         fullName: user.fullName ?? "Administrator",
         firstName: (user.fullName ?? "Administrator").split(" ")[0] || "Administrator",
-        batch: "—",
+        batch: "-",
         initials: initials(user.fullName ?? "Administrator"),
         avatarUrl: null,
         verificationStatus: null,
@@ -528,7 +528,7 @@ export async function getAlumniSession(): Promise<AlumniSessionResult> {
         userId: user.id,
         fullName: name,
         firstName: name.split(" ")[0] || name,
-        batch: "—",
+        batch: "-",
         initials: initials(name),
         avatarUrl: null,
         verificationStatus: null,
@@ -788,7 +788,7 @@ export async function updateMyProfile(input: ProfileEditInput): Promise<SaveResu
       connection,
       editor.userId,
       displayName,
-      `Updated personal profile — ${displayName}`,
+      `Updated personal profile - ${displayName}`,
     );
 
     await connection.commit();

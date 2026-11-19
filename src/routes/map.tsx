@@ -9,13 +9,13 @@ import { getPublicStatsData } from "@/lib/public-stats.functions";
 export const Route = createFileRoute("/map")({
   head: () => ({
     meta: [
-      { title: "Alumni Map & Statistics — AlumTrack MSU Main Campus" },
+      { title: "Alumni Map & Statistics - AlumTrack MSU Main Campus" },
       {
         name: "description",
         content:
           "Explore live alumni statistics, employment summaries, and the interactive AlumTrack GIS map.",
       },
-      { property: "og:title", content: "Alumni Map & Statistics — AlumTrack" },
+      { property: "og:title", content: "Alumni Map & Statistics - AlumTrack" },
       {
         property: "og:description",
         content: "Live alumni statistics and an interactive GIS map from the OARCC database.",
@@ -54,10 +54,10 @@ function AlumniMapPage() {
         },
       ]
     : [
-        { value: "—", label: "Alumni Traced" },
-        { value: "—", label: "Colleges" },
-        { value: "—", label: "Batch Years" },
-        { value: "—", label: "Events This Year" },
+        { value: "-", label: "Alumni Traced" },
+        { value: "-", label: "Colleges" },
+        { value: "-", label: "Batch Years" },
+        { value: "-", label: "Events This Year" },
       ];
 
   const publicStats = stats
@@ -90,10 +90,10 @@ function AlumniMapPage() {
         },
       ]
     : [
-        { value: "—", label: "Total traced alumni", note: "Across — batch years" },
-        { value: "—", label: "Employment rate", note: "Employment status unavailable" },
-        { value: "—", label: "Working overseas", note: "Host countries unavailable" },
-        { value: "—", label: "Employed locally", note: "Based in the Philippines" },
+        { value: "-", label: "Total traced alumni", note: "Across - batch years" },
+        { value: "-", label: "Employment rate", note: "Employment status unavailable" },
+        { value: "-", label: "Working overseas", note: "Host countries unavailable" },
+        { value: "-", label: "Employed locally", note: "Based in the Philippines" },
       ];
 
   const industries = stats?.industries ?? [];
@@ -195,7 +195,7 @@ function AlumniMapPage() {
             <div className="w-full min-w-0 rounded-2xl border border-[#E6DFD5] border-l-4 border-l-highlight bg-gradient-to-br from-card to-background p-5 shadow-sm">
               <h3 className="text-sm font-semibold text-foreground">Privacy notice</h3>
               <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                Public maps and statistics show only where alumni are based — never exact street
+                Public maps and statistics show only where alumni are based - never exact street
                 addresses, contact numbers, or Akan email addresses. Detailed records are available
                 to verified alumni and OARCC administrators.
               </p>

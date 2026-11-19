@@ -11,13 +11,13 @@ import type { AdminDashboardStats } from "@/lib/admin.types";
 export const Route = createFileRoute("/admin/")({
   head: () => ({
     meta: [
-      { title: "Admin Dashboard — AlumTrack MSU Main Campus" },
+      { title: "Admin Dashboard - AlumTrack MSU Main Campus" },
       {
         name: "description",
         content:
           "OARCC administrator dashboard: manage the alumni directory, post announcements and jobs, generate reports, and monitor system usage.",
       },
-      { property: "og:title", content: "Admin Dashboard — AlumTrack" },
+      { property: "og:title", content: "Admin Dashboard - AlumTrack" },
       {
         property: "og:description",
         content: "Manage alumni records, posts, reports, and admin accounts.",
@@ -68,6 +68,11 @@ function formatNumber(value: number): string {
   return new Intl.NumberFormat("en-PH").format(value);
 }
 
+/** Older stored activity strings used em-dashes; display them with clean short dashes. */
+function cleanActivityText(value: string): string {
+  return value.replace(/\u2014/g, "-");
+}
+
 function AdminDashboard() {
   const data = Route.useLoaderData();
   const [showHistory, setShowHistory] = useState(false);
@@ -79,7 +84,7 @@ function AdminDashboard() {
     return (
       <AdminShell
         title="Admin Dashboard"
-        subtitle="Office of Alumni Relations and Career Center — control center."
+        subtitle="Office of Alumni Relations and Career Center - control center."
       >
         <div className="rounded-lg border-t-4 border-brand bg-card p-6">
           <h2 className="text-sm font-bold text-foreground">Administrator sign-in required</h2>
@@ -104,7 +109,7 @@ function AdminDashboard() {
     );
     return merged.map((year) => ({ label: year }));
   }, [activity]);
-  // Chronological Jan-Dec (preserve order — no alphabetical sort).
+  // Chronological Jan-Dec (preserve order - no alphabetical sort).
   const monthOptions = useMemo(() => MONTH_NAMES.map((name) => ({ label: name })), []);
   // filterMonth stores the typed/picked month NAME so typed text stays visible
   // (e.g. "Nov") instead of disappearing on partial matches.
@@ -130,7 +135,7 @@ function AdminDashboard() {
   return (
     <AdminShell
       title="Admin Dashboard"
-      subtitle="Office of Alumni Relations and Career Center — control center."
+      subtitle="Office of Alumni Relations and Career Center - control center."
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold text-muted-foreground">
@@ -173,9 +178,11 @@ function AdminDashboard() {
           <ul className="mt-3 max-h-[350px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 divide-y divide-border">
             {previewActivity.map((item) => (
               <li key={item.id} className="min-h-[48px] py-2.5">
-                <p className="text-sm leading-snug text-foreground">{item.text}</p>
+                <p className="text-sm leading-snug text-foreground">
+                  {cleanActivityText(item.text)}
+                </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {item.actorName} · {item.time}
+                  {cleanActivityText(item.actorName)} · {item.time}
                 </p>
               </li>
             ))}
@@ -258,10 +265,10 @@ function AdminDashboard() {
                       <td className="px-4 py-2.5 text-xs text-muted-foreground">{item.date}</td>
                       <td className="px-4 py-2.5 text-xs text-muted-foreground">{item.clock}</td>
                       <td className="px-4 py-2.5 text-xs font-semibold text-foreground">
-                        {item.actorName}
+                        {cleanActivityText(item.actorName)}
                       </td>
                       <td className="px-4 py-2.5 text-xs leading-snug text-foreground">
-                        {item.text}
+                        {cleanActivityText(item.text)}
                       </td>
                     </tr>
                   ))}

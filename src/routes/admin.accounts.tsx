@@ -19,13 +19,13 @@ import type { AdminAccount, AdminAccountRole } from "@/lib/admin.types";
 export const Route = createFileRoute("/admin/accounts")({
   head: () => ({
     meta: [
-      { title: "Manage Admin Accounts — AlumTrack Admin" },
+      { title: "Manage Admin Accounts - AlumTrack Admin" },
       {
         name: "description",
         content:
           "Add new administrators, assign admin roles, and deactivate or delete admin accounts of the OARCC.",
       },
-      { property: "og:title", content: "Manage Admin Accounts — AlumTrack Admin" },
+      { property: "og:title", content: "Manage Admin Accounts - AlumTrack Admin" },
       {
         property: "og:description",
         content: "Add admins, assign roles, deactivate or delete accounts.",
@@ -47,7 +47,7 @@ const ROLES: Array<{ value: AdminAccountRole; name: string; description: string 
     value: "standard",
     name: "Standard Admin",
     description:
-      "Full alumni management — import, export, verify, add, and edit records — but no access to Admin Accounts.",
+      "Full alumni management - import, export, verify, add, and edit records - but no access to Admin Accounts.",
   },
   {
     value: "viewer",
@@ -267,7 +267,7 @@ function AdminAccounts() {
   return (
     <AdminShell
       title="Manage Admin Accounts"
-      subtitle="Head Admin only — add admins, assign tiers, and deactivate or delete accounts."
+      subtitle="Head Admin only - add admins, assign tiers, and deactivate or delete accounts."
       action={
         <button
           onClick={() => {
@@ -364,7 +364,7 @@ function AdminAccounts() {
                 <Clock className="size-3 text-brand" /> Last login: {account.lastLogin}
               </div>
               <div className="flex items-center gap-1.5">
-                <UserRound className="size-3 text-brand" /> Created: {account.createdAt || "—"}
+                <UserRound className="size-3 text-brand" /> Created: {account.createdAt || "-"}
               </div>
             </dl>
 

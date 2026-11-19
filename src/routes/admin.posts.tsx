@@ -37,13 +37,13 @@ import {
 export const Route = createFileRoute("/admin/posts")({
   head: () => ({
     meta: [
-      { title: "Engagement Network — AlumTrack Admin" },
+      { title: "Engagement Network - AlumTrack Admin" },
       {
         name: "description",
         content:
           "Post announcements, news and events, and job offerings for MSU Main Campus alumni from the OARCC admin console.",
       },
-      { property: "og:title", content: "Engagement Network — AlumTrack Admin" },
+      { property: "og:title", content: "Engagement Network - AlumTrack Admin" },
       {
         property: "og:description",
         content: "Publish announcements, news & events, and job offerings.",
@@ -433,7 +433,7 @@ function AdminPosts() {
               </div>
               <p className="mt-2 text-sm font-semibold leading-snug text-foreground">{post.title}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Posted {post.date || "—"} · by {post.author}
+                Posted {post.date || "-"} · by {post.author}
               </p>
             </div>
 
@@ -500,7 +500,7 @@ function AdminPosts() {
                 {POST_TYPE_LABELS[viewing.type]}
               </span>
               <span className="rounded-sm bg-muted px-2 py-0.5 text-muted-foreground">
-                Posted {viewing.date || "—"}
+                Posted {viewing.date || "-"}
               </span>
               <span className="rounded-sm bg-muted px-2 py-0.5 text-muted-foreground">
                 {viewing.status}
@@ -808,7 +808,7 @@ function AdminPosts() {
                   {uploading ? "Uploading…" : "Add photos"}
                 </span>
                 <span className="text-[11px] text-muted-foreground">
-                  JPG, PNG, or WebP — compressed automatically, up to {MAX_IMAGES} images.
+                  JPG, PNG, or WebP - compressed automatically, up to {MAX_IMAGES} images.
                 </span>
                 <input
                   ref={fileInputRef}

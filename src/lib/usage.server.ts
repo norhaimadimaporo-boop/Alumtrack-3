@@ -29,13 +29,13 @@ type LogRow = RowDataPacket & {
 /**
  * Live system counters from `sessions` + `users`/`alumni_profiles`:
  * active sessions (unexpired, distinct users), logins today (last_login_at,
- * counted by Asia/Manila calendar day — `last_login_at` is stored as UTC),
+ * counted by Asia/Manila calendar day - `last_login_at` is stored as UTC),
  * distinct regions with an active session, and overseas active sessions.
  *
  * Access control: detailed per-user login/logout rows are Head Admin only.
  * Standard/Viewer admins still get the aggregate counters, but
  * `canViewAccessLogs` is false and `accessLogs` is never queried or
- * returned for them — the rows are filtered on the server, not just hidden
+ * returned for them - the rows are filtered on the server, not just hidden
  * in the UI. Standard history remains available via Recent Admin Activity
  * (`getAdminDashboard`, viewer+).
  */
@@ -103,7 +103,7 @@ export async function getSystemUsage(): Promise<SystemUsageResult> {
         const where =
           [row.current_city?.trim() || row.address_city?.trim(), row.current_region?.trim() || row.address_province?.trim()]
             .filter(Boolean)
-            .join(", ") || "—";
+            .join(", ") || "-";
         return {
           id: row.token_hash.slice(0, 16),
           user: displayName,

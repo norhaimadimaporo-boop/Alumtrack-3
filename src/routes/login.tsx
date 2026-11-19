@@ -8,13 +8,13 @@ import { setSession } from "@/lib/session";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Alumni Login — AlumTrack MSU Main Campus" },
+      { title: "Alumni Login - AlumTrack MSU Main Campus" },
       {
         name: "description",
         content:
           "Sign in to AlumTrack to update your alumni profile, employment record, and job location.",
       },
-      { property: "og:title", content: "Alumni Login — AlumTrack" },
+      { property: "og:title", content: "Alumni Login - AlumTrack" },
       {
         property: "og:description",
         content: "Sign in to your MSU Main Campus alumni account.",

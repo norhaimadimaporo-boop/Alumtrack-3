@@ -176,7 +176,7 @@ export function RealAlumniMap({
             <MapSkeleton heightClassName={canvasHeight} />
           )}
 
-          {/* Floating view presets — top-left of the embedded map */}
+          {/* Floating view presets - top-left of the embedded map */}
           <div
             role="group"
             aria-label="Map view"

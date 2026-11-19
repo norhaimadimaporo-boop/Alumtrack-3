@@ -12,13 +12,13 @@ import { getRecycleBinData, restoreRecycle } from "@/lib/recycle.functions";
 export const Route = createFileRoute("/admin/usage")({
   head: () => ({
     meta: [
-      { title: "System Monitoring & Login GIS Map — AlumTrack Admin" },
+      { title: "System Monitoring & Login GIS Map - AlumTrack Admin" },
       {
         name: "description",
         content:
           "Track system access logs by geographic location, monitor active alumni sessions per region, and export tracer reports by batch year, course, and region.",
       },
-      { property: "og:title", content: "System Monitoring & Login GIS Map — AlumTrack Admin" },
+      { property: "og:title", content: "System Monitoring & Login GIS Map - AlumTrack Admin" },
       {
         property: "og:description",
         content: "Interactive login and activity GIS map with exportable tracer reports.",

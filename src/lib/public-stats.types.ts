@@ -1,9 +1,9 @@
 /**
  * Live, database-backed public statistics for the home page ("/") and the
  * alumni tracer summary. Every number rendered from this type comes from a
- * single `getPublicStats()` query against the active MySQL database — local
+ * single `getPublicStats()` query against the active MySQL database - local
  * (`.env`) in development, Aiven (`.env.production` / Vercel env) in
- * production — so the same page shows correct figures regardless of which
+ * production - so the same page shows correct figures regardless of which
  * database the deployment is pointed at.
  */
 
@@ -24,7 +24,7 @@ export type PublicStats = {
   /**
    * Distinct effective batch years. A profile's effective batch follows the
    * priority Baccalaureate → Graduate → Post Graduate graduation year in
-   * `alumni_education` (stored `batch_year` only as a last resort) —
+   * `alumni_education` (stored `batch_year` only as a last resort) -
    * matching Search, Directory, and Reports.
    */
   batchYears: number;

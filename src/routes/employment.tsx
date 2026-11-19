@@ -15,13 +15,13 @@ import type { EmploymentRecordInput, WorkspaceEmployment } from "@/lib/profile.t
 export const Route = createFileRoute("/employment")({
   head: () => ({
     meta: [
-      { title: "Employment History — AlumTrack MSU Main Campus" },
+      { title: "Employment History - AlumTrack MSU Main Campus" },
       {
         name: "description",
         content:
           "Add and edit your jobs, company details, and work location as an MSU Main Campus alumnus. Past jobs stay on record as previous.",
       },
-      { property: "og:title", content: "Employment History — AlumTrack" },
+      { property: "og:title", content: "Employment History - AlumTrack" },
       {
         property: "og:description",
         content: "Manage your current and previous jobs, sector, and work location.",

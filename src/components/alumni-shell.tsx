@@ -81,7 +81,7 @@ export function AlumniSidebar({
     | undefined;
 }) {
   const displayName = user?.name || "Alumni";
-  const displayBatch = user?.batch && user.batch !== "" ? user.batch : "—";
+  const displayBatch = user?.batch && user.batch !== "" ? user.batch : "-";
   const displayInitials = user?.initials || "AL";
 
   return (

@@ -4,7 +4,7 @@ import { Facebook, Mail, MapPin, Phone, Clock, Globe } from "lucide-react";
 export const Route = createFileRoute("/oarcc")({
   head: () => ({
     meta: [
-      { title: "OARCC — Office of Alumni Relations and Career Center | AlumTrack" },
+      { title: "OARCC - Office of Alumni Relations and Career Center | AlumTrack" },
       {
         name: "description",
         content:
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/oarcc")({
       {
         property: "og:description",
         content:
-          "The office behind AlumTrack — serving MSU Marawi alumni since 1972 under the Office of the President.",
+          "The office behind AlumTrack - serving MSU Marawi alumni since 1972 under the Office of the President.",
       },
     ],
   }),
@@ -71,7 +71,7 @@ function OarccPage() {
             Office of Alumni Relations and Career Center
           </h1>
           <p className="mt-4 text-sm text-brand-foreground/80">
-            Mindanao State University — Main Campus, Marawi City
+            Mindanao State University - Main Campus, Marawi City
           </p>
         </div>
       </section>
@@ -82,7 +82,7 @@ function OarccPage() {
             The Office of Alumni Relations (OAR) at Mindanao State University, Marawi City was
             created in 1972 under the supervision of the Office of the President. As conceived, this
             office functions to enhance mutuality of interests and concerns between the University
-            and her pride—her alumni, as stipulated in Special Order #119-P, series 1975 and in
+            and her pride - her alumni, as stipulated in Special Order #119-P, series 1975 and in
             Section 9, Article 3 of the 1978 MSU System Reorganization Plan.
           </p>
         </Block>
@@ -145,8 +145,8 @@ function OarccPage() {
         <Block title="Function of the Office">
           <p>
             This office functions to enhance mutuality of interests and concerns between the
-            University and her pride—alumni, as stipulated in Special Order #119-P, series 1975 and
-            Section 9, Article 3 of the MSU System Reorganization.
+            University and her pride - alumni, as stipulated in Special Order #119-P, series 1975
+            and Section 9, Article 3 of the MSU System Reorganization.
           </p>
         </Block>
 

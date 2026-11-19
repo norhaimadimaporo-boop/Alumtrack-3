@@ -8,13 +8,13 @@ import { postExcerpt, type PostRecord } from "@/lib/posts.types";
 export const Route = createFileRoute("/news")({
   head: () => ({
     meta: [
-      { title: "Latest Posts — AlumTrack MSU Main Campus" },
+      { title: "Latest Posts - AlumTrack MSU Main Campus" },
       {
         name: "description",
         content:
           "News, events, and job postings from the MSU Office of Alumni Relations and Career Center.",
       },
-      { property: "og:title", content: "Latest Posts — AlumTrack" },
+      { property: "og:title", content: "Latest Posts - AlumTrack" },
       {
         property: "og:description",
         content: "Latest announcements, alumni events, and job postings from OARCC.",

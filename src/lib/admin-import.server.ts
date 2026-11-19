@@ -83,7 +83,7 @@ export async function listImportHistory(): Promise<AdminImportHistoryResult> {
           totalRows: Number(row.total_rows ?? 0),
           createdRows: Number(row.created_rows ?? 0),
           updatedRows: Number(row.updated_rows ?? 0),
-          importedAt: valid ? `${manilaDate(date)} · ${manilaClock(date)}` : "—",
+          importedAt: valid ? `${manilaDate(date)} · ${manilaClock(date)}` : "-",
           stamp: valid ? date.toISOString() : "",
         };
       }),
@@ -672,7 +672,7 @@ async function importRow(
   const displayName = clamp(fullName(firstName, middleName, lastName), 150);
   const email = resolveEmail(get("email"), firstName, lastName, usedEmails);
 
-  // Phase 1 — personal details.
+  // Phase 1 - personal details.
   const birthIso = parseCsvDate(get("birthDate"));
   const birthDate = birthIso ?? "1900-01-01";
   const ageValue = birthIso ? Number(calculateAge(birthIso)) : Number.NaN;
@@ -681,7 +681,7 @@ async function importRow(
   const birthPlace = clamp(get("birthPlace") || "Not provided", 200);
   const religion = clamp(get("religion") || "Not provided", 120);
 
-  // Phase 2 — address & contact.
+  // Phase 2 - address & contact.
   const presentRaw = get("presentAddress");
   const homeRaw = get("homeAddress");
   const present = splitAddress(presentRaw);
@@ -704,7 +704,7 @@ async function importRow(
   const latitude = normalizeCoordinate(get("latitude"), 90) ?? location?.lat ?? null;
   const longitude = normalizeCoordinate(get("longitude"), 180) ?? location?.lng ?? null;
 
-  // Phase 3 — educational background.
+  // Phase 3 - educational background.
   const degree = clamp(get("degree"), 200);
   const college = clamp(get("college"), 200);
   const campus = clamp(get("campus"), 200);
@@ -715,7 +715,7 @@ async function importRow(
     degree || college || campus || msuId || graduatedOn || get("degreeLevel").trim(),
   );
 
-  // Phase 4 — employment.
+  // Phase 4 - employment.
   const position = clamp(get("position"), 200);
   const employer = clamp(get("employer"), 200);
   const workplaceAddress = clamp(get("workplaceAddress"), 255);
@@ -743,7 +743,7 @@ async function importRow(
       : "unemployed";
   const wantsEmployment = employmentStatus === "employed" || hasEmploymentData;
 
-  // Phase 5 — organization affiliation.
+  // Phase 5 - organization affiliation.
   const orgName = clamp(get("orgName"), 200);
   const orgPosition = clamp(get("orgPosition"), 200);
   const orgAddress = clamp(get("orgAddress"), 255);
@@ -1015,7 +1015,7 @@ export async function importAlumniCsv(
         [
           admin.id,
           admin.fullName ?? admin.email,
-          `Imported CSV — ${created} new, ${updated} updated`,
+          `Imported CSV - ${created} new, ${updated} updated`,
         ],
       );
       try {

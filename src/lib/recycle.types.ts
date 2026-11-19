@@ -13,7 +13,7 @@ export type RecycleItem = {
 
 export type RecycleBinData = {
   ok: true;
-  /** True only for Head Admins — server-enforced. */
+  /** True only for Head Admins - server-enforced. */
   canViewRecycleBin: boolean;
   items: RecycleItem[];
 };

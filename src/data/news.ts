@@ -52,7 +52,7 @@ export const POSTS: Post[] = [
   },
   {
     id: 4,
-    title: "Now hiring: IT Support Officers — Lanao del Sur Provincial Government",
+    title: "Now hiring: IT Support Officers - Lanao del Sur Provincial Government",
     category: "Job",
     date: "July 5, 2026",
     excerpt:
@@ -82,7 +82,7 @@ export const POSTS: Post[] = [
   },
   {
     id: 7,
-    title: "Now hiring: Junior Software Developers — Davao tech hub",
+    title: "Now hiring: Junior Software Developers - Davao tech hub",
     category: "Job",
     date: "May 30, 2026",
     excerpt:
@@ -99,7 +99,7 @@ export const POSTS: Post[] = [
 const PHOTO_ALIASES: Record<string, string> = {
   "MSU Grand Alumni Homecoming 2026": photoHomecoming,
   "Alumni data validation drive extended until September": photoLaunch,
-  "Junior Software Developer — Accenture Philippines": photoGovJob,
+  "Junior Software Developer - Accenture Philippines": photoGovJob,
   "OARCC office hours during the semestral break": photoOfficeHours,
 };
 

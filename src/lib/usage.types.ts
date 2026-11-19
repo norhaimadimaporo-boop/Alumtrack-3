@@ -20,7 +20,7 @@ export type SystemUsageData = {
   loginsToday: number;
   regionsWithActivity: number;
   overseasSessions: number;
-  /** True only for Head Admins — detailed login/logout rows are Head-only. */
+  /** True only for Head Admins - detailed login/logout rows are Head-only. */
   canViewAccessLogs: boolean;
   /** Recent access logs, newest first (capped on the server). Head Admin only. */
   accessLogs: AccessLogEntry[];

@@ -19,13 +19,13 @@ import type { ReportRecord } from "@/lib/reports.types";
 export const Route = createFileRoute("/admin/reports")({
   head: () => ({
     meta: [
-      { title: "Reports & Graduate Statistics — AlumTrack Admin" },
+      { title: "Reports & Graduate Statistics - AlumTrack Admin" },
       {
         name: "description",
         content:
           "Tracer study analytics with GIS filters: employment rate by college, time to first employment, regional placement, and exportable employment distribution reports.",
       },
-      { property: "og:title", content: "Reports & Graduate Statistics — AlumTrack Admin" },
+      { property: "og:title", content: "Reports & Graduate Statistics - AlumTrack Admin" },
       {
         property: "og:description",
         content: "GIS filtering, tracer analytics charts, and exportable graduate reports.",
@@ -71,7 +71,7 @@ function sameValue(value: string, filter: string) {
 
 function uniqueSorted(values: string[]) {
   return [
-    ...new Set(values.map((v) => v.trim()).filter((v) => v && v !== "—" && v !== "Not provided")),
+    ...new Set(values.map((v) => v.trim()).filter((v) => v && v !== "-" && v !== "Not provided")),
   ].sort((a, b) => a.localeCompare(b));
 }
 
@@ -417,7 +417,7 @@ function AdminReports() {
                     <td className="px-4 py-2.5 text-xs text-muted-foreground">{r.course}</td>
                     <td className="px-4 py-2.5 text-xs text-muted-foreground">{r.batch}</td>
                     <td className="px-4 py-2.5 text-xs text-muted-foreground">
-                      {[r.city !== "—" ? r.city : "", r.province, r.country]
+                      {[r.city !== "-" ? r.city : "", r.province, r.country]
                         .filter(Boolean)
                         .join(", ")}
                     </td>
@@ -440,7 +440,7 @@ function AdminReports() {
         <Panel title="1. No. of graduates per year (masteral & undergrad)" icon>
           <ResponsiveColumnChart items={perYear} />
         </Panel>
-        <Panel title="2. Tribal percentage — Muslim / Non-Muslim graduates" icon>
+        <Panel title="2. Tribal percentage - Muslim / Non-Muslim graduates" icon>
           <DonutChart items={tribalSplit} />
         </Panel>
         <Panel title="3. No. of graduates by province" icon>

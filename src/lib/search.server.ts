@@ -136,7 +136,7 @@ export async function listPublicAlumni(): Promise<PublicAlumniResult> {
       const isSelf = viewerId !== null && row.user_id === viewerId;
       const bypass = isAdmin || isSelf;
       // Job Title / Company gated by "Current workplace" (plus the public
-      // switch for everyone — public switches still apply). Admins and
+      // switch for everyone - public switches still apply). Admins and
       // owners bypass every gate for full details.
       const showJob = bypass
         ? true
@@ -148,7 +148,7 @@ export async function listPublicAlumni(): Promise<PublicAlumniResult> {
       const showDetailed = bypass ? true : signedIn && enabled(row.directory_show_region, true);
       const showGeneralRegion = bypass ? true : !signedIn || showDetailed;
       // Contact & links: show only the fields whose switches are ON.
-      // Email has no directory switch — `publicShowEmail` gates it for everyone.
+      // Email has no directory switch - `publicShowEmail` gates it for everyone.
       const showMobile = bypass
         ? true
         : enabled(row.public_show_contact, false) &&
@@ -156,7 +156,7 @@ export async function listPublicAlumni(): Promise<PublicAlumniResult> {
       const showEmail = bypass ? true : enabled(row.public_show_email, false);
       const showFacebook = bypass ? true : signedIn && enabled(row.directory_show_facebook, false);
 
-      // Location label from the PRESENT address only — never the educational
+      // Location label from the PRESENT address only - never the educational
       // Region (BARMM): overseas = "City, Country"; PH = "City, Province,
       // Philippines".
       const presentLabel = formatLocationLabel({
@@ -192,7 +192,7 @@ export async function listPublicAlumni(): Promise<PublicAlumniResult> {
         lastName: row.last_name,
         course: row.course?.trim() || "Course not provided",
         college: row.college?.trim() || "College not provided",
-        batch: batchYear ? String(batchYear) : "—",
+        batch: batchYear ? String(batchYear) : "-",
         job: showJob
           ? row.current_position?.trim() || row.employment_position?.trim() || "Not provided"
           : null,

@@ -5,10 +5,10 @@
  * Privacy gates (see `search.server.ts`):
  * - `job` / `company`: null unless `publicShowEmployment` AND (for signed-in
  *   viewers) `directoryShowWorkplace` are ON ("Current workplace").
- * - `region`: general region visible to this viewer — always for guests,
+ * - `region`: general region visible to this viewer - always for guests,
  *   only when `directoryShowRegion` is ON for signed-in viewers. Null → the
  *   card renders "Region is private".
- * - `location`: detailed "City, Province, Country" — only for signed-in
+ * - `location`: detailed "City, Province, Country" - only for signed-in
  *   viewers with `directoryShowRegion` ON. Null → the card falls back to
  *   `region` (general), then to "Region is private".
  * - `mobile` / `facebook` / `emails`: only the contacts whose switches are ON

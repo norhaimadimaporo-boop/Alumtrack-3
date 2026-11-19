@@ -38,7 +38,7 @@ export function isPhilippinesCountry(country: string): boolean {
  * Barangay names (A–Z) for the given city, optionally disambiguated by
  * province. Returns an empty array when the city is unknown or ambiguous
  * (e.g. seven municipalities named "San Miguel" and no province to pick the
- * right one) — callers should then keep the field as free text.
+ * right one) - callers should then keep the field as free text.
  */
 export function getBarangayNames(cityName: string, provinceName?: string): string[] {
   const city = (cityName ?? "").trim();
@@ -65,7 +65,7 @@ export function getBarangayNames(cityName: string, provinceName?: string): strin
     if (provinceMatched.length > 0) candidates = provinceMatched;
   }
 
-  // Ambiguous city with no province to disambiguate — don't show wrong data.
+  // Ambiguous city with no province to disambiguate - don't show wrong data.
   if (candidates.length !== 1) return [];
 
   return getBarangaysByMunicipality(candidates[0].psgcCode)
