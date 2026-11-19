@@ -157,6 +157,9 @@ const PH_CITIES: Array<[string, string, string, number, number]> = [
   ["Makati City", "Metro Manila", "NCR - Metro Manila", 14.5547, 121.0244],
   ["Taguig City", "Metro Manila", "NCR - Metro Manila", 14.5176, 121.0509],
   ["Cebu City", "Cebu", "Region VII - Central Visayas", 10.3157, 123.8854],
+  ["Pasig City", "Metro Manila", "NCR - Metro Manila", 14.5764, 121.0851],
+  ["Iloilo City", "Iloilo", "Region VI - Western Visayas", 10.7202, 122.5621],
+  ["Baguio City", "Benguet", "CAR - Cordillera", 16.4023, 120.596],
 ];
 
 /** Province / region centroids: [province, region, lat, lng]. */
@@ -266,7 +269,7 @@ const FOREIGN_CITIES: Array<[string, string, string, number, number]> = [
   ["Muscat", "Muscat", "Oman", 23.588, 58.3829],
   ["Kuala Lumpur", "Federal Territory", "Malaysia", 3.139, 101.6869],
   ["Singapore", "Central Region", "Singapore", 1.3521, 103.8198],
-  ["Jakarta", "Jakarta", "Indonesia", -6.2088, 106.8456],
+  ["Jakarta", "Jakarta", "Indonesia", -6.2615, 106.8106],
   ["Bangkok", "Bangkok", "Thailand", 13.7563, 100.5018],
   ["Tokyo", "Tokyo", "Japan", 35.6762, 139.6503],
   ["Osaka", "Osaka", "Japan", 34.6937, 135.5023],
@@ -293,7 +296,7 @@ const FOREIGN_CITIES: Array<[string, string, string, number, number]> = [
   ["Stockholm", "Stockholm", "Sweden", 59.3293, 18.0686],
   ["Copenhagen", "Capital Region", "Denmark", 55.6761, 12.5683],
   ["Dublin", "Leinster", "Ireland", 53.3498, -6.2603],
-  ["Auckland", "Auckland", "New Zealand", -36.8485, 174.7633],
+  ["Auckland", "Auckland", "New Zealand", -36.8509, 174.7645],
   ["Wellington", "Wellington", "New Zealand", -41.2865, 174.7762],
   ["Christchurch", "Canterbury", "New Zealand", -43.5321, 172.6362],
   // China
@@ -449,6 +452,21 @@ const FOREIGN_CITIES: Array<[string, string, string, number, number]> = [
   ["Perth", "Western Australia", "Australia", -31.9505, 115.8605],
   ["Adelaide", "South Australia", "Australia", -34.9285, 138.6007],
   ["Canberra", "Australian Capital Territory", "Australia", -35.2809, 149.13],
+  // Cities newly present in imported alumni records (previously dropped when
+  // their municipality was not in the gazetteer).
+  ["Shinjuku", "Tokyo", "Japan", 35.6762, 139.6503],
+  ["Osaka", "Osaka", "Japan", 34.6937, 135.5023],
+  ["Nagoya", "Aichi", "Japan", 35.1815, 136.9066],
+  ["Incheon", "Incheon", "South Korea", 37.4563, 126.7052],
+  ["Petaling Jaya", "Selangor", "Malaysia", 3.1073, 101.6067],
+  ["South Jakarta", "Jakarta", "Indonesia", -6.2615, 106.8106],
+  ["Bandung", "West Java", "Indonesia", -6.9175, 107.6191],
+  ["Tehran", "Tehran Province", "Iran", 35.6892, 51.389],
+  ["Isfahan", "Isfahan Province", "Iran", 32.6539, 51.666],
+  ["Al Rayyan", "Al Rayyan", "Qatar", 25.2919, 51.4244],
+  ["Baghdad", "Baghdad Governorate", "Iraq", 33.3152, 44.3661],
+  ["Erbil", "Erbil Governorate", "Iraq", 36.1911, 44.0092],
+  ["New York City", "New York", "United States", 40.7128, -74.006],
 ];
 
 /** Country centroids, used when only a country name is provided. */
@@ -510,6 +528,8 @@ const FOREIGN_COUNTRIES: Array<[string, string, number, number]> = [
   ["Romania", "Romania", 45.9432, 24.9668],
   ["Ukraine", "Ukraine", 48.3794, 31.1656],
   ["Finland", "Finland", 61.9241, 25.7482],
+  ["Iran", "Iran", 32.4279, 53.688],
+  ["Iraq", "Iraq", 33.2232, 43.6793],
 ];
 
 const PH_REGION_CENTERS: Array<[string, number, number]> = [
@@ -807,6 +827,24 @@ export function isPhilippinesCountryName(country: string | null | undefined): bo
   return (
     key === "philippines" || key === "ph" || key === "phil" || key === "republic of the philippines"
   );
+}
+
+/**
+ * Last-resort coordinates for any record with a declared country but no
+ * matching city. Philippine (or blank) addresses use the PH centroid; other
+ * countries use their own centroid so the pin lands in the right country.
+ */
+export function countryCentroid(
+  country: string | null | undefined,
+): { lat: number; lng: number; country: string } | null {
+  const value = (country ?? "").trim();
+  if (!value || isPhilippinesCountryName(value)) {
+    return { lat: PH_FALLBACK.lat, lng: PH_FALLBACK.lng, country: "Philippines" };
+  }
+  const place =
+    FOREIGN_COUNTRY_INDEX.get(normalize(value)) ??
+    FOREIGN_COUNTRY_INDEX.get(canonicalCountryKey(value));
+  return place ? { lat: place.lat, lng: place.lng, country: place.country } : null;
 }
 
 function isPhilippineCoords(lat: number, lng: number): boolean {

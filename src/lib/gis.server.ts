@@ -4,7 +4,12 @@ import type { AlumniMapPin } from "../data/gis";
 import { getSessionUser } from "./auth.server";
 import { getPool } from "./db.server";
 import { ensureSoftDeleteColumns } from "./soft-delete.server";
-import { formatLocationLabel, resolveLocation, resolvePresentAddress } from "./geo";
+import {
+  countryCentroid,
+  formatLocationLabel,
+  resolveLocation,
+  resolvePresentAddress,
+} from "./geo";
 import type { ProfileEmploymentStatus } from "./admin.types";
 
 type MapRow = RowDataPacket & {
@@ -202,9 +207,20 @@ export async function listAlumniMapPins(
           pinProvince = pinProvince || resolved.region;
         }
       }
+      // Final safety net: a valid Present Country still plots at that country's
+      // centroid instead of silently dropping the alumnus from the map.
+      let countryFallback: { lat: number; lng: number; country: string } | null = null;
+      if (lat === null || lng === null) {
+        countryFallback = countryCentroid(presentCountry || declaredCountry);
+        if (countryFallback) {
+          lat = countryFallback.lat;
+          lng = countryFallback.lng;
+        }
+      }
       if (lat === null || lng === null) continue;
 
-      const pinCountry = present.country || presentLocation?.country || "Philippines";
+      const pinCountry =
+        present.country || presentLocation?.country || countryFallback?.country || "Philippines";
       const employed = row.employment_status === "employed";
       const position = row.current_position?.trim();
       // Batch priority: Baccalaureate → Graduate → Post Graduate → stored
