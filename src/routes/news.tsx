@@ -73,7 +73,7 @@ function NewsPage() {
   const heading = featuredPosts.length === 1 ? "Latest Post" : "Latest Posts";
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
+    <div className="mx-auto w-full max-w-[1720px] px-3 py-10 sm:px-5 lg:px-6 xl:px-8">
       <div className="border-l-4 border-brand pl-4">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">{heading}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -108,9 +108,7 @@ function NewsPage() {
             <h2 className="mt-3 text-2xl font-bold leading-snug text-foreground">
               {featured.title}
             </h2>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              {featured.excerpt}
-            </p>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{featured.excerpt}</p>
             <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-brand">
               Read more <ArrowRight className="size-4" />
             </span>
@@ -147,12 +145,7 @@ function NewsPage() {
             className="group flex flex-col overflow-hidden rounded-sm border border-border bg-card text-left transition-colors hover:border-brand"
           >
             {post.photo ? (
-              <img
-                src={post.photo}
-                alt=""
-                loading="lazy"
-                className="h-32 w-full object-cover"
-              />
+              <img src={post.photo} alt="" loading="lazy" className="h-32 w-full object-cover" />
             ) : (
               <div className="h-32 bg-secondary" />
             )}
@@ -204,9 +197,7 @@ function NewsPage() {
               </div>
             )}
             <p className="mt-4 text-xs text-muted-foreground">{open.date}</p>
-            <h2 className="mt-1 text-2xl font-bold leading-snug text-foreground">
-              {open.title}
-            </h2>
+            <h2 className="mt-1 text-2xl font-bold leading-snug text-foreground">{open.title}</h2>
             <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
               {open.body}
             </p>

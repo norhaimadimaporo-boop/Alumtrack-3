@@ -51,7 +51,7 @@ export function AdminShell({
   );
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl items-start gap-8 overflow-x-clip px-4 pb-4 pt-6 md:grid-cols-[230px_1fr]">
+    <div className="mx-auto grid w-full max-w-[1720px] items-start gap-5 overflow-x-clip px-3 pb-4 pt-6 sm:px-5 md:grid-cols-[240px_minmax(0,1fr)] lg:gap-6 lg:px-6 xl:grid-cols-[256px_minmax(0,1fr)] xl:px-8">
       <aside className="md:sticky md:top-[73px] md:self-start">
         <div className="rounded-2xl border border-white/15 bg-[#5A0012]/85 p-4 text-white shadow-sm backdrop-blur-sm">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand">

@@ -48,7 +48,7 @@ export function AlumniShell({
 
   return (
     <>
-      <div className="mx-auto flex w-full max-w-7xl flex-col items-start gap-6 px-4 pt-6 pb-12 md:flex-row">
+      <div className="mx-auto flex w-full max-w-[1720px] flex-col items-start gap-5 px-3 pt-6 pb-12 sm:px-5 md:flex-row lg:gap-6 lg:px-6 xl:px-8">
         <AlumniSidebar user={user} />
 
         <section className="w-full min-w-0 max-w-full flex-1">
@@ -85,7 +85,7 @@ export function AlumniSidebar({
   const displayInitials = user?.initials || "AL";
 
   return (
-    <aside className="w-full shrink-0 md:sticky md:top-[73px] md:w-64 md:self-start">
+    <aside className="w-full shrink-0 md:sticky md:top-[73px] md:w-60 md:self-start xl:w-64">
       <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-[#5A0012]/85 p-3 text-white shadow-sm backdrop-blur-sm">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-highlight text-sm font-bold text-highlight-foreground">
           {user?.userId ? (

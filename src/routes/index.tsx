@@ -108,7 +108,7 @@ function Index() {
           className="absolute inset-0 size-full object-cover object-center"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#5A0012]/70 via-[#80001B]/40 to-transparent" />
-        <div className="relative mx-auto max-w-6xl px-4 py-24 md:py-32">
+        <div className="relative mx-auto max-w-[1720px] px-3 py-24 sm:px-5 md:py-32 lg:px-6 xl:px-8">
           <span className="inline-block bg-highlight px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-highlight-foreground">
             Office of Alumni Relations and Career Center
           </span>
@@ -139,7 +139,7 @@ function Index() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-20">
+      <section className="mx-auto max-w-[1720px] px-3 py-20 sm:px-5 lg:px-6 xl:px-8">
         <h2 className="border-l-4 border-brand pl-4 text-2xl font-bold text-foreground">
           What you can do here
         </h2>
@@ -182,7 +182,7 @@ function Index() {
       </section>
 
       <section className="border-y border-border bg-secondary/60">
-        <div className="mx-auto max-w-6xl px-4 py-20">
+        <div className="mx-auto max-w-[1720px] px-3 py-20 sm:px-5 lg:px-6 xl:px-8">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <h2 className="border-l-4 border-brand pl-4 text-2xl font-bold text-foreground">
               Latest from OARCC
@@ -215,7 +215,7 @@ function Index() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-6xl gap-8 px-4 py-20 md:grid-cols-[1.2fr_1fr] md:items-center">
+      <section className="mx-auto grid max-w-[1720px] gap-8 px-3 py-20 sm:px-5 lg:px-6 xl:px-8 md:grid-cols-[1.2fr_1fr] md:items-center">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">
             The office behind AlumTrack

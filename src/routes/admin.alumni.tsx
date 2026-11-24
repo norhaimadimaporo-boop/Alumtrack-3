@@ -926,14 +926,14 @@ function AdminAlumni() {
         {rows.length} record{rows.length === 1 ? "" : "s"} found
       </p>
 
-      <div className="mt-3 block max-h-[580px] w-full max-w-full overflow-y-auto overflow-x-auto rounded-lg border border-border bg-card">
-        <table className="w-full min-w-[720px] table-fixed text-left text-sm">
+      <div className="mt-3 block max-h-[580px] w-full max-w-full overflow-x-auto overflow-y-auto rounded-lg border border-border bg-card md:overflow-x-hidden">
+        <table className="w-full table-fixed text-left text-sm">
           <colgroup>
-            <col className="w-[200px]" />
-            <col className="w-[160px]" />
-            <col className="w-[180px]" />
-            <col className="w-[120px]" />
-            <col className="w-[220px]" />
+            <col className="w-[28%]" />
+            <col className="w-[22%]" />
+            <col className="w-[24%]" />
+            <col className="w-[13%]" />
+            <col className="w-[13%]" />
           </colgroup>
           <thead className="border-b border-border bg-muted/60">
             <tr className="text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -966,19 +966,21 @@ function AdminAlumni() {
                         sizeClassName="size-9"
                         textClassName="text-[11px]"
                       />
-                      <div className="min-w-0">
-                        <p className="font-semibold text-foreground">{a.name}</p>
-                        <p className="text-xs text-muted-foreground">ID No. {idNumber(a)}</p>
-                        <p className="text-xs text-muted-foreground">{a.region}</p>
+                      <div className="min-w-0 break-words">
+                        <p className="break-words font-semibold text-foreground">{a.name}</p>
+                        <p className="break-words text-xs text-muted-foreground">
+                          ID No. {idNumber(a)}
+                        </p>
+                        <p className="break-words text-xs text-muted-foreground">{a.region}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">
+                  <td className="break-words px-4 py-3 text-xs text-muted-foreground">
                     {a.course}
                     <br />
                     Batch {a.batch}
                   </td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">
+                  <td className="break-words px-4 py-3 text-xs text-muted-foreground">
                     {a.job}
                     <br />
                     {a.company}
@@ -996,7 +998,7 @@ function AdminAlumni() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-3">
+                    <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
                       {canManage && !verified && (
                         <button
                           onClick={() => void handleVerify(a)}

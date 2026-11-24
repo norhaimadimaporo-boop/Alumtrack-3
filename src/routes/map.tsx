@@ -100,7 +100,7 @@ function AlumniMapPage() {
 
   return (
     <div className="w-full max-w-full overflow-x-hidden">
-      <section className="mx-auto max-w-6xl px-4 pb-8 pt-10 sm:pt-12">
+      <section className="mx-auto w-full max-w-[1720px] px-3 pb-8 pt-10 sm:px-5 sm:pt-12 lg:px-6 xl:px-8">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand">
           MSU Main Campus Alumni
         </p>
@@ -114,7 +114,7 @@ function AlumniMapPage() {
       </section>
 
       <section className="w-full border-y border-border bg-card">
-        <dl className="mx-auto grid max-w-6xl grid-cols-2 divide-x divide-border px-4 md:grid-cols-4">
+        <dl className="mx-auto grid w-full max-w-[1720px] grid-cols-2 divide-x divide-border px-3 sm:px-5 md:grid-cols-4 lg:px-6 xl:px-8">
           {topStats.map((item) => (
             <div key={item.label} className="px-3 py-6 text-center sm:px-4 sm:py-8">
               <dt className="text-2xl font-bold text-brand sm:text-3xl">{item.value}</dt>
@@ -124,7 +124,7 @@ function AlumniMapPage() {
             </div>
           ))}
         </dl>
-        <p className="mx-auto flex max-w-6xl items-center gap-1.5 px-4 pb-4 text-[11px] font-semibold text-muted-foreground">
+        <p className="mx-auto flex w-full max-w-[1720px] items-center gap-1.5 px-3 pb-4 text-[11px] font-semibold text-muted-foreground sm:px-5 lg:px-6 xl:px-8">
           <Database className="size-3.5 shrink-0 text-brand" />
           {stats
             ? `Live data from the alumni database · ${formatNumber(stats.totalTraced)} verified alumni`
@@ -134,7 +134,7 @@ function AlumniMapPage() {
         </p>
       </section>
 
-      <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:py-16">
+      <section className="mx-auto w-full max-w-[1720px] px-3 py-12 sm:px-5 sm:py-16 lg:px-6 xl:px-8">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <h2 className="border-l-4 border-brand pl-4 text-2xl font-bold text-foreground">
             Alumni statistics at a glance

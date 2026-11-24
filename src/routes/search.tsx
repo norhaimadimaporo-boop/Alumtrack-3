@@ -122,7 +122,7 @@ function SearchPage() {
   const activeCount = Object.values(filters).filter(Boolean).length;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
+    <div className="mx-auto w-full max-w-[1720px] px-3 py-10 sm:px-5 lg:px-6 xl:px-8">
       <div className="border-l-4 border-brand pl-4">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Search Alumni</h1>
         <p className="mt-1 text-sm text-muted-foreground">
