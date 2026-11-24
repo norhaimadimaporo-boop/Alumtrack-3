@@ -7,7 +7,6 @@ import {
   Briefcase,
   Users,
   Newspaper,
-  MapPinned,
   Settings,
 } from "lucide-react";
 import { AlumniChatWidget } from "@/components/alumni-chat-widget";
@@ -19,7 +18,6 @@ const links = [
   { to: "/profile", label: "My Profile", icon: UserRound },
   { to: "/education", label: "Education Details", icon: GraduationCap },
   { to: "/employment", label: "Employment History", icon: Briefcase },
-  { to: "/alumni-map", label: "Alumni Map", icon: MapPinned },
   { to: "/organization", label: "Organization", icon: Users },
   { to: "/jobs", label: "Job Offerings", icon: Newspaper },
   { to: "/settings", label: "Privacy & Settings", icon: Settings },

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Database, MapPinned } from "lucide-react";
+import { MapPinned } from "lucide-react";
 
 import { BarList } from "@/components/cluster-map";
 import { MultiFilterSelect } from "@/components/multi-filter-select";
@@ -45,23 +45,6 @@ function AlumniMapPage() {
   const { stats: statsResult, map: mapResult } = Route.useLoaderData();
   const stats = statsResult.ok ? statsResult.stats : null;
   const knownEmployment = stats ? stats.employed + stats.unemployed : 0;
-
-  const topStats = stats
-    ? [
-        { value: formatNumber(stats.totalTraced), label: "Alumni Traced" },
-        { value: formatNumber(stats.colleges), label: "Colleges" },
-        { value: formatNumber(stats.batchYears), label: "Batch Years" },
-        {
-          value: formatNumber(stats.eventsThisYear),
-          label: `Events This Year (${stats.currentYear})`,
-        },
-      ]
-    : [
-        { value: "-", label: "Alumni Traced" },
-        { value: "-", label: "Colleges" },
-        { value: "-", label: "Batch Years" },
-        { value: "-", label: "Events This Year" },
-      ];
 
   const publicStats = stats
     ? [
@@ -161,64 +144,27 @@ function AlumniMapPage() {
 
   return (
     <div className="w-full max-w-full overflow-x-hidden">
-      <section className="mx-auto w-full max-w-[1720px] px-3 pb-8 pt-10 sm:px-5 sm:pt-12 lg:px-6 xl:px-8">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand">
-          MSU Main Campus Alumni
-        </p>
-        <h1 className="mt-2 border-l-4 border-brand pl-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+      <section className="mx-auto w-full max-w-[1720px] px-3 pb-3 pt-6 sm:px-5 lg:px-6 xl:px-8">
+        <h1 className="mb-3 border-l-4 border-brand pl-4 text-xl font-bold tracking-tight text-foreground sm:text-2xl">
           Alumni Map &amp; Statistics
         </h1>
-        <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-          Explore live alumni statistics and verified graduates&apos; locations across the
-          Philippines and overseas.
-        </p>
       </section>
 
-      <section className="w-full border-y border-border bg-card">
-        <dl className="mx-auto grid w-full max-w-[1720px] grid-cols-2 divide-x divide-border px-3 sm:px-5 md:grid-cols-4 lg:px-6 xl:px-8">
-          {topStats.map((item) => (
-            <div key={item.label} className="px-3 py-6 text-center sm:px-4 sm:py-8">
-              <dt className="text-2xl font-bold text-brand sm:text-3xl">{item.value}</dt>
-              <dd className="mt-1 text-[10px] uppercase tracking-[0.12em] text-muted-foreground sm:text-xs sm:tracking-[0.14em]">
-                {item.label}
-              </dd>
-            </div>
-          ))}
-        </dl>
-        <p className="mx-auto flex w-full max-w-[1720px] items-center gap-1.5 px-3 pb-4 text-[11px] font-semibold text-muted-foreground sm:px-5 lg:px-6 xl:px-8">
-          <Database className="size-3.5 shrink-0 text-brand" />
-          {stats
-            ? `Live data from the alumni database · ${formatNumber(stats.totalTraced)} verified alumni`
-            : statsResult.ok
-              ? "Live data from the alumni database"
-              : statsResult.message}
-        </p>
-      </section>
-
-      <section className="mx-auto w-full max-w-[1720px] px-3 py-12 sm:px-5 sm:py-16 lg:px-6 xl:px-8">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-          <h2 className="border-l-4 border-brand pl-4 text-2xl font-bold text-foreground">
-            Alumni statistics at a glance
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            Graduate Tracer Study summary · aggregate data only · live from database
-          </p>
-        </div>
-
-        <div className="mt-6 grid w-full min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="mx-auto w-full max-w-[1720px] px-3 sm:px-5 lg:px-6 xl:px-8">
+        <div className="grid w-full min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {publicStats.map((item) => (
             <div
               key={item.label}
-              className="min-w-0 rounded-2xl border border-[#E6DFD5] border-t-4 border-t-brand bg-gradient-to-br from-card to-background p-5 shadow-sm"
+              className="min-w-0 rounded-2xl border border-[#E6DFD5] border-t-4 border-t-brand bg-gradient-to-br from-card to-background p-3 shadow-sm sm:p-3.5"
             >
-              <p className="text-3xl font-bold text-foreground">{item.value}</p>
-              <p className="mt-1 text-sm font-semibold text-foreground">{item.label}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{item.note}</p>
+              <p className="text-lg font-bold text-foreground sm:text-xl">{item.value}</p>
+              <p className="mt-0.5 text-xs font-semibold text-foreground">{item.label}</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">{item.note}</p>
             </div>
           ))}
         </div>
 
-        <div className="mt-6 grid w-full min-w-0 gap-4 lg:grid-cols-[minmax(0,70fr)_minmax(0,30fr)]">
+        <div className="mt-4 grid w-full min-w-0 gap-4 lg:grid-cols-[minmax(0,70fr)_minmax(0,30fr)]">
           <div className="w-full min-w-0">
             <div className="w-full min-w-0 rounded-2xl border border-[#E6DFD5] bg-gradient-to-br from-card to-background p-4 shadow-sm sm:p-5">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">

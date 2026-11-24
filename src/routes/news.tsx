@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { CalendarDays, ArrowRight, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CalendarDays, ArrowRight, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { POSTS, findPostPhoto, type Post } from "@/data/news";
 import { getPostViewer, getPublishedPosts } from "@/lib/posts.functions";
 import { postExcerpt, type PostRecord } from "@/lib/posts.types";
@@ -59,6 +59,23 @@ function NewsPage() {
   const { posts: loaded, canSeeJobs } = Route.useLoaderData();
   const [tab, setTab] = useState<TabValue>("All");
   const [open, setOpen] = useState<FeedPost | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (lightboxIndex === null || !open) return;
+    const total = open.images.length;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLightboxIndex(null);
+      if (event.key === "ArrowLeft" && total > 1) {
+        setLightboxIndex((current) => ((current ?? 0) - 1 + total) % total);
+      }
+      if (event.key === "ArrowRight" && total > 1) {
+        setLightboxIndex((current) => ((current ?? 0) + 1) % total);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [lightboxIndex, open]);
 
   const visibleTabs = canSeeJobs ? TABS : TABS.filter((t) => t.value !== "Job");
 
@@ -174,7 +191,7 @@ function NewsPage() {
           onClick={() => setOpen(null)}
         >
           <div
-            className="max-h-[80vh] w-full max-w-2xl overflow-y-auto rounded-sm border-t-4 border-brand bg-card p-8"
+            className="max-h-[90vh] w-[94vw] max-w-4xl overflow-y-auto rounded-sm border-t-4 border-brand bg-card p-6 shadow-2xl sm:p-8"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4">
@@ -185,14 +202,21 @@ function NewsPage() {
             </div>
             {open.images.length > 0 && (
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                {open.images.map((url) => (
-                  <img
-                    key={url}
-                    src={url}
-                    alt=""
-                    loading="lazy"
-                    className="w-full rounded-lg object-cover"
-                  />
+                {open.images.map((url, index) => (
+                  <button
+                    key={`${url}-${index}`}
+                    type="button"
+                    aria-label="View photo full screen"
+                    onClick={() => setLightboxIndex(index)}
+                    className="block w-full cursor-zoom-in overflow-hidden rounded-lg"
+                  >
+                    <img
+                      src={url}
+                      alt=""
+                      loading="lazy"
+                      className="w-full rounded-lg object-cover transition-transform hover:scale-[1.02]"
+                    />
+                  </button>
                 ))}
               </div>
             )}
@@ -202,6 +226,65 @@ function NewsPage() {
               {open.body}
             </p>
           </div>
+        </div>
+      )}
+
+      {open && lightboxIndex !== null && open.images.length > 0 && (
+        <div
+          role="presentation"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md"
+          onClick={() => setLightboxIndex(null)}
+        >
+          <button
+            type="button"
+            aria-label="Close photo"
+            onClick={() => setLightboxIndex(null)}
+            className="absolute right-4 top-4 z-10 flex size-11 items-center justify-center rounded-full border border-white/30 bg-black/70 text-white transition-colors hover:bg-black"
+          >
+            <X className="size-6" />
+          </button>
+
+          {open.images.length > 1 && (
+            <>
+              <button
+                type="button"
+                aria-label="Previous photo"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setLightboxIndex(
+                    (current) => ((current ?? 0) - 1 + open.images.length) % open.images.length,
+                  );
+                }}
+                className="absolute left-3 z-10 flex size-11 items-center justify-center rounded-full border border-white/30 bg-black/70 text-white transition-colors hover:bg-black sm:left-6"
+              >
+                <ChevronLeft className="size-6" />
+              </button>
+              <button
+                type="button"
+                aria-label="Next photo"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setLightboxIndex((current) => ((current ?? 0) + 1) % open.images.length);
+                }}
+                className="absolute right-3 z-10 flex size-11 items-center justify-center rounded-full border border-white/30 bg-black/70 text-white transition-colors hover:bg-black sm:right-6"
+              >
+                <ChevronRight className="size-6" />
+              </button>
+            </>
+          )}
+
+          <img
+            src={open.images[lightboxIndex] ?? ""}
+            alt=""
+            onClick={(event) => event.stopPropagation()}
+            className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
+          />
+
+          {open.images.length > 1 && (
+            <span className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full border border-white/20 bg-black/70 px-3 py-1 text-xs font-semibold text-white">
+              {lightboxIndex + 1} / {open.images.length}
+            </span>
+          )}
         </div>
       )}
     </div>

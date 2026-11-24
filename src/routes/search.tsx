@@ -180,19 +180,29 @@ function SearchPage() {
               </button>
             )}
           </div>
-          <MultiCollegeCourseSelect
-            colleges={filters.college}
-            courses={filters.course}
-            onCollegesChange={(v) => set("college", v)}
-            onCoursesChange={(v) => set("course", v)}
-          />
-          <MultiFilterSelect
-            placeholder="All batch years"
-            options={options.batches}
-            value={filters.batch}
-            onChange={(v) => set("batch", v)}
-            allLabel="All batch years"
-          />
+          <div className="flex w-full flex-col gap-3">
+            <MultiFilterSelect
+              placeholder="All colleges"
+              options={options.colleges}
+              value={filters.college}
+              onChange={(v) => set("college", v)}
+              allLabel="All colleges"
+            />
+            <MultiFilterSelect
+              placeholder="All courses"
+              options={options.courses}
+              value={filters.course}
+              onChange={(v) => set("course", v)}
+              allLabel="All courses"
+            />
+            <MultiFilterSelect
+              placeholder="All batch years"
+              options={options.batches}
+              value={filters.batch}
+              onChange={(v) => set("batch", v)}
+              allLabel="All batch years"
+            />
+          </div>
         </aside>
 
         <section>
