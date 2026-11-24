@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import { AddressFields } from "@/components/address-fields";
 import { Modal } from "@/components/modal";
+import { ReligionCombobox } from "@/components/religion-select";
 import { updateMyProfileData } from "@/lib/profile.functions";
 import type { ProfileEditInput } from "@/lib/profile.types";
 import type { AddressInput } from "@/lib/registration.types";
@@ -186,7 +187,7 @@ export function ProfileEditModal({
               onChange={(value) => set("birthPlace", value)}
               required
             />
-            <TextField
+            <ReligionCombobox
               label="Religious affiliation"
               value={form.religion}
               onChange={(value) => set("religion", value)}

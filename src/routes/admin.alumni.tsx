@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
 import { CollegeCourseSelect, SearchableFilterSelect } from "@/components/college-course-select";
+import { ReligionCombobox } from "@/components/religion-select";
 import { AvatarImage } from "@/components/profile-avatar";
 import { AddressFields } from "@/components/address-fields";
 import { Modal, LabeledInput, PrimaryButton } from "@/components/modal";
@@ -1460,7 +1461,7 @@ function AdminAlumni() {
                   onChange={setWizardBirthPlace}
                   placeholder="Barangay, City/Municipality, Province"
                 />
-                <LabeledInput
+                <ReligionCombobox
                   label="Religious affiliation"
                   value={wizardReligion}
                   onChange={setWizardReligion}

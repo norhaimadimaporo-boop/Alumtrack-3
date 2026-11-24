@@ -13,6 +13,8 @@ import {
   type GeoCountryData,
 } from "@/lib/geo-data";
 import { sameCollege, sameCourse } from "@/lib/msu-colleges";
+import { ReligionFilterSelect } from "@/components/religion-select";
+import { sameReligion } from "@/lib/religions";
 import { getReportRecords } from "@/lib/reports.functions";
 import type { ReportRecord } from "@/lib/reports.types";
 
@@ -131,7 +133,6 @@ function AdminReports() {
       colleges: uniqueSorted(all.map((r) => r.college)),
       courses: uniqueSorted(all.map((r) => r.course)),
       tribes: uniqueSorted(all.map((r) => r.ethnicity)),
-      religions: uniqueSorted(all.map((r) => r.religion)),
       genders: uniqueSorted(all.map((r) => r.gender)),
       affiliations: ["Secular", "Non-secular", "No affiliation"].filter((label) =>
         all.some((r) => r.affiliation === label),
@@ -168,7 +169,7 @@ function AdminReports() {
         if (filters.college && !sameCollege(r.college, filters.college)) return false;
         if (filters.course && !sameCourse(r.course, filters.course)) return false;
         if (!sameValue(r.ethnicity, filters.tribe)) return false;
-        if (!sameValue(r.religion, filters.religion)) return false;
+        if (!sameReligion(r.religion, filters.religion)) return false;
         if (!sameValue(r.province, filters.province)) return false;
         if (!sameValue(r.gender, filters.gender)) return false;
         if (!sameValue(r.affiliation, filters.affiliation)) return false;
@@ -318,12 +319,7 @@ function AdminReports() {
             value={filters.tribe}
             onChange={(v) => set("tribe", v)}
           />
-          <SearchableFilterSelect
-            placeholder="All religions"
-            options={options.religions}
-            value={filters.religion}
-            onChange={(v) => set("religion", v)}
-          />
+          <ReligionFilterSelect value={filters.religion} onChange={(v) => set("religion", v)} />
           <SearchableFilterSelect
             placeholder="All genders"
             options={options.genders}

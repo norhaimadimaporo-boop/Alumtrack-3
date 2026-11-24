@@ -54,7 +54,7 @@ export function SiteFooter() {
               <Facebook className="size-4" />
             </a>
             <a
-              href="mailto:officeofalumnirelations01@gmail.com"
+              href="mailto:msuoarcc@gmail.com"
               aria-label="Email OARCC"
               className="flex size-10 items-center justify-center rounded-full border border-[#D8CFC4] text-[#7A1315] transition-colors hover:bg-[#7A1315] hover:text-white"
             >
@@ -97,6 +97,11 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
+              <Link to="/map" className="hover:text-brand">
+                Map
+              </Link>
+            </li>
+            <li>
               <Link to="/news" className="hover:text-brand">
                 Latest Posts
               </Link>
@@ -130,17 +135,14 @@ export function SiteFooter() {
             </li>
             <li className="flex gap-2">
               <Phone className="size-4 shrink-0 text-brand" />
-              <a href="tel:09461617360" className="hover:underline">
-                0946-161-7360
+              <a href="tel:09567393998" className="hover:underline">
+                0956-739-3998
               </a>
             </li>
             <li className="flex gap-2">
               <Mail className="size-4 shrink-0 text-brand" />
-              <a
-                href="mailto:officeofalumnirelations01@gmail.com"
-                className="whitespace-nowrap hover:underline"
-              >
-                officeofalumnirelations01@gmail.com
+              <a href="mailto:msuoarcc@gmail.com" className="whitespace-nowrap hover:underline">
+                msuoarcc@gmail.com
               </a>
             </li>
             <li className="flex gap-2">

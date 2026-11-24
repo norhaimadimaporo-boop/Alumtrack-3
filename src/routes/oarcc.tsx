@@ -175,17 +175,14 @@ function OarccPage() {
             </li>
             <li className="flex gap-3">
               <Phone className="mt-0.5 size-4 shrink-0 text-highlight" />
-              <a href="tel:09461617360" className="hover:underline">
-                0946-161-7360
+              <a href="tel:09567393998" className="hover:underline">
+                0956-739-3998
               </a>
             </li>
             <li className="flex gap-3">
               <Mail className="mt-0.5 size-4 shrink-0 text-highlight" />
-              <a
-                href="mailto:officeofalumnirelations01@gmail.com"
-                className="break-all hover:underline"
-              >
-                officeofalumnirelations01@gmail.com
+              <a href="mailto:msuoarcc@gmail.com" className="break-all hover:underline">
+                msuoarcc@gmail.com
               </a>
             </li>
             <li className="flex gap-3">
@@ -206,7 +203,7 @@ function OarccPage() {
             <SocialButton
               icon={<Mail className="size-4" />}
               label="Email Us"
-              href="mailto:officeofalumnirelations01@gmail.com"
+              href="mailto:msuoarcc@gmail.com"
             />
             <SocialButton
               icon={<Globe className="size-4" />}

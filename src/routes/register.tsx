@@ -5,6 +5,7 @@ import { BrandMark } from "@/components/brand-mark";
 
 import { AddressFields } from "@/components/address-fields";
 import { CollegeCourseSelect } from "@/components/college-course-select";
+import { ReligionCombobox } from "@/components/religion-select";
 import { calculateAge } from "@/lib/profile-format";
 import { registerAlumni } from "@/lib/registration.functions";
 import {
@@ -640,7 +641,7 @@ function RegisterPage() {
                 placeholder="Barangay, City/Municipality, Province"
                 required
               />
-              <Field
+              <ReligionCombobox
                 label="Religious Affiliation"
                 value={form.religion}
                 onChange={(value) => update("religion", value)}
