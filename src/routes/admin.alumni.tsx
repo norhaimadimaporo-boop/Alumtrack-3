@@ -21,6 +21,9 @@ import {
 } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
 import { CollegeCourseSelect, SearchableFilterSelect } from "@/components/college-course-select";
+import { MultiFilterSelect } from "@/components/multi-filter-select";
+import { MultiCollegeCourseSelect } from "@/components/multi-college-course-select";
+import { matchesAny, matchesAnyCollege, matchesAnyCourse } from "@/lib/multi-filter";
 import { ReligionCombobox } from "@/components/religion-select";
 import { AvatarImage } from "@/components/profile-avatar";
 import { AddressFields } from "@/components/address-fields";
@@ -196,10 +199,10 @@ function AdminAlumni() {
   // Viewers get the read-only directory; null is the pre-hydration state.
   const canManage = adminRole === "head" || adminRole === "standard";
   const [query, setQuery] = useState("");
-  const [course, setCourse] = useState("");
-  const [college, setCollege] = useState("");
-  const [batch, setBatch] = useState("");
-  const [verification, setVerification] = useState("");
+  const [course, setCourse] = useState<string[]>([]);
+  const [college, setCollege] = useState<string[]>([]);
+  const [batch, setBatch] = useState<string[]>([]);
+  const [verification, setVerification] = useState<string[]>([]);
   const [viewing, setViewing] = useState<Alumnus | null>(null);
   const [editing, setEditing] = useState<Alumnus | null>(null);
   const [adding, setAdding] = useState(false);
@@ -762,12 +765,13 @@ function AdminAlumni() {
   ].sort();
 
   const rows = alumni.filter((a) => {
+    const status = a.verified ? "Verified" : "For Verification";
     return (
       a.name.toLowerCase().includes(query.toLowerCase()) &&
-      (course ? sameCourse(a.course, course) : true) &&
-      (college ? sameCollege(a.college, college) : true) &&
-      (batch ? a.batch === batch : true) &&
-      (verification === "" ? true : verification === "Verified" ? a.verified : !a.verified)
+      matchesAnyCourse(a.course, course) &&
+      matchesAnyCollege(a.college, college) &&
+      matchesAny(a.batch, batch) &&
+      (verification.length === 0 || verification.includes(status))
     );
   });
 
@@ -832,9 +836,9 @@ function AdminAlumni() {
     setExportGender("");
     // Reset/clear the active directory filters after a successful export.
     setQuery("");
-    setCourse("");
-    setBatch("");
-    setVerification("");
+    setCourse([]);
+    setBatch([]);
+    setVerification([]);
   };
 
   const open = adding || editing !== null;
@@ -884,28 +888,27 @@ function AdminAlumni() {
             className="h-11 w-full rounded-full border border-[#E5DDD3] bg-white/75 pl-10 pr-4 text-sm text-[#3D2E2E] shadow-sm backdrop-blur-md outline-none transition-all hover:border-[#7A1315]/50 focus:border-[#7A1315]"
           />
         </div>
-        <CollegeCourseSelect
-          className="sm:col-span-2"
-          college={college}
-          course={course}
-          onChange={({ college: nextCollege, course: nextCourse }) => {
-            setCollege(nextCollege);
-            setCourse(nextCourse);
-          }}
-          allowEmpty
-          filterStyle
-        />
-        <SearchableFilterSelect
+        <div className="sm:col-span-2">
+          <MultiCollegeCourseSelect
+            colleges={college}
+            courses={course}
+            onCollegesChange={setCollege}
+            onCoursesChange={setCourse}
+          />
+        </div>
+        <MultiFilterSelect
           placeholder="All batches"
           options={batchOptions}
           value={batch}
           onChange={setBatch}
+          allLabel="All batches"
         />
-        <SearchableFilterSelect
+        <MultiFilterSelect
           placeholder="All statuses"
           options={["Verified", "For Verification"]}
           value={verification}
           onChange={setVerification}
+          allLabel="All statuses"
         />
       </div>
 

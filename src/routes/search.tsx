@@ -14,12 +14,14 @@ import {
   Mail,
   Globe,
 } from "lucide-react";
-import { CollegeCourseSelect, SearchableFilterSelect } from "@/components/college-course-select";
-import { sameCollege, sameCourse } from "@/lib/msu-colleges";
+import { MultiFilterSelect } from "@/components/multi-filter-select";
+import { MultiCollegeCourseSelect } from "@/components/multi-college-course-select";
+import { matchesAny, matchesAnyCollege, matchesAnyCourse } from "@/lib/multi-filter";
 import { getPublicAlumni } from "@/lib/search.functions";
 import { initials } from "@/lib/profile-format";
 import type { PublicAlumnus } from "@/lib/search.types";
-import { ProfileAvatar } from "@/components/profile-avatar";
+import { AvatarImage, ProfileAvatar } from "@/components/profile-avatar";
+import { AlumniProfileModal } from "@/components/alumni-profile-modal";
 
 export const Route = createFileRoute("/search")({
   head: () => ({
@@ -42,17 +44,12 @@ export const Route = createFileRoute("/search")({
 });
 
 type Filters = {
-  course: string;
-  college: string;
-  batch: string;
+  course: string[];
+  college: string[];
+  batch: string[];
 };
 
-const empty: Filters = { course: "", college: "", batch: "" };
-
-/** Case-insensitive equality so "lanao del sur" matches "Lanao del Sur". */
-function sameValue(value: string, filter: string) {
-  return !filter || value.trim().toLowerCase() === filter.trim().toLowerCase();
-}
+const empty: Filters = { course: [], college: [], batch: [] };
 
 /** Deduplicates filter values, keeping the best-capitalised spelling. */
 function pickLabels(values: string[]) {
@@ -74,6 +71,7 @@ function SearchPage() {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<Filters>(empty);
   const [view, setView] = useState<"grid" | "list">("grid");
+  const [selected, setSelected] = useState<PublicAlumnus | null>(null);
 
   const alumni = useMemo(() => (data.ok ? data.alumni : []), [data]);
   const signedIn = data.ok && data.signedIn;
@@ -89,7 +87,7 @@ function SearchPage() {
     [alumni],
   );
 
-  const set = (key: keyof Filters, value: string) => setFilters((f) => ({ ...f, [key]: value }));
+  const set = (key: keyof Filters, value: string[]) => setFilters((f) => ({ ...f, [key]: value }));
 
   const results = useMemo(() => {
     // Text search matches the alumni NAME only: every typed word must appear
@@ -112,14 +110,14 @@ function SearchPage() {
         });
         if (!matches) return false;
       }
-      if (filters.course && !sameCourse(a.course, filters.course)) return false;
-      if (filters.college && !sameCollege(a.college, filters.college)) return false;
-      if (filters.batch && a.batch !== filters.batch) return false;
+      if (!matchesAnyCourse(a.course, filters.course)) return false;
+      if (!matchesAnyCollege(a.college, filters.college)) return false;
+      if (!matchesAny(a.batch, filters.batch)) return false;
       return true;
     });
   }, [alumni, query, filters]);
 
-  const activeCount = Object.values(filters).filter(Boolean).length;
+  const activeCount = Object.values(filters).reduce((count, values) => count + values.length, 0);
 
   return (
     <div className="mx-auto w-full max-w-[1720px] px-3 py-10 sm:px-5 lg:px-6 xl:px-8">
@@ -182,21 +180,18 @@ function SearchPage() {
               </button>
             )}
           </div>
-          <CollegeCourseSelect
-            college={filters.college}
-            course={filters.course}
-            onChange={({ college, course }) =>
-              setFilters((current) => ({ ...current, college, course }))
-            }
-            allowEmpty
-            filterStyle
-            stacked
+          <MultiCollegeCourseSelect
+            colleges={filters.college}
+            courses={filters.course}
+            onCollegesChange={(v) => set("college", v)}
+            onCoursesChange={(v) => set("course", v)}
           />
-          <SearchableFilterSelect
+          <MultiFilterSelect
             placeholder="All batch years"
             options={options.batches}
             value={filters.batch}
             onChange={(v) => set("batch", v)}
+            allLabel="All batch years"
           />
         </aside>
 
@@ -241,12 +236,25 @@ function SearchPage() {
               }
             >
               {results.map((a) => (
-                <AlumniCard key={a.id} alumnus={a} signedIn={signedIn} />
+                <AlumniCard
+                  key={a.id}
+                  alumnus={a}
+                  signedIn={signedIn}
+                  onOpen={() => setSelected(a)}
+                />
               ))}
             </div>
           )}
         </section>
       </div>
+
+      {selected && (
+        <AlumniProfileModal
+          alumnus={selected}
+          signedIn={signedIn}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   );
 }
@@ -285,7 +293,15 @@ function ViewButton({
  * always render (with a private placeholder when hidden) so cards line up;
  * contact rows render only when the owner allows them.
  */
-function AlumniCard({ alumnus, signedIn }: { alumnus: PublicAlumnus; signedIn: boolean }) {
+function AlumniCard({
+  alumnus,
+  signedIn,
+  onOpen,
+}: {
+  alumnus: PublicAlumnus;
+  signedIn: boolean;
+  onOpen: () => void;
+}) {
   const statusColor =
     alumnus.status === "Employed"
       ? "bg-success/12 text-success"
@@ -294,9 +310,20 @@ function AlumniCard({ alumnus, signedIn }: { alumnus: PublicAlumnus; signedIn: b
         : "bg-muted text-muted-foreground";
 
   return (
-    <article className="group rounded-sm border border-border bg-card p-4 transition-colors hover:border-brand">
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
+      className="group cursor-pointer rounded-sm border border-border bg-card p-4 transition-colors hover:border-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+    >
       <div className="flex items-center gap-3">
-        <ProfileAvatar
+        <AvatarImage
           userId={alumnus.userId}
           name={alumnus.name}
           initials={initials(alumnus.name)}
@@ -306,7 +333,16 @@ function AlumniCard({ alumnus, signedIn }: { alumnus: PublicAlumnus; signedIn: b
         />
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-bold leading-snug text-foreground group-hover:text-brand">
-            {alumnus.name}
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpen();
+              }}
+              className="text-left hover:underline"
+            >
+              {alumnus.name}
+            </button>
           </h2>
           <p className="text-xs text-muted-foreground">{alumnus.course}</p>
           <p className="mt-0.5 text-xs font-medium text-brand">Batch {alumnus.batch}</p>

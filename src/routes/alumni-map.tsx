@@ -2,9 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Filter, Globe2, MapPinned, RotateCcw } from "lucide-react";
 import { AlumniShell } from "@/components/alumni-shell";
-import { CollegeCourseSelect, SearchableFilterSelect } from "@/components/college-course-select";
+import { MultiFilterSelect } from "@/components/multi-filter-select";
+import { MultiCollegeCourseSelect } from "@/components/multi-college-course-select";
 import { RealAlumniMap } from "@/components/real-alumni-map";
-import { collegeForCourse, sameCollege } from "@/lib/msu-colleges";
+import { matchesAny, matchesAnyCollege, matchesAnyCourse } from "@/lib/multi-filter";
+import { collegeForCourse } from "@/lib/msu-colleges";
 import { getAlumniMapPinsData } from "@/lib/gis.functions";
 import { getMyWorkspaceData } from "@/lib/profile.functions";
 
@@ -38,19 +40,21 @@ export const Route = createFileRoute("/alumni-map")({
 const GULF_COUNTRIES = ["United Arab Emirates", "Saudi Arabia", "Qatar"];
 
 /** Pick the preset that best frames the selected host country. */
-function focusForCountry(country: string): "region" | "philippines" | "middle-east" {
-  if (country === "Philippines") return "philippines";
-  if (GULF_COUNTRIES.includes(country)) return "middle-east";
+function focusForCountry(countries: string[]): "region" | "philippines" | "middle-east" {
+  if (countries.length === 1) {
+    if (countries[0] === "Philippines") return "philippines";
+    if (GULF_COUNTRIES.includes(countries[0] ?? "")) return "middle-east";
+  }
   return "region";
 }
 
 function AlumniMapPage() {
   const { workspace: data, pins: allPins, mapError } = Route.useLoaderData();
   const user = data.ok ? data.user : null;
-  const [course, setCourse] = useState("");
-  const [college, setCollege] = useState("");
-  const [batch, setBatch] = useState("");
-  const [country, setCountry] = useState("");
+  const [course, setCourse] = useState<string[]>([]);
+  const [college, setCollege] = useState<string[]>([]);
+  const [batch, setBatch] = useState<string[]>([]);
+  const [country, setCountry] = useState<string[]>([]);
 
   const batchOptions = useMemo(
     () =>
@@ -75,17 +79,18 @@ function AlumniMapPage() {
       allPins.filter((pin) => {
         const pinCollege = collegeForCourse(pin.course) ?? "";
         return (
-          (!course || pin.course === course) &&
-          (!college || (pinCollege && sameCollege(pinCollege, college))) &&
-          (!batch || pin.batch === batch) &&
-          (!country || pin.country === country)
+          matchesAnyCourse(pin.course, course) &&
+          matchesAnyCollege(pinCollege, college) &&
+          matchesAny(pin.batch, batch) &&
+          matchesAny(pin.country, country)
         );
       }),
     [allPins, course, college, batch, country],
   );
 
   const employed = pins.filter((p) => p.status === "Employed").length;
-  const hasFilters = Boolean(course || college || batch || country);
+  const hasFilters =
+    course.length > 0 || college.length > 0 || batch.length > 0 || country.length > 0;
 
   return (
     <AlumniShell
@@ -137,28 +142,27 @@ function AlumniMapPage() {
           </div>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <CollegeCourseSelect
-              className="sm:col-span-2"
-              college={college}
-              course={course}
-              onChange={({ college: nextCollege, course: nextCourse }) => {
-                setCollege(nextCollege);
-                setCourse(nextCourse);
-              }}
-              allowEmpty
-              filterStyle
-            />
-            <SearchableFilterSelect
+            <div className="sm:col-span-2">
+              <MultiCollegeCourseSelect
+                colleges={college}
+                courses={course}
+                onCollegesChange={setCollege}
+                onCoursesChange={setCourse}
+              />
+            </div>
+            <MultiFilterSelect
               placeholder="All batch years"
               options={batchOptions}
               value={batch}
               onChange={setBatch}
+              allLabel="All batch years"
             />
-            <SearchableFilterSelect
+            <MultiFilterSelect
               placeholder="All countries"
               options={countries}
               value={country}
               onChange={setCountry}
+              allLabel="All countries"
             />
           </div>
 
@@ -166,10 +170,10 @@ function AlumniMapPage() {
             <button
               type="button"
               onClick={() => {
-                setCourse("");
-                setCollege("");
-                setBatch("");
-                setCountry("");
+                setCourse([]);
+                setCollege([]);
+                setBatch([]);
+                setCountry([]);
               }}
               className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
             >

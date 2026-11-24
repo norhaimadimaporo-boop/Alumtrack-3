@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { BarChart3, MapPinned, Search } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
-import { CollegeCourseSelect, SearchableFilterSelect } from "@/components/college-course-select";
+import { MultiFilterSelect } from "@/components/multi-filter-select";
+import { MultiCollegeCourseSelect } from "@/components/multi-college-course-select";
 import { BarList, DonutChart, ColumnChart } from "@/components/cluster-map";
 import { RealAlumniMap } from "@/components/real-alumni-map";
 import {
@@ -12,9 +13,13 @@ import {
   type GeoCountry,
   type GeoCountryData,
 } from "@/lib/geo-data";
-import { sameCollege, sameCourse } from "@/lib/msu-colleges";
-import { ReligionFilterSelect } from "@/components/religion-select";
-import { sameReligion } from "@/lib/religions";
+import {
+  matchesAny,
+  matchesAnyCollege,
+  matchesAnyCourse,
+  matchesAnyReligion,
+} from "@/lib/multi-filter";
+import { PHILIPPINE_RELIGIONS } from "@/lib/religions";
 import { getReportRecords } from "@/lib/reports.functions";
 import type { ReportRecord } from "@/lib/reports.types";
 
@@ -39,37 +44,33 @@ export const Route = createFileRoute("/admin/reports")({
 });
 
 type Filters = {
-  batch: string;
-  college: string;
-  course: string;
-  tribe: string;
-  religion: string;
-  province: string;
-  gender: string;
-  affiliation: string;
-  employment: string;
-  country: string;
+  batch: string[];
+  college: string[];
+  course: string[];
+  tribe: string[];
+  religion: string[];
+  province: string[];
+  gender: string[];
+  affiliation: string[];
+  employment: string[];
+  country: string[];
 };
 
 const emptyFilters: Filters = {
-  batch: "",
-  college: "",
-  course: "",
-  tribe: "",
-  religion: "",
-  province: "",
-  gender: "",
-  affiliation: "",
-  employment: "",
-  country: "",
+  batch: [],
+  college: [],
+  course: [],
+  tribe: [],
+  religion: [],
+  province: [],
+  gender: [],
+  affiliation: [],
+  employment: [],
+  country: [],
 };
 
 const YEAR_FROM = 2012;
 const YEAR_TO = 2026;
-
-function sameValue(value: string, filter: string) {
-  return !filter || value.trim().toLowerCase() === filter.trim().toLowerCase();
-}
 
 function uniqueSorted(values: string[]) {
   return [
@@ -82,7 +83,7 @@ function AdminReports() {
   const [filters, setFilters] = useState<Filters>(emptyFilters);
 
   const all = useMemo<ReportRecord[]>(() => (data.ok ? data.records : []), [data]);
-  const set = (key: keyof Filters, value: string) => setFilters((f) => ({ ...f, [key]: value }));
+  const set = (key: keyof Filters, value: string[]) => setFilters((f) => ({ ...f, [key]: value }));
 
   // Same country/state dataset used by the Alumni Registration address fields.
   const [countries, setCountries] = useState<GeoCountry[]>([]);
@@ -103,7 +104,10 @@ function AdminReports() {
   }, []);
 
   const countryCode = useMemo(
-    () => findCountryByName(countries, filters.country)?.code ?? "",
+    () =>
+      filters.country.length === 1
+        ? (findCountryByName(countries, filters.country[0] ?? "")?.code ?? "")
+        : "",
     [countries, filters.country],
   );
 
@@ -157,7 +161,7 @@ function AdminReports() {
   const provinceOptions = useMemo(() => {
     const fromGeo = (countryData?.states ?? []).map((state) => state.name);
     const fromRecords = all
-      .filter((r) => !filters.country || sameValue(r.country, filters.country))
+      .filter((r) => matchesAny(r.country, filters.country))
       .map((r) => r.province);
     return uniqueSorted([...fromGeo, ...fromRecords]);
   }, [countryData, all, filters.country]);
@@ -165,20 +169,19 @@ function AdminReports() {
   const filtered = useMemo(
     () =>
       all.filter((r) => {
-        if (filters.batch && r.batch !== filters.batch) return false;
-        if (filters.college && !sameCollege(r.college, filters.college)) return false;
-        if (filters.course && !sameCourse(r.course, filters.course)) return false;
-        if (!sameValue(r.ethnicity, filters.tribe)) return false;
-        if (!sameReligion(r.religion, filters.religion)) return false;
-        if (!sameValue(r.province, filters.province)) return false;
-        if (!sameValue(r.gender, filters.gender)) return false;
-        if (!sameValue(r.affiliation, filters.affiliation)) return false;
-        if (filters.employment) {
-          const employed = r.employmentStatus === "employed";
-          if (filters.employment === "Employed" && !employed) return false;
-          if (filters.employment === "Unemployed" && employed) return false;
+        if (!matchesAny(r.batch, filters.batch)) return false;
+        if (!matchesAnyCollege(r.college, filters.college)) return false;
+        if (!matchesAnyCourse(r.course, filters.course)) return false;
+        if (!matchesAny(r.ethnicity, filters.tribe)) return false;
+        if (!matchesAnyReligion(r.religion, filters.religion)) return false;
+        if (!matchesAny(r.province, filters.province)) return false;
+        if (!matchesAny(r.gender, filters.gender)) return false;
+        if (!matchesAny(r.affiliation, filters.affiliation)) return false;
+        if (filters.employment.length > 0) {
+          const label = r.employmentStatus === "employed" ? "Employed" : "Unemployed";
+          if (!filters.employment.includes(label)) return false;
         }
-        if (!sameValue(r.country, filters.country)) return false;
+        if (!matchesAny(r.country, filters.country)) return false;
         return true;
       }),
     [all, filters],
@@ -273,7 +276,7 @@ function AdminReports() {
     [filtered],
   );
 
-  const activeCount = Object.values(filters).filter(Boolean).length;
+  const activeCount = Object.values(filters).reduce((count, values) => count + values.length, 0);
 
   return (
     <AdminShell
@@ -297,58 +300,69 @@ function AdminReports() {
         </div>
         {!data.ok && <p className="mt-2 text-xs text-red-600">{data.message}</p>}
         <div className="mt-3 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
-          <SearchableFilterSelect
+          <MultiFilterSelect
             placeholder="All batch years"
             options={options.batches}
             value={filters.batch}
             onChange={(v) => set("batch", v)}
+            allLabel="All batch years"
           />
-          <CollegeCourseSelect
-            className="sm:col-span-2"
-            college={filters.college}
-            course={filters.course}
-            onChange={({ college, course }) =>
-              setFilters((current) => ({ ...current, college, course }))
-            }
-            allowEmpty
-            filterStyle
-          />
-          <SearchableFilterSelect
+          <div className="sm:col-span-2">
+            <MultiCollegeCourseSelect
+              colleges={filters.college}
+              courses={filters.course}
+              onCollegesChange={(v) => set("college", v)}
+              onCoursesChange={(v) => set("course", v)}
+            />
+          </div>
+          <MultiFilterSelect
             placeholder="All tribes"
             options={options.tribes}
             value={filters.tribe}
             onChange={(v) => set("tribe", v)}
+            allLabel="All tribes"
           />
-          <ReligionFilterSelect value={filters.religion} onChange={(v) => set("religion", v)} />
-          <SearchableFilterSelect
+          <MultiFilterSelect
+            placeholder="All religions"
+            options={[...PHILIPPINE_RELIGIONS]}
+            value={filters.religion}
+            onChange={(v) => set("religion", v)}
+            allLabel="All religions"
+          />
+          <MultiFilterSelect
             placeholder="All genders"
             options={options.genders}
             value={filters.gender}
             onChange={(v) => set("gender", v)}
+            allLabel="All genders"
           />
-          <SearchableFilterSelect
+          <MultiFilterSelect
             placeholder="All group affiliations"
             options={options.affiliations}
             value={filters.affiliation}
             onChange={(v) => set("affiliation", v)}
+            allLabel="All group affiliations"
           />
-          <SearchableFilterSelect
+          <MultiFilterSelect
             placeholder="All employment statuses"
             options={options.employments}
             value={filters.employment}
             onChange={(v) => set("employment", v)}
+            allLabel="All employment statuses"
           />
-          <SearchableFilterSelect
+          <MultiFilterSelect
             placeholder="All countries"
             options={countryOptions}
             value={filters.country}
-            onChange={(v) => setFilters((current) => ({ ...current, country: v, province: "" }))}
+            onChange={(v) => setFilters((current) => ({ ...current, country: v, province: [] }))}
+            allLabel="All countries"
           />
-          <SearchableFilterSelect
+          <MultiFilterSelect
             placeholder="All provinces"
             options={provinceOptions}
             value={filters.province}
             onChange={(v) => set("province", v)}
+            allLabel="All provinces"
           />
         </div>
       </section>
