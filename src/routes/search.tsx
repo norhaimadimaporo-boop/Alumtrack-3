@@ -51,21 +51,6 @@ type Filters = {
 
 const empty: Filters = { course: [], college: [], batch: [] };
 
-/** Deduplicates filter values, keeping the best-capitalised spelling. */
-function pickLabels(values: string[]) {
-  const seen = new Map<string, string>();
-  for (const raw of values) {
-    const value = raw.trim();
-    if (!value || value === "-" || value === "Not provided") continue;
-    const key = value.toLowerCase();
-    const current = seen.get(key);
-    const capitals = (value.match(/[A-Z]/g) ?? []).length;
-    const currentCapitals = current ? (current.match(/[A-Z]/g) ?? []).length : -1;
-    if (!current || capitals > currentCapitals) seen.set(key, value);
-  }
-  return [...seen.values()].sort((a, b) => a.localeCompare(b));
-}
-
 function SearchPage() {
   const data = Route.useLoaderData();
   const [query, setQuery] = useState("");
@@ -76,14 +61,13 @@ function SearchPage() {
   const alumni = useMemo(() => (data.ok ? data.alumni : []), [data]);
   const signedIn = data.ok && data.signedIn;
 
-  const options = useMemo(
-    () => ({
-      courses: pickLabels(alumni.map((a) => a.course)),
-      colleges: pickLabels(alumni.map((a) => a.college)),
-      batches: [...new Set(alumni.map((a) => a.batch).filter((b) => b !== "-"))].sort((a, b) =>
-        b.localeCompare(a),
-      ),
-    }),
+  // Identical to the Map's batch list: derived from live records, excludes the
+  // "-" placeholder, sorted newest-first with localeCompare.
+  const batchOptions = useMemo(
+    () =>
+      [...new Set(alumni.map((a) => a.batch))]
+        .filter((b) => b !== "-")
+        .sort((a, b) => b.localeCompare(a)),
     [alumni],
   );
 
@@ -181,23 +165,16 @@ function SearchPage() {
             )}
           </div>
           <div className="flex w-full flex-col gap-3">
-            <MultiFilterSelect
-              placeholder="All colleges"
-              options={options.colleges}
-              value={filters.college}
-              onChange={(v) => set("college", v)}
-              allLabel="All colleges"
-            />
-            <MultiFilterSelect
-              placeholder="All courses"
-              options={options.courses}
-              value={filters.course}
-              onChange={(v) => set("course", v)}
-              allLabel="All courses"
+            <MultiCollegeCourseSelect
+              stacked
+              colleges={filters.college}
+              courses={filters.course}
+              onCollegesChange={(v) => set("college", v)}
+              onCoursesChange={(v) => set("course", v)}
             />
             <MultiFilterSelect
               placeholder="All batch years"
-              options={options.batches}
+              options={batchOptions}
               value={filters.batch}
               onChange={(v) => set("batch", v)}
               allLabel="All batch years"

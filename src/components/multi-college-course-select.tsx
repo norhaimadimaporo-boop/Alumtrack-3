@@ -9,11 +9,14 @@ export function MultiCollegeCourseSelect({
   courses,
   onCollegesChange,
   onCoursesChange,
+  stacked = false,
 }: {
   colleges: string[];
   courses: string[];
   onCollegesChange: (next: string[]) => void;
   onCoursesChange: (next: string[]) => void;
+  /** Keep the two controls in a single vertical column (Search Alumni sidebar). */
+  stacked?: boolean;
 }) {
   const courseOptions = useMemo(() => {
     if (colleges.length === 0) return COURSE_OPTIONS;
@@ -42,7 +45,11 @@ export function MultiCollegeCourseSelect({
   };
 
   return (
-    <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+    <div
+      className={
+        stacked ? "grid min-w-0 grid-cols-1 gap-3" : "grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2"
+      }
+    >
       <MultiFilterSelect
         placeholder="All colleges"
         options={[...COLLEGE_OPTIONS]}

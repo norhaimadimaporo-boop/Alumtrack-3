@@ -42,10 +42,10 @@ export function AlumniProfileModal({
 
   const statusColor =
     alumnus.status === "Employed"
-      ? "bg-emerald-500 text-white font-bold tracking-wide shadow-sm"
+      ? "bg-emerald-100 text-emerald-900 border border-emerald-200/80 font-semibold tracking-wide"
       : alumnus.status === "Unemployed"
-        ? "bg-amber-400 text-stone-950 font-bold tracking-wide shadow-sm"
-        : "bg-white/20 text-white font-bold tracking-wide shadow-sm";
+        ? "bg-amber-100 text-amber-900 border border-amber-200/80 font-semibold tracking-wide"
+        : "bg-white/20 text-white border border-white/30 font-semibold tracking-wide";
   const location = alumnus.location ?? alumnus.region;
 
   return createPortal(
@@ -87,7 +87,7 @@ export function AlumniProfileModal({
                 <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide">
                   Verified alumnus
                 </span>
-                <span className={`rounded-full px-3 py-1 text-xs uppercase ${statusColor}`}>
+                <span className={`rounded-full px-3 py-0.5 text-xs uppercase ${statusColor}`}>
                   {alumnus.status}
                 </span>
               </div>
