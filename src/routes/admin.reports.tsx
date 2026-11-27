@@ -1,11 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, MapPinned, Search } from "lucide-react";
+import { BarChart3, Search } from "lucide-react";
 import { AdminShell } from "@/components/admin-shell";
 import { MultiFilterSelect } from "@/components/multi-filter-select";
 import { MultiCollegeCourseSelect } from "@/components/multi-college-course-select";
 import { BarList, DonutChart, ColumnChart } from "@/components/cluster-map";
-import { RealAlumniMap } from "@/components/real-alumni-map";
 import {
   findCountryByName,
   loadGeoCountries,
@@ -204,10 +203,6 @@ function AdminReports() {
     ];
   }, [filtered]);
 
-  const pins = useMemo(() => filtered.flatMap((r) => (r.pin ? [r.pin] : [])), [filtered]);
-  const domesticCount = pins.filter((pin) => pin.country === "Philippines").length;
-  const overseasCount = pins.length - domesticCount;
-
   const perYear = useMemo(() => {
     const counts = new Map<string, number>();
     for (const r of filtered) {
@@ -374,25 +369,6 @@ function AdminReports() {
             <p className="mt-1 text-xs text-muted-foreground">{kpi.label}</p>
           </div>
         ))}
-      </div>
-
-      <div className="mt-4 overflow-hidden rounded-lg border-t-4 border-brand bg-card p-5 pb-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <MapPinned className="size-4 text-brand" /> AlumTrack Map
-          </h2>
-          <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-muted-foreground">
-            <span className="rounded-full border border-border px-2.5 py-1">
-              {domesticCount} in the Philippines
-            </span>
-            <span className="rounded-full border border-border px-2.5 py-1">
-              {overseasCount} overseas
-            </span>
-          </div>
-        </div>
-        <div className="mt-3 w-full">
-          <RealAlumniMap pins={pins} heightClassName="h-[400px] md:h-[480px] w-full" />
-        </div>
       </div>
 
       <div className="mt-4 rounded-lg border border-border bg-card p-5">

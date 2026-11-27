@@ -26,10 +26,14 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAccountsRouteImport } from './routes/admin.accounts'
+import { Route as AdminActivityHistoryRouteImport } from './routes/admin.activity-history'
 import { Route as AdminAlumniRouteImport } from './routes/admin.alumni'
+import { Route as AdminMapRouteImport } from './routes/admin.map'
 import { Route as AdminMessagesRouteImport } from './routes/admin.messages'
 import { Route as AdminPostsRouteImport } from './routes/admin.posts'
+import { Route as AdminRecycleBinRouteImport } from './routes/admin.recycle-bin'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminSystemUsageRouteImport } from './routes/admin.system-usage'
 import { Route as AdminUsageRouteImport } from './routes/admin.usage'
 import { Route as ApiAlumniAvatarRouteImport } from './routes/api.alumni.avatar'
 import { Route as ApiChatMessagesIdRouteImport } from './routes/api.chat.messages.$id'
@@ -119,9 +123,19 @@ const AdminAccountsRoute = AdminAccountsRouteImport.update({
   path: '/admin/accounts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminActivityHistoryRoute = AdminActivityHistoryRouteImport.update({
+  id: '/admin/activity-history',
+  path: '/admin/activity-history',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminAlumniRoute = AdminAlumniRouteImport.update({
   id: '/admin/alumni',
   path: '/admin/alumni',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminMapRoute = AdminMapRouteImport.update({
+  id: '/admin/map',
+  path: '/admin/map',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminMessagesRoute = AdminMessagesRouteImport.update({
@@ -134,9 +148,19 @@ const AdminPostsRoute = AdminPostsRouteImport.update({
   path: '/admin/posts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRecycleBinRoute = AdminRecycleBinRouteImport.update({
+  id: '/admin/recycle-bin',
+  path: '/admin/recycle-bin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminReportsRoute = AdminReportsRouteImport.update({
   id: '/admin/reports',
   path: '/admin/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSystemUsageRoute = AdminSystemUsageRouteImport.update({
+  id: '/admin/system-usage',
+  path: '/admin/system-usage',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsageRoute = AdminUsageRouteImport.update({
@@ -172,10 +196,14 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/admin/accounts': typeof AdminAccountsRoute
+  '/admin/activity-history': typeof AdminActivityHistoryRoute
   '/admin/alumni': typeof AdminAlumniRoute
+  '/admin/map': typeof AdminMapRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/posts': typeof AdminPostsRoute
+  '/admin/recycle-bin': typeof AdminRecycleBinRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/system-usage': typeof AdminSystemUsageRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin/': typeof AdminIndexRoute
   '/api/alumni/avatar': typeof ApiAlumniAvatarRoute
@@ -198,10 +226,14 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/admin/accounts': typeof AdminAccountsRoute
+  '/admin/activity-history': typeof AdminActivityHistoryRoute
   '/admin/alumni': typeof AdminAlumniRoute
+  '/admin/map': typeof AdminMapRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/posts': typeof AdminPostsRoute
+  '/admin/recycle-bin': typeof AdminRecycleBinRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/system-usage': typeof AdminSystemUsageRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin': typeof AdminIndexRoute
   '/api/alumni/avatar': typeof ApiAlumniAvatarRoute
@@ -225,10 +257,14 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/admin/accounts': typeof AdminAccountsRoute
+  '/admin/activity-history': typeof AdminActivityHistoryRoute
   '/admin/alumni': typeof AdminAlumniRoute
+  '/admin/map': typeof AdminMapRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/posts': typeof AdminPostsRoute
+  '/admin/recycle-bin': typeof AdminRecycleBinRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/system-usage': typeof AdminSystemUsageRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin/': typeof AdminIndexRoute
   '/api/alumni/avatar': typeof ApiAlumniAvatarRoute
@@ -253,10 +289,14 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/admin/accounts'
+    | '/admin/activity-history'
     | '/admin/alumni'
+    | '/admin/map'
     | '/admin/messages'
     | '/admin/posts'
+    | '/admin/recycle-bin'
     | '/admin/reports'
+    | '/admin/system-usage'
     | '/admin/usage'
     | '/admin/'
     | '/api/alumni/avatar'
@@ -279,10 +319,14 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/admin/accounts'
+    | '/admin/activity-history'
     | '/admin/alumni'
+    | '/admin/map'
     | '/admin/messages'
     | '/admin/posts'
+    | '/admin/recycle-bin'
     | '/admin/reports'
+    | '/admin/system-usage'
     | '/admin/usage'
     | '/admin'
     | '/api/alumni/avatar'
@@ -305,10 +349,14 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/admin/accounts'
+    | '/admin/activity-history'
     | '/admin/alumni'
+    | '/admin/map'
     | '/admin/messages'
     | '/admin/posts'
+    | '/admin/recycle-bin'
     | '/admin/reports'
+    | '/admin/system-usage'
     | '/admin/usage'
     | '/admin/'
     | '/api/alumni/avatar'
@@ -332,10 +380,14 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   AdminAccountsRoute: typeof AdminAccountsRoute
+  AdminActivityHistoryRoute: typeof AdminActivityHistoryRoute
   AdminAlumniRoute: typeof AdminAlumniRoute
+  AdminMapRoute: typeof AdminMapRoute
   AdminMessagesRoute: typeof AdminMessagesRoute
   AdminPostsRoute: typeof AdminPostsRoute
+  AdminRecycleBinRoute: typeof AdminRecycleBinRoute
   AdminReportsRoute: typeof AdminReportsRoute
+  AdminSystemUsageRoute: typeof AdminSystemUsageRoute
   AdminUsageRoute: typeof AdminUsageRoute
   AdminIndexRoute: typeof AdminIndexRoute
   ApiAlumniAvatarRoute: typeof ApiAlumniAvatarRoute
@@ -463,11 +515,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAccountsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/activity-history': {
+      id: '/admin/activity-history'
+      path: '/admin/activity-history'
+      fullPath: '/admin/activity-history'
+      preLoaderRoute: typeof AdminActivityHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/alumni': {
       id: '/admin/alumni'
       path: '/admin/alumni'
       fullPath: '/admin/alumni'
       preLoaderRoute: typeof AdminAlumniRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/map': {
+      id: '/admin/map'
+      path: '/admin/map'
+      fullPath: '/admin/map'
+      preLoaderRoute: typeof AdminMapRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/messages': {
@@ -484,11 +550,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPostsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/recycle-bin': {
+      id: '/admin/recycle-bin'
+      path: '/admin/recycle-bin'
+      fullPath: '/admin/recycle-bin'
+      preLoaderRoute: typeof AdminRecycleBinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/reports': {
       id: '/admin/reports'
       path: '/admin/reports'
       fullPath: '/admin/reports'
       preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/system-usage': {
+      id: '/admin/system-usage'
+      path: '/admin/system-usage'
+      fullPath: '/admin/system-usage'
+      preLoaderRoute: typeof AdminSystemUsageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/usage': {
@@ -532,10 +612,14 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   AdminAccountsRoute: AdminAccountsRoute,
+  AdminActivityHistoryRoute: AdminActivityHistoryRoute,
   AdminAlumniRoute: AdminAlumniRoute,
+  AdminMapRoute: AdminMapRoute,
   AdminMessagesRoute: AdminMessagesRoute,
   AdminPostsRoute: AdminPostsRoute,
+  AdminRecycleBinRoute: AdminRecycleBinRoute,
   AdminReportsRoute: AdminReportsRoute,
+  AdminSystemUsageRoute: AdminSystemUsageRoute,
   AdminUsageRoute: AdminUsageRoute,
   AdminIndexRoute: AdminIndexRoute,
   ApiAlumniAvatarRoute: ApiAlumniAvatarRoute,

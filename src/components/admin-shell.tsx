@@ -4,13 +4,17 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Users,
+  MapPinned,
   Megaphone,
-  BarChart3,
-  ShieldCheck,
-  Activity,
   MessageCircle,
+  BarChart3,
+  Activity,
+  History,
+  Trash2,
+  ShieldCheck,
 } from "lucide-react";
 import { getAdminChatUnread } from "@/lib/chat.functions";
+import { getAdminDashboardData } from "@/lib/admin.functions";
 import { useAdminName, useAdminRole } from "@/hooks/use-session";
 import type { AdminRole } from "@/lib/session";
 
@@ -22,15 +26,73 @@ const ROLE_LABEL: Record<AdminRole, string> = {
   viewer: "Viewer Admin",
 };
 
-const links = [
-  { to: "/admin", label: "Admin Dashboard", icon: LayoutDashboard, min: "viewer" },
-  { to: "/admin/messages", label: "Messages", icon: MessageCircle, min: "standard" },
-  { to: "/admin/alumni", label: "Alumni Directory", icon: Users, min: "viewer" },
-  { to: "/admin/posts", label: "Engagement Network", icon: Megaphone, min: "standard" },
-  { to: "/admin/reports", label: "Reports & Statistics", icon: BarChart3, min: "viewer" },
-  { to: "/admin/accounts", label: "Admin Accounts", icon: ShieldCheck, min: "head" },
-  { to: "/admin/usage", label: "System Usage", icon: Activity, min: "viewer" },
-] as const;
+type NavLink = {
+  to: string;
+  label: string;
+  icon: typeof Users;
+  min: AdminRole;
+  badge?: "pending" | "unread" | "new";
+};
+
+const NAV_GROUPS: Array<{ section: string; links: NavLink[] }> = [
+  {
+    section: "Overview",
+    links: [{ to: "/admin", label: "Dashboard", icon: LayoutDashboard, min: "viewer" }],
+  },
+  {
+    section: "Alumni",
+    links: [
+      {
+        to: "/admin/alumni",
+        label: "Alumni directory",
+        icon: Users,
+        min: "viewer",
+        badge: "pending",
+      },
+      { to: "/admin/map", label: "Alumni map (GIS)", icon: MapPinned, min: "viewer", badge: "new" },
+    ],
+  },
+  {
+    section: "Engagement",
+    links: [
+      { to: "/admin/posts", label: "Engagement network", icon: Megaphone, min: "standard" },
+      {
+        to: "/admin/messages",
+        label: "Messages",
+        icon: MessageCircle,
+        min: "standard",
+        badge: "unread",
+      },
+    ],
+  },
+  {
+    section: "Insights",
+    links: [
+      { to: "/admin/reports", label: "Reports and statistics", icon: BarChart3, min: "viewer" },
+    ],
+  },
+  {
+    section: "System",
+    links: [
+      { to: "/admin/system-usage", label: "System usage", icon: Activity, min: "viewer" },
+      {
+        to: "/admin/activity-history",
+        label: "Activity history",
+        icon: History,
+        min: "viewer",
+        badge: "new",
+      },
+      {
+        to: "/admin/recycle-bin",
+        label: "Recycle bin",
+        icon: Trash2,
+        min: "standard",
+        badge: "new",
+      },
+      { to: "/admin/accounts", label: "Admin accounts", icon: ShieldCheck, min: "head" },
+    ],
+  },
+];
 
 export function AdminShell({
   title,
@@ -45,10 +107,33 @@ export function AdminShell({
 }) {
   const adminRole = useAdminRole();
   const adminName = useAdminName();
-  // Fail safe before hydration: only show links every tier may open.
-  const visibleLinks = links.filter(
-    (link) => ADMIN_RANK[adminRole ?? "viewer"] >= ADMIN_RANK[link.min],
-  );
+  const [pending, setPending] = useState(0);
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const [dashboard, messages] = await Promise.all([
+          getAdminDashboardData(),
+          adminRole && ADMIN_RANK[adminRole] >= ADMIN_RANK.standard
+            ? getAdminChatUnread()
+            : Promise.resolve(0),
+        ]);
+        if (!active) return;
+        if (dashboard.ok) setPending(dashboard.stats.pendingVerification);
+        setUnread(messages);
+      } catch {
+        // Sidebar badges are best-effort; the page itself still loads.
+      }
+    };
+    void load();
+    const timer = window.setInterval(() => void load(), 30_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [adminRole]);
 
   return (
     <div className="mx-auto grid w-full max-w-[1720px] items-start gap-5 overflow-x-clip px-3 pb-4 pt-6 sm:px-5 md:grid-cols-[240px_minmax(0,1fr)] lg:gap-6 lg:px-6 xl:grid-cols-[256px_minmax(0,1fr)] xl:px-8">
@@ -65,22 +150,39 @@ export function AdminShell({
           </p>
         </div>
 
-        <nav className="mt-3 grid w-full max-w-full grid-cols-3 gap-1.5 rounded-2xl border border-white/15 bg-[#5A0012]/85 px-2 py-3 text-white shadow-sm backdrop-blur-sm md:flex md:flex-col md:overflow-visible">
-          {visibleLinks.map((l) => (
-            <Link
-              key={l.to}
-              to={l.to}
-              title={l.label}
-              activeOptions={{ exact: l.to === "/admin" }}
-              activeProps={{ className: "bg-highlight text-highlight-foreground shadow-sm" }}
-              inactiveProps={{ className: "text-white/85 hover:bg-white/10" }}
-              className="flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-center text-[10px] font-medium leading-tight transition-colors md:min-h-0 md:flex-row md:justify-start md:gap-2 md:px-3 md:text-left md:text-sm"
-            >
-              <l.icon className="size-4 shrink-0" />
-              <span className="min-w-0 whitespace-normal">{l.label}</span>
-              {l.to === "/admin/messages" && <MessagesUnreadBadge role={adminRole} />}
-            </Link>
-          ))}
+        <nav className="mt-3 rounded-2xl border border-white/15 bg-[#5A0012]/85 px-2 py-3 text-white shadow-sm backdrop-blur-sm">
+          {NAV_GROUPS.map((group) => {
+            const visible = group.links.filter(
+              (link) => (ADMIN_RANK[adminRole ?? "viewer"] ?? 0) >= ADMIN_RANK[link.min],
+            );
+            if (visible.length === 0) return null;
+            return (
+              <div key={group.section} className="mb-2 last:mb-0">
+                <p className="px-3 pb-1 pt-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white/45">
+                  {group.section}
+                </p>
+                <div className="grid grid-cols-3 gap-1.5 md:flex md:flex-col md:gap-0.5">
+                  {visible.map((link) => (
+                    <Link
+                      key={link.to}
+                      to={link.to}
+                      title={link.label}
+                      activeOptions={{ exact: link.to === "/admin" }}
+                      activeProps={{
+                        className: "!bg-[#D6B46C] !text-[#3B2412] font-semibold shadow-sm",
+                      }}
+                      inactiveProps={{ className: "text-white/85 hover:bg-white/10" }}
+                      className="flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-center text-[10px] font-medium leading-tight transition-colors md:min-h-0 md:flex-row md:justify-start md:gap-2 md:px-3 md:text-left md:text-sm"
+                    >
+                      <link.icon className="size-4 shrink-0" />
+                      <span className="min-w-0 truncate">{link.label}</span>
+                      <Badge kind={link.badge} pending={pending} unread={unread} />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </nav>
       </aside>
 
@@ -98,36 +200,26 @@ export function AdminShell({
   );
 }
 
-function MessagesUnreadBadge({ role }: { role: AdminRole | null }) {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    if (!role || ADMIN_RANK[role] < ADMIN_RANK.standard) {
-      setCount(0);
-      return;
-    }
-
-    let active = true;
-    const loadCount = async () => {
-      try {
-        const unread = await getAdminChatUnread();
-        if (active) setCount(unread);
-      } catch (error) {
-        console.error("[admin-shell] Could not refresh unread chat count:", error);
-      }
-    };
-
-    void loadCount();
-    const timer = window.setInterval(() => void loadCount(), 10_000);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
-  }, [role]);
-
+function Badge({
+  kind,
+  pending,
+  unread,
+}: {
+  kind?: NavLink["badge"];
+  pending: number;
+  unread: number;
+}) {
+  if (kind === "new") {
+    return (
+      <span className="ml-auto rounded-full bg-[#D6B46C]/25 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#F0D9A8] md:text-[10px]">
+        New
+      </span>
+    );
+  }
+  const count = kind === "pending" ? pending : kind === "unread" ? unread : 0;
   if (count <= 0) return null;
   return (
-    <span className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-highlight px-1.5 py-0.5 text-[9px] font-bold leading-none text-highlight-foreground md:ml-auto md:text-[10px]">
+    <span className="ml-auto inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-[#D6B46C] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#3B2412] md:text-[10px]">
       {count > 99 ? "99+" : count}
     </span>
   );

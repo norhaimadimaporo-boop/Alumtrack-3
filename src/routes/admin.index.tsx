@@ -37,11 +37,17 @@ const STAT_META: Array<{
   key: StatKey;
   label: string;
   icon: typeof Users;
+  to: string;
 }> = [
-  { key: "registeredAlumni", label: "Registered alumni", icon: Users },
-  { key: "pendingVerification", label: "Pending verification", icon: UserCheck },
-  { key: "employedAlumni", label: "Employed alumni", icon: Briefcase },
-  { key: "activePosts", label: "Active posts", icon: Megaphone },
+  { key: "registeredAlumni", label: "Registered alumni", icon: Users, to: "/admin/alumni" },
+  {
+    key: "pendingVerification",
+    label: "Pending verification",
+    icon: UserCheck,
+    to: "/admin/alumni",
+  },
+  { key: "employedAlumni", label: "Employed alumni", icon: Briefcase, to: "/admin/map" },
+  { key: "activePosts", label: "Active posts", icon: Megaphone, to: "/admin/posts" },
 ];
 
 const MONTH_NAMES = [
@@ -149,26 +155,140 @@ function AdminDashboard() {
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {STAT_META.map((meta) => (
-          <div key={meta.key} className="rounded-lg border border-border bg-card p-4">
+          <Link
+            key={meta.key}
+            to={meta.to}
+            className="group block rounded-lg border border-border bg-card p-4 transition-colors hover:border-brand"
+          >
             <meta.icon className="size-4 text-brand" />
             <p className="mt-3 text-2xl font-bold text-foreground">
               {formatNumber(stats[meta.key])}
             </p>
-            <p className="text-xs text-muted-foreground">{meta.label}</p>
-          </div>
+            <p className="text-xs text-muted-foreground group-hover:text-brand">{meta.label}</p>
+          </Link>
         ))}
+      </div>
+
+      <div className="mt-4 rounded-lg border-l-4 border-highlight bg-card p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">Needs attention</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {stats.pendingVerification} alumni awaiting verification · {stats.activePosts} active
+              posts
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to="/admin/alumni"
+              className="rounded-md bg-brand px-3 py-2 text-xs font-semibold text-brand-foreground hover:bg-brand-dark"
+            >
+              Review pending alumni
+            </Link>
+            <Link
+              to="/admin/messages"
+              className="rounded-md border border-border px-3 py-2 text-xs font-semibold hover:border-brand"
+            >
+              Open messages
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link
+          to="/admin/alumni"
+          className="rounded-md border border-brand px-3 py-2 text-xs font-semibold text-brand hover:bg-brand/10"
+        >
+          + Add alumni
+        </Link>
+        <Link
+          to="/admin/posts"
+          className="rounded-md border border-brand px-3 py-2 text-xs font-semibold text-brand hover:bg-brand/10"
+        >
+          + New post
+        </Link>
+        <Link
+          to="/admin/alumni"
+          className="rounded-md border border-brand px-3 py-2 text-xs font-semibold text-brand hover:bg-brand/10"
+        >
+          Export alumni
+        </Link>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h2 className="text-sm font-semibold text-foreground">New registrations per month</h2>
+          {(() => {
+            const counts = new Map<string, number>();
+            for (const item of data.ok ? data.recentRegistrations : []) {
+              const key = item.createdAt.slice(0, 7);
+              if (key && /^\d{4}-\d{2}$/.test(key)) counts.set(key, (counts.get(key) ?? 0) + 1);
+            }
+            const entries = [...counts.entries()]
+              .sort((a, b) => a[0].localeCompare(b[0]))
+              .slice(-8);
+            const max = Math.max(1, ...entries.map(([, value]) => value));
+            if (entries.length === 0) {
+              return <p className="mt-3 text-xs text-muted-foreground">No recent registrations.</p>;
+            }
+            return (
+              <div className="mt-3 flex h-28 items-end gap-1.5">
+                {entries.map(([month, value]) => (
+                  <div
+                    key={month}
+                    className="flex h-full flex-1 flex-col items-center justify-end gap-1"
+                  >
+                    <span className="text-[10px] text-muted-foreground">{value}</span>
+                    <div
+                      className="w-full rounded-t bg-brand/80"
+                      style={{ height: `${Math.max(4, (value / max) * 100)}%` }}
+                      title={`${month}: ${value}`}
+                    />
+                    <span className="text-[9px] text-muted-foreground">{month.slice(5)}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+        <div className="rounded-lg border border-border bg-card p-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-foreground">Latest registrations</h2>
+            <Link to="/admin/alumni" className="text-xs font-semibold text-brand hover:underline">
+              View directory
+            </Link>
+          </div>
+          <ul className="mt-2 divide-y divide-border">
+            {(data.ok ? data.recentRegistrations : []).slice(0, 5).map((item) => (
+              <li key={item.id} className="flex items-center justify-between gap-2 py-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-foreground">{item.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{item.course}</p>
+                </div>
+                <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">
+                  {item.verificationStatus}
+                </span>
+              </li>
+            ))}
+            {(data.ok ? data.recentRegistrations : []).length === 0 && (
+              <li className="py-6 text-center text-xs text-muted-foreground">
+                No registrations yet.
+              </li>
+            )}
+          </ul>
+        </div>
       </div>
 
       <div className="mt-4 rounded-lg border-t-4 border-brand bg-card p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-foreground">Recent admin activity</h2>
-          <button
-            type="button"
-            onClick={() => setShowHistory(true)}
+          <Link
+            to="/admin/activity-history"
             className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline"
           >
-            <History className="size-3.5" /> View All / View History
-          </button>
+            <History className="size-3.5" /> View all activity
+          </Link>
         </div>
         {previewActivity.length === 0 ? (
           <p className="mt-3 rounded-lg bg-muted px-3 py-4 text-xs text-muted-foreground">

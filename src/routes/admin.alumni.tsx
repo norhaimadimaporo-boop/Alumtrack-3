@@ -199,6 +199,7 @@ function AdminAlumni() {
   // Viewers get the read-only directory; null is the pre-hydration state.
   const canManage = adminRole === "head" || adminRole === "standard";
   const [query, setQuery] = useState("");
+  const [directoryTab, setDirectoryTab] = useState<"all" | "pending">("all");
   const [course, setCourse] = useState<string[]>([]);
   const [college, setCollege] = useState<string[]>([]);
   const [batch, setBatch] = useState<string[]>([]);
@@ -768,6 +769,7 @@ function AdminAlumni() {
     const status = a.verified ? "Verified" : "For Verification";
     return (
       a.name.toLowerCase().includes(query.toLowerCase()) &&
+      (directoryTab === "all" || !a.verified) &&
       matchesAnyCourse(a.course, course) &&
       matchesAnyCollege(a.college, college) &&
       matchesAny(a.batch, batch) &&
@@ -878,7 +880,24 @@ function AdminAlumni() {
         </div>
       }
     >
-      <div className="grid grid-cols-1 items-center gap-3 rounded-lg border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mt-3 inline-flex rounded-lg border border-border bg-card p-1">
+        {(["all", "pending"] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setDirectoryTab(tab)}
+            className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+              directoryTab === tab
+                ? "bg-brand text-brand-foreground"
+                : "text-muted-foreground hover:text-brand"
+            }`}
+          >
+            {tab === "all" ? "All" : "Pending Verification"}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 items-center gap-3 rounded-lg border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#7A1315]" />
           <input
