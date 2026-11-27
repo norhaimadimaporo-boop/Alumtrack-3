@@ -199,11 +199,12 @@ function AdminAlumni() {
   // Viewers get the read-only directory; null is the pre-hydration state.
   const canManage = adminRole === "head" || adminRole === "standard";
   const [query, setQuery] = useState("");
-  const [directoryTab, setDirectoryTab] = useState<"all" | "pending">("all");
+  const [directoryTab, setDirectoryTab] = useState<"all" | "pending" | "verified">("all");
   const [course, setCourse] = useState<string[]>([]);
   const [college, setCollege] = useState<string[]>([]);
   const [batch, setBatch] = useState<string[]>([]);
-  const [verification, setVerification] = useState<string[]>([]);
+  const [education, setEducation] = useState<string[]>([]);
+  const [employmentStatus, setEmploymentStatus] = useState<string[]>([]);
   const [viewing, setViewing] = useState<Alumnus | null>(null);
   const [editing, setEditing] = useState<Alumnus | null>(null);
   const [adding, setAdding] = useState(false);
@@ -766,14 +767,29 @@ function AdminAlumni() {
   ].sort();
 
   const rows = alumni.filter((a) => {
-    const status = a.verified ? "Verified" : "For Verification";
+    const levels = a.education.map((record) => record.level.trim().toLowerCase());
+    const educationMatch =
+      education.length === 0 ||
+      education.some((selected) => {
+        const key = selected.toLowerCase();
+        return levels.some(
+          (level) =>
+            level.includes(key) ||
+            (key === "graduated" && level.includes("graduate") && !level.includes("post")) ||
+            (key === "post-graduate" && level.includes("post")),
+        );
+      });
+    const employmentMatch =
+      employmentStatus.length === 0 ||
+      employmentStatus.includes(a.employmentStatus === "employed" ? "Employed" : "Unemployed");
     return (
       a.name.toLowerCase().includes(query.toLowerCase()) &&
-      (directoryTab === "all" || !a.verified) &&
+      (directoryTab === "all" || (directoryTab === "pending" ? !a.verified : a.verified)) &&
       matchesAnyCourse(a.course, course) &&
       matchesAnyCollege(a.college, college) &&
       matchesAny(a.batch, batch) &&
-      (verification.length === 0 || verification.includes(status))
+      educationMatch &&
+      employmentMatch
     );
   });
 
@@ -840,7 +856,8 @@ function AdminAlumni() {
     setQuery("");
     setCourse([]);
     setBatch([]);
-    setVerification([]);
+    setEducation([]);
+    setEmploymentStatus([]);
   };
 
   const open = adding || editing !== null;
@@ -881,7 +898,7 @@ function AdminAlumni() {
       }
     >
       <div className="mt-3 inline-flex rounded-lg border border-border bg-card p-1">
-        {(["all", "pending"] as const).map((tab) => (
+        {(["all", "pending", "verified"] as const).map((tab) => (
           <button
             key={tab}
             type="button"
@@ -892,7 +909,7 @@ function AdminAlumni() {
                 : "text-muted-foreground hover:text-brand"
             }`}
           >
-            {tab === "all" ? "All" : "Pending Verification"}
+            {tab === "all" ? "All" : tab === "pending" ? "Pending Verification" : "Verified"}
           </button>
         ))}
       </div>
@@ -923,11 +940,18 @@ function AdminAlumni() {
           allLabel="All batches"
         />
         <MultiFilterSelect
-          placeholder="All statuses"
-          options={["Verified", "For Verification"]}
-          value={verification}
-          onChange={setVerification}
-          allLabel="All statuses"
+          placeholder="All education"
+          options={["Baccalaureate", "Graduated", "Post-graduate"]}
+          value={education}
+          onChange={setEducation}
+          allLabel="All education"
+        />
+        <MultiFilterSelect
+          placeholder="All status"
+          options={["Employed", "Unemployed"]}
+          value={employmentStatus}
+          onChange={setEmploymentStatus}
+          allLabel="All status"
         />
       </div>
 
